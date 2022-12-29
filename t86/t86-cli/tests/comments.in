@@ -1,0 +1,12 @@
+.text
+
+# Comment number one 
+MOV [0], 49
+MOV R0, [0]
+PUTCHAR R0 # Comment number two
+MOV R0, 0
+MOV [R0], 10
+MOV R1, [R0]
+PUTCHAR R1
+HALT
+# Comment at the very end

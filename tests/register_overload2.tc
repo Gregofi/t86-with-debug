@@ -1,0 +1,7 @@
+int overload(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
+}
+
+int main() {
+    return overload(1, 2, 3, 1, 2, 3);
+}

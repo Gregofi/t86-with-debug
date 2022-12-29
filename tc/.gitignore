@@ -1,0 +1,7 @@
+OLD
+build
+.cache
+cmake-build-*
+.vscode
+tests/diff/
+tests/out/

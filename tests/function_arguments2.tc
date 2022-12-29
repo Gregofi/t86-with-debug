@@ -1,0 +1,13 @@
+
+
+int bar(int arg1, int arg2) {
+    return arg1 + arg2;
+}
+
+int foo(int arg1, int arg2, int arg3, int arg4) {
+    return bar(arg1, arg2) + bar(arg3, arg4);
+}
+
+int main() {
+    return foo(1, 2, 3, 4);
+}

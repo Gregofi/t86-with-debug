@@ -1,0 +1,17 @@
+
+
+int not_not_dead() {
+    return 5;
+}
+
+int not_dead() {
+    return 1 + not_not_dead();
+}
+
+int dead() {
+    return 1;
+}
+
+int main() {
+    return not_dead();
+}

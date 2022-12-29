@@ -1,0 +1,5 @@
+.text
+MOV R0, 50
+MOV R0, R0 + -5
+PUTNUM R0
+HALT

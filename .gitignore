@@ -1,0 +1,5 @@
+*.a
+build
+.cache
+tests/diff
+tests/out
