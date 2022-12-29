@@ -1,0 +1,64 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build-tinyc:
+    name: Build TinyC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          cd ${{ github.workspace }}/tc
+          ./scripts/build.sh
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tinyc
+          path: ${{ github.workspace }}/tc/build/applications/ni-gen/ni-gen
+          retention-days: 1
+        
+  build-t86:
+    name: Build T86
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          cd ${{ github.workspace }}/t86
+          ./scripts/build.sh
+      - name: Unit tests
+        run: |
+          cd ${{ github.workspace }}/t86/build
+          make test
+      - name: Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: t86
+          path: ${{ github.workspace }}/t86/build/t86-cli/t86-cli 
+          retention-days: 1
+            
+  test-interpreter:
+    needs: [build-t86, build-tinyc]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download compiler
+        uses: actions/download-artifact@v3
+        with:
+          name: tinyc
+      - name: Download T86
+        uses: actions/download-artifact@v3
+        with:
+          name: t86
+      # The artifacts are not executable by default
+      - name: permissions
+        run: chmod +x ${{ github.workspace }}/t86-cli ${{ github.workspace }}/ni-gen
+      - name: Run tests
+        run: |
+          cd ${{ github.workspace }}
+          ./scripts/run_tests.sh ./ni-gen ./t86-cli
