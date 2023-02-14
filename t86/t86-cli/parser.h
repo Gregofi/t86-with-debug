@@ -50,7 +50,7 @@ public:
         } else if (c == ']') {
             return Token::RBRACKET;
         } else if (c == '+') {
-            return Token::PLUS;
+           return Token::PLUS;
         } else if (c == '*') {
             return Token::TIMES;
         } else if (c == '.') {

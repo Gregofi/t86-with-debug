@@ -1,6 +1,7 @@
 #include <fstream>
 
 #include "parser.h"
+#include "../t86/os.h"
 
 using namespace tiny::t86;
 
@@ -33,10 +34,6 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    tiny::t86::Cpu cpu{};
-
-    cpu.start(std::move(program));
-    while (!cpu.halted()) {
-        cpu.tick();
-    }
+    OS os;
+    os.Run(std::move(program));
 }

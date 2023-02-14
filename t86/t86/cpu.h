@@ -54,6 +54,10 @@ namespace tiny::t86 {
 
             constexpr static std::size_t defaultRamGatesCount = 4;
 
+            constexpr static const char* debuggerPortString = "-debuggerPort";
+
+            const static int debuggerPort = 9121;
+
             std::size_t registerCnt() const;
 
             std::size_t floatRegisterCnt() const;
@@ -126,6 +130,10 @@ namespace tiny::t86 {
         bool halted() const;
 
         void halt();
+
+        void interrupt(int number);
+
+        int interrupted() const;
 
         bool registerReady(PhysicalRegister reg) const;
 
@@ -223,5 +231,9 @@ namespace tiny::t86 {
         std::function<void(Cpu&)> breakHandler_;
 
         bool halted_{false};
+
+        // Zero means that the program is not interrupted, any other number
+        // means that interrupt has occured.
+        int interrupted_{0};
     };
 }

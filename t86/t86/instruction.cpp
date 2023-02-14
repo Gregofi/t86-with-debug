@@ -19,6 +19,8 @@ namespace tiny::t86 {
                 return "NOP";
             case Type::HALT:
                 return "HALT";
+            case Type::BRKPT:
+                return "BRKPT";
             case Type::DBG:
                 return "DBG";
             case Type::BREAK:
@@ -517,7 +519,6 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
         entry.setStackPointer(operands[1].getValue() - 1);
     }
 
-
     void FPUSH::execute(ReservationStation::Entry& entry) const {
         const auto& operands = entry.operands();
         const auto& memWriteIds = entry.memoryWriteIds();
@@ -602,6 +603,10 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
     void DBG::retire(ReservationStation::Entry& entry) const {
         entry.unrollSpeculation();
         debugFunction_(entry.cpu());
+    }
+
+    void BRKPT::retire(ReservationStation::Entry& entry) const {
+        entry.unrollSpeculation();
     }
 
     void BREAK::retire(ReservationStation::Entry& entry) const {

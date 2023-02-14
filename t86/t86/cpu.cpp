@@ -9,6 +9,9 @@
 
 namespace tiny::t86 {
     void Cpu::tick() {
+        // Clear interrupt flag
+        interrupted_ = 0;
+
         StatsLogger::instance().newTick();
 
         ram_.tick();
@@ -134,6 +137,14 @@ namespace tiny::t86 {
 
     void Cpu::halt() {
         halted_ = true;
+    }
+
+    int Cpu::interrupted() const {
+        return interrupted_;
+    }
+
+    void Cpu::interrupt(int code) {
+        interrupted_ = code;
     }
 
     std::optional<uint64_t> Cpu::readMemory(uint64_t address, MemoryWrite::Id maxId) {
