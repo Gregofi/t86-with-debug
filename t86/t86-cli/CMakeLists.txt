@@ -9,4 +9,4 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Wall")
 
 project(${PROJECT_NAME})
 add_executable(t86-cli main.cpp)
-target_link_libraries(t86-cli t86 common)
+target_link_libraries(t86-cli t86 common fmt)
