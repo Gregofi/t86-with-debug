@@ -1,8 +1,8 @@
 #pragma once
 
-#include "cpu.h"
-#include "debug.h"
-#include "program.h"
+#include "t86/cpu.h"
+#include "t86/debug.h"
+#include "t86/program.h"
 
 namespace tiny::t86 {
 class OS {

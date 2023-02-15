@@ -6,7 +6,7 @@ set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -Wextra -pedantic -g -D__DEBUG__ -fsanitize=undefined")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(common)
 add_subdirectory(tinyC)

@@ -5,7 +5,7 @@
 #include "cpu.h"
 #include "utils/stats_logger.h"
 #include "cpu/branch_predictors/naive_branch_predictor.h"
-#include "../common/config.h"
+#include "common/config.h"
 
 namespace tiny::t86 {
     void Cpu::tick() {

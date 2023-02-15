@@ -5,10 +5,12 @@
 #include <cstring>
 #include <string>
 #include <string_view>
-#include "../t86/program/programbuilder.h"
-#include "../t86/cpu.h"
-#include "../t86/program/helpers.h"
-#include "../common/helpers.h"
+#include "t86/program/programbuilder.h"
+#include "t86/cpu.h"
+#include "t86/program/helpers.h"
+#include "common/helpers.h"
+#include "fmt/core.h"
+#include "common/logger.h"
 
 
 enum class Token {
@@ -127,6 +129,7 @@ public:
     void Section() {
         ExpectTok(Token::ID, curtok, []{ return "Expected '.section_name'"; });
         std::string section_name = lex.getId();
+        log_info("Parsing '{}' section\n", section_name);
         GetNextPrev();
         if (section_name == "text") {
             Text();
@@ -143,7 +146,7 @@ public:
         } else if (regname == "IP") {
             return tiny::t86::Register::ProgramCounter();
         } else if (regname[0] != 'R') {
-            throw ParserError(utils::format("Registers must begin with an R, unless IP, BP or SP, got {}", regname));
+            throw ParserError(fmt::format("Registers must begin with an R, unless IP, BP or SP, got {}", regname));
         }
         regname.remove_prefix(1);
         return tiny::t86::Register{static_cast<size_t>(std::atoi(regname.data()))};
@@ -471,14 +474,13 @@ public:
         } else if (ins_name == "NOP") {
             return new tiny::t86::NOP{};
         } else {
-            throw ParserError(utils::format("Unknown instruction {}", ins_name));
+            throw ParserError(fmt::format("Unknown instruction {}", ins_name));
         }
     }
 
 #undef CHECK_COMMA
 
     void Text() {
-        utils::logger("Parsing text section...");
         while (curtok == Token::NUM || curtok == Token::ID) {
             auto ins = Instruction();
             program.push_back(ins);

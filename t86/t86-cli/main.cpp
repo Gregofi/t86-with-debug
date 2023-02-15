@@ -1,7 +1,8 @@
 #include <fstream>
+#include <iostream>
 
-#include "parser.h"
-#include "../t86/os.h"
+#include "common/parser.h"
+#include "t86/os.h"
 
 using namespace tiny::t86;
 

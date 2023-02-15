@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
-#include "../t86-cli/parser.h"
+#include "common/parser.h"
 
 TEST(TokenizerTest, OnlyIds) {
     std::istringstream iss("A B C D");
