@@ -1,4 +1,5 @@
 #pragma once
+#include "common/TCP.h"
 
 namespace tiny::t86 {
 class Cpu;
@@ -6,7 +7,7 @@ class Cpu;
 /// A debugging interface provided by the VM.
 class Debug {
 public:
-    Debug(int port, Cpu& cpu): cpu(cpu) {}
+    Debug(int port, Cpu& cpu): cpu(cpu), server(port) {}
 
     enum class BreakReason {
         SoftwareBreakpoint,
@@ -26,6 +27,7 @@ public:
     bool Work(BreakReason reason);
 private:
     Cpu& cpu;
+    TCP::TCPServer server;
 
 };
 }

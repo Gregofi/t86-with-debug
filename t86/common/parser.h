@@ -12,7 +12,6 @@
 #include "fmt/core.h"
 #include "common/logger.h"
 
-
 enum class Token {
     ID,
     DOT,

@@ -1,147 +1,147 @@
 [
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest -std=gnu++20 -o CMakeFiles/parser_test.dir/tests/parser_test.cpp.o -c /home/gregofi1/diplomka/main/t86/tests/parser_test.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/tests/parser_test.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/parser_test.dir/tests/parser_test.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/tests/parser_test.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/tests/parser_test.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/common",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/common.dir/config.cpp.o -c /home/gregofi1/diplomka/main/t86/common/config.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/common/config.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/common",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/common.dir/config.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/common/config.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/common/config.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/config.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/config.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/config.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/config.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/config.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/config.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/alu.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/alu.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/alu.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/alu.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/alu.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/alu.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/branch_predictors/naive_branch_predictor.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/branch_predictors/naive_branch_predictor.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/branch_predictors/naive_branch_predictor.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/branch_predictors/naive_branch_predictor.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/branch_predictors/naive_branch_predictor.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/branch_predictors/naive_branch_predictor.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager/memory_write.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager/memory_write.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager/memory_write.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager/memory_write.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager/memory_write.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager/memory_write.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager/memory_writes.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager/memory_writes.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/memory_writes_manager/memory_writes.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/memory_writes_manager/memory_writes.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager/memory_writes.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/memory_writes_manager/memory_writes.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/register.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/register.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/register.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/register.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/register.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/register.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/register_allocation_table.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/register_allocation_table.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/register_allocation_table.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/register_allocation_table.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/register_allocation_table.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/register_allocation_table.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/cpu/reservation_station.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/cpu/reservation_station.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/cpu/reservation_station.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/cpu/reservation_station.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/reservation_station.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/cpu/reservation_station.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/debug.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/debug.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/debug.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/debug.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/debug.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/debug.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/instruction.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/instruction.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/instruction.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/instruction.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instruction.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instruction.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/instructions/operand.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/instructions/operand.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/instructions/operand.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/instructions/operand.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/operand.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/operand.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/instructions/product.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/instructions/product.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/instructions/product.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/instructions/product.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/product.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/product.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/instructions/requirements.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/instructions/requirements.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/instructions/requirements.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/instructions/requirements.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/requirements.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/instructions/requirements.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/os.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/os.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/os.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/os.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/os.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/os.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/program.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/program.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/program.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/program.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/program.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/program.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/program/helpers.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/program/helpers.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/program/helpers.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/program/helpers.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/program/helpers.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/program/helpers.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/ram.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/ram.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/ram.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/ram.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/ram.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/ram.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -std=gnu++20 -o CMakeFiles/t86.dir/utils/stats_logger.cpp.o -c /home/gregofi1/diplomka/main/t86/t86/utils/stats_logger.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86/utils/stats_logger.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86.dir/utils/stats_logger.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/utils/stats_logger.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86/utils/stats_logger.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/t86-cli",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/include -std=gnu++20 -o CMakeFiles/t86-cli.dir/main.cpp.o -c /home/gregofi1/diplomka/main/t86/t86-cli/main.cpp",
-  "file": "/home/gregofi1/diplomka/main/t86/t86-cli/main.cpp"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/t86-cli",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/include  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/t86-cli.dir/main.cpp.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/t86-cli/main.cpp",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/t86-cli/main.cpp"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-build/googlemock",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/include -I/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++20 -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/src/gmock-all.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-build/googlemock",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/include -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk  -DGTEST_HAS_PTHREAD=1   -std=c++20 -o CMakeFiles/gmock.dir/src/gmock-all.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/src/gmock-all.cc"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-build/googlemock",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++20 -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googlemock/src/gmock_main.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-build/googlemock",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk  -DGTEST_HAS_PTHREAD=1   -std=c++20 -o CMakeFiles/gmock_main.dir/src/gmock_main.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/src/gmock_main.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googlemock/src/gmock_main.cc"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-build/googletest",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/include -I/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++20 -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/src/gtest-all.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/src/gtest-all.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-build/googletest",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/include -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk  -DGTEST_HAS_PTHREAD=1   -std=c++20 -o CMakeFiles/gtest.dir/src/gtest-all.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/src/gtest-all.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/src/gtest-all.cc"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-build/googletest",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/include -isystem /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest -Wall -Wshadow -Wno-error=dangling-else -DGTEST_HAS_PTHREAD=1 -fexceptions -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -std=c++20 -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/src/gtest_main.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/googletest-src/googletest/src/gtest_main.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-build/googletest",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/include -isystem /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk  -DGTEST_HAS_PTHREAD=1   -std=c++20 -o CMakeFiles/gtest_main.dir/src/gtest_main.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/src/gtest_main.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/googletest-src/googletest/src/gtest_main.cc"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/fmt-build",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/include -std=gnu++20 -o CMakeFiles/fmt.dir/src/format.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/src/format.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/src/format.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/include  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/fmt.dir/src/format.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/src/format.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/src/format.cc"
 },
 {
-  "directory": "/home/gregofi1/diplomka/main/t86/build/_deps/fmt-build",
-  "command": "/usr/bin/c++  -I/home/gregofi1/diplomka/main/t86 -I/home/gregofi1/diplomka/main/t86/common -I/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/include -std=gnu++20 -o CMakeFiles/fmt.dir/src/os.cc.o -c /home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/src/os.cc",
-  "file": "/home/gregofi1/diplomka/main/t86/build/_deps/fmt-src/src/os.cc"
+  "directory": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-build",
+  "command": "/Library/Developer/CommandLineTools/usr/bin/c++  -I/Users/filipgregor/Diplomka/thesis-monorepo/t86 -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/common -I/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/include  -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX13.1.sdk -std=gnu++20 -o CMakeFiles/fmt.dir/src/os.cc.o -c /Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/src/os.cc",
+  "file": "/Users/filipgregor/Diplomka/thesis-monorepo/t86/build/_deps/fmt-src/src/os.cc"
 }
 ]

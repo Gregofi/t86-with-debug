@@ -292,6 +292,7 @@ Instruction | Operands | Description |
 ----------|----------|--------|
 DBG | debug function | executes debug function
 BREAK | | executes handle function
+BKPT | | used for a breakpoint by debuggers
 HALT | | halts the CPU
 
 ## VM
