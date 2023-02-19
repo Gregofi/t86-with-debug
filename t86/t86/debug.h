@@ -42,7 +42,7 @@ public:
         log_info("Sending stop message to the debugger");
         server.Send("Program stopped");
         bool end = false;
-        while (end) {
+        while (!end) {
             log_info("Waiting for message from the debugger");
             auto message = server.Receive();
             // TODO: This means that we received EOF, which shouldn't
