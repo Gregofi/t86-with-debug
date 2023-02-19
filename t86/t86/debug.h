@@ -1,5 +1,6 @@
 #pragma once
 #include "common/TCP.h"
+#include "common/logger.h"
 
 namespace tiny::t86 {
 class Cpu;
@@ -10,6 +11,7 @@ public:
     Debug(int port, Cpu& cpu): cpu(cpu), server(port) {}
 
     enum class BreakReason {
+        Begin,
         SoftwareBreakpoint,
         HardwareBreakpoint,
         SingleStep,
@@ -25,6 +27,7 @@ public:
 
     std::string ReasonToString(BreakReason reason) {
         switch (reason) {
+            case BreakReason::Begin: return "Execution start";
             case BreakReason::SoftwareBreakpoint: return "Software breakpoint";
             case BreakReason::HardwareBreakpoint: return "Hardware breakpoint";
             case BreakReason::SingleStep: return "Single step";
@@ -36,15 +39,18 @@ public:
     /// which will communicate with the client.
     /// Should be called on any break situation.
     bool Work(BreakReason reason) {
+        log_info("Sending stop message to the debugger");
         server.Send("Program stopped");
         bool end = false;
         while (end) {
+            log_info("Waiting for message from the debugger");
             auto message = server.Receive();
             // TODO: This means that we received EOF, which shouldn't
             //       really happen.
             if (!message) {
                 return false;
             }
+            log_info("Received message '{}' from debugger", *message);
             
             if (message == "REASON") {
                 std::string r = ReasonToString(reason);

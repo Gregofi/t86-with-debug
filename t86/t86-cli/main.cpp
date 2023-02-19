@@ -46,9 +46,7 @@ int main(int argc, char* argv[]) {
     tiny::t86::Program program;
     try {
         program = parser.Parse();
-#ifdef LOGGER
-        program.dump();
-#endif
+        // program.dump();
     } catch (ParserError &err) {
         std::cerr << err.what() << std::endl;
         return 2;

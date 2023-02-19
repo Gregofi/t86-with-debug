@@ -24,6 +24,13 @@ public:
 
 private:
     void DispatchInterrupt(int n);
+    /// If debug interface is present then sends message to it,
+    /// otherwise noop.
+    void DebuggerMessage(Debug::BreakReason reason) {
+        if (debug_interface) {
+            debug_interface->Work(reason);
+        }
+    }
 
     Cpu cpu;
     std::optional<Debug> debug_interface;

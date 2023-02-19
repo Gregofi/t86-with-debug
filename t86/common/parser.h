@@ -128,13 +128,14 @@ public:
     void Section() {
         ExpectTok(Token::ID, curtok, []{ return "Expected '.section_name'"; });
         std::string section_name = lex.getId();
-        log_info("Parsing '{}' section\n", section_name);
+        log_info("Parsing '{}' section", section_name);
         GetNextPrev();
         if (section_name == "text") {
             Text();
         } else {
             throw ParserError("Invalid section name");
         }
+        log_info("Finished parsing '{}' section", section_name);
     }
 
     tiny::t86::Register getRegister(std::string_view regname) {

@@ -8,11 +8,11 @@ namespace tiny::t86 {
 void OS::DispatchInterrupt(int n) {
     switch (n) {
     case 3:
-        debug_interface->Work(Debug::BreakReason::SoftwareBreakpoint);
+        DebuggerMessage(Debug::BreakReason::SoftwareBreakpoint);
         break;
     default:
         // TODO: Add logging!
-        log_error("No interrupt handler for interrupt no. {}!\n", n);
+        log_error("No interrupt handler for interrupt no. {}!", n);
         assert(false); 
         break;
     }
@@ -20,6 +20,8 @@ void OS::DispatchInterrupt(int n) {
 
 void OS::Run(Program program) {
     cpu.start(std::move(program));
+    DebuggerMessage(Debug::BreakReason::Begin);
+    log_info("Starting execution\n");
     while (true) {
         cpu.tick();
         if (cpu.halted()) {
@@ -27,6 +29,7 @@ void OS::Run(Program program) {
         }
 
         if (int n = cpu.interrupted(); n > 0) {
+            log_info("Interrupt {} occurred", n);
             DispatchInterrupt(n);
         }
     }
