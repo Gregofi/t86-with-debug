@@ -81,7 +81,7 @@ namespace tiny::t86 {
             FDIV,
             EXT,
             NRW,
-            BRKPT,
+            BKPT,
         };
 
         struct Signature {
@@ -736,9 +736,9 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         std::function<void(Cpu&)> debugFunction_;
     };
 
-    class BRKPT : public NoOpInstruction {
+    class BKPT : public NoOpInstruction {
     public:
-        Type type() const override { return Type::BRKPT; }
+        Type type() const override { return Type::BKPT; }
 
         std::size_t length() const override;
 
