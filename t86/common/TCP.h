@@ -89,13 +89,13 @@ public:
         if (!initialized) {
             throw TCPError("Call to Send before Initialize");
         }
-        ::TCP::Send(static_cast<T*>(this)->sock, s);
+        ::TCP::Send(sock, s);
     }
     std::optional<std::string> Receive() {
         if (!initialized) {
             throw TCPError("Call to Receive before Initialize");
         }
-        return ::TCP::Receive(static_cast<T*>(this)->sock);
+        return ::TCP::Receive(sock);
     }
 protected:
     bool initialized = false;
