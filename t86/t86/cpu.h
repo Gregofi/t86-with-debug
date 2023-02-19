@@ -56,8 +56,6 @@ namespace tiny::t86 {
 
             constexpr static const char* debuggerPortString = "-debuggerPort";
 
-            const static int debuggerPort = 9121;
-
             std::size_t registerCnt() const;
 
             std::size_t floatRegisterCnt() const;
@@ -85,6 +83,10 @@ namespace tiny::t86 {
         // This is how many renamed registers can be in use translate once for once instruction
         //  (it is quite generous, usually around 3 will be used translate once)
         static constexpr std::size_t possibleRenamedRegisterCnt = maxInstructionOperands + specialRegistersCnt;
+
+        static constexpr int TRAP_FLAG_INTERRUPT = 1;
+
+        static constexpr uint64_t TRAP_FLAG_MASK = 0x0100;
 
         Cpu();
 
@@ -180,6 +182,9 @@ namespace tiny::t86 {
         void registerBranchNotTaken(uint64_t sourcePc);
 
         void registerBranchTaken(uint64_t sourcePc, uint64_t destination);
+
+        /// Checks if trap flag is set in FLAGS register.
+        bool isTrapFlagSet();
 
         PhysicalRegister nextFreeRegister() const;
 

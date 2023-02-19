@@ -6,6 +6,7 @@
 #include "utils/stats_logger.h"
 #include "cpu/branch_predictors/naive_branch_predictor.h"
 #include "common/config.h"
+#include "common/logger.h"
 
 namespace tiny::t86 {
     void Cpu::tick() {
@@ -21,6 +22,12 @@ namespace tiny::t86 {
         reservationStation_.executeAndRetire();
 
         if (halted()) {
+            return;
+        }
+
+        if (isTrapFlagSet()) {
+            log_info("Trap flag is set - interrupting");
+            interrupted_ = TRAP_FLAG_INTERRUPT;
             return;
         }
 
@@ -357,5 +364,10 @@ namespace tiny::t86 {
                                    std::to_string(Config::defaultRamSize));
         config.setDefaultIfMissing(Config::ramGatesCountConfigString,
                                    std::to_string(Config::defaultRamGatesCount));
+    }
+
+    bool Cpu::isTrapFlagSet() {
+        int64_t flags = getRegister(Register::Flags());
+        return (flags & ~TRAP_FLAG_MASK) >> 8;
     }
 }

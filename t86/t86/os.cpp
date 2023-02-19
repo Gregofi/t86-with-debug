@@ -25,6 +25,8 @@ void OS::Run(Program program) {
     while (true) {
         cpu.tick();
         if (cpu.halted()) {
+            log_info("Halt");
+            DebuggerMessage(Debug::BreakReason::Halt);
             return;
         }
 
