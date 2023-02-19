@@ -13,6 +13,12 @@ inline void log_info(fmt::format_string<Args...> format_str, Args&& ...args) {
 }
 
 template<typename... Args>
+inline void log_warning(fmt::format_string<Args...> format_str, Args&& ...args) {
+    fmt::print(fg(fmt::color::orange), "WARNING: ");
+    fmt::print(format_str, args...);
+}
+
+template<typename... Args>
 inline void log_error(fmt::format_string<Args...> format_str, Args&& ...args) {
     fmt::print(fg(fmt::color::crimson), "ERROR: ");
     fmt::print(format_str, args...);
