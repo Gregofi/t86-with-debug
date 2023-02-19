@@ -43,47 +43,76 @@ inline void Send(int socket, const std::string& s) {
         uint8_t data[sizeof(size_t)];
     } x;
     x.l = s.length();
-    std::cerr << "size of the string: " << s.length() << "\n";
-    std::cerr << "size of the string in the union: " << x.l << " " << x.data[0] << "\n";
     SendRaw(socket, x.data, sizeof(size_t));
-
     SendRaw(socket, reinterpret_cast<const uint8_t*>(s.c_str()), s.length());
 }
 
-class Receiver {
-public:
-    Receiver() {}
-    std::optional<std::string> Receive(int socket) {
-        // The messages are in form 8b | data
-        size_t size = 0;
-        int err = read(socket, &size, sizeof(size_t));
+inline std::optional<std::string> Receive(int socket) {
+    // The messages are in form 8b | data
+    size_t size = 0;
+    int err = read(socket, &size, sizeof(size_t));
+    if (err < 0) {
+        throw TCPError("Reading failed");
+    } if (err == 0) {
+        return std::nullopt;
+    }
+
+    size_t received = 0;
+    std::vector<uint8_t> data(size);
+    while (received < size) {
+        int err = read(socket, data.data() + received, size - received);
         if (err < 0) {
             throw TCPError("Reading failed");
-        } if (err == 0) {
+        } else if (err == 0) {
             return std::nullopt;
         }
-
-        size_t received = 0;
-        std::vector<uint8_t> data(size);
-        while (received < size) {
-            int err = read(socket, data.data() + received, size - received);
-            if (err < 0) {
-                throw TCPError("Reading failed");
-            } else if (err == 0) {
-                return std::nullopt;
-            }
-            received += err;
-        }
-        // Unecessary copy, but since the messages will be very small we franky
-        // dont care
-        std::string result(data.begin(), data.end());
-        return result;
+        received += err;
     }
+    // Unecessary copy, but since the messages will be very small we franky
+    // dont care
+    std::string result(data.begin(), data.end());
+    return result;
+}
+
+template<typename T>
+class TCP {
+public:
+    TCP(int port): port(port) {}
+    void Initialize() {
+        if (initialized) {
+            throw TCPError("Already initialized");
+        }
+        static_cast<T*>(this)->Initialize_();
+        initialized = true;
+    }
+    void Send(const std::string& s) {
+        if (!initialized) {
+            throw TCPError("Call to Send before Initialize");
+        }
+        ::TCP::Send(static_cast<T*>(this)->sock, s);
+    }
+    std::optional<std::string> Receive() {
+        if (!initialized) {
+            throw TCPError("Call to Receive before Initialize");
+        }
+        return ::TCP::Receive(static_cast<T*>(this)->sock);
+    }
+protected:
+    bool initialized = false;
+    int port;
+    int sock;
 };
 
-class TCPClient {
+class TCPClient : public TCP<TCPClient> {
 public:
-    TCPClient(int port): port(port) {
+    TCPClient(int port): TCP(port) {
+    }
+
+    void Initialize_() {
+        if (initialized) {
+            throw TCPError("Already connected");
+        }
+
         char buffer[1024];
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) {
@@ -98,26 +127,20 @@ public:
         int client_fd = connect(sock, (sockaddr*)&serv_addr, sizeof(serv_addr));
     }
 
-    void Send(const std::string& s) {
-        ::TCP::Send(sock, s);
-    }
-
-    std::optional<std::string> Receive() {
-        return receiver.Receive(sock);
-    }
-
     ~TCPClient() {
         close(sock);
     }
-public:
-    int port;
-    int sock;
-    Receiver receiver;
 };
 
-class TCPServer {
+class TCPServer: public TCP<TCPServer> {
 public:
-    TCPServer(int port): port(port) {
+    TCPServer(int port): TCP(port) {
+    }
+
+    /**
+     * Listens for incoming connections, blocking call
+     */
+    void Initialize_() {
         int opt = 1;
         server_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (server_fd < 0) {
@@ -143,32 +166,21 @@ public:
             throw TCPError("Listen Error");
         }
 
+        if (listen(server_fd, 3) < 0) {
+            throw TCPError("Listen error");
+        }
+
         int addrlen = sizeof(address);
         sock = accept(server_fd, (sockaddr*)&address, (socklen_t*)&addrlen);
     }
 
     ~TCPServer() {
-        shutdown(server_fd, SHUT_RDWR);
+        if (initialized) {
+            shutdown(server_fd, SHUT_RDWR);
+        }
     }
-
-    void Send(const std::string& s) {
-        ::TCP::Send(sock, s);
-    }
-
-    std::optional<std::string> Receive() {
-        return receiver.Receive(sock);
-    }
-private:
-    static const size_t BUFFER_SIZE = 4096;
-
-    int port;
+protected:
     int server_fd;
-    int sock;
-
-    uint8_t buffer[BUFFER_SIZE];
-    uint8_t size = 0;
-
-    Receiver receiver;
 };
 
 }
