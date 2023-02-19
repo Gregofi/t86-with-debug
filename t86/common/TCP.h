@@ -147,9 +147,10 @@ public:
             throw TCPError("Couldn't open socket - socket");
         }
 
-        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
+        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt,
                        sizeof(opt))) {
-            throw TCPError("Couldn't open socket - setsockopt");
+            throw TCPError(std::string("Couldn't open socket - setsockopt:")
+                    + strerror(errno));
         }
 
         sockaddr_in address{
