@@ -68,7 +68,7 @@ inline std::optional<std::string> Receive(int socket) {
         }
         received += err;
     }
-    // Unecessary copy, but since the messages will be very small we franky
+    // Unecessary copy, but since the messages will be very small we frankly
     // dont care
     std::string result(data.begin(), data.end());
     return result;
