@@ -7,6 +7,14 @@ set(PROJECT_NAME "t86-cli")
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOGGER")
 set(CMAKE_CXX_FLAGS_RELEASE "-Wall")
 
+# fetch latest argparse
+include(FetchContent)
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+)
+FetchContent_MakeAvailable(argparse)
+
 project(${PROJECT_NAME})
 add_executable(t86-cli main.cpp)
-target_link_libraries(t86-cli t86 common fmt)
+target_link_libraries(t86-cli t86 common fmt::fmt argparse)

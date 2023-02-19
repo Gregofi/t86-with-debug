@@ -8,4 +8,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Wall")
 
 project(${PROJECT_NAME})
 file(GLOB_RECURSE SRC "*.cpp" "*.h")
+
 add_library(${PROJECT_NAME} ${SRC})
+target_link_libraries(${PROJECT_NAME} fmt::fmt)
+

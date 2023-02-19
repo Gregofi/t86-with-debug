@@ -2,6 +2,7 @@
 
 #include "os.h"
 #include "debug.h"
+#include "common/logger.h"
 
 namespace tiny::t86 {
 void OS::DispatchInterrupt(int n) {
@@ -11,6 +12,7 @@ void OS::DispatchInterrupt(int n) {
         break;
     default:
         // TODO: Add logging!
+        log_error("No interrupt handler for interrupt no. {}!\n", n);
         assert(false); 
         break;
     }
