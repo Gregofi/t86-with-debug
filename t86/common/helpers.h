@@ -4,6 +4,7 @@
 #include <sstream>
 #include <memory>
 #include <iostream>
+#include <vector>
 #include <string_view>
 
 #define STR(...) static_cast<std::stringstream &&>(std::stringstream() << __VA_ARGS__).str()
@@ -19,5 +20,18 @@ namespace tiny {
 }
 
 namespace utils {
-
+    /// Splits given string_view by the delimiter.
+    /// Lifetime of the splitted strings is bound to
+    /// lifetime of the string which was viewed by 's'.
+    /// To use this outside of that lifetime, convert
+    /// the string_views to strings.
+    inline std::vector<std::string_view> split(std::string_view s, char delim) {
+        std::vector<std::string_view> result;
+        while (!s.empty()) {
+            auto size = s.find(delim);
+            result.emplace_back(s.substr(size));
+            s.remove_prefix(size);
+        }
+        return result;
+    }
 }
