@@ -7,7 +7,7 @@
 template<typename... Args>
 inline void log_debug(fmt::format_string<Args...> format_str, Args&& ...args) {
 #if LOG_LEVEL > 3
-    fmt::print(stderr, fg(fmt::color::blue), "DEBUG: ");
+    fmt::print(stderr, fg(fmt::color::violet), "DEBUG: ");
     fmt::print(stderr, format_str, args...);
     fmt::print(stderr, "\n");
 #endif

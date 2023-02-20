@@ -29,6 +29,9 @@ namespace utils {
         std::vector<std::string_view> result;
         while (!s.empty()) {
             auto size = s.find(delim);
+            if (size == 0) {
+                continue;
+            }
             if (size == s.npos) {
                 result.emplace_back(s);
                 break;

@@ -368,6 +368,8 @@ namespace tiny::t86 {
 
     bool Cpu::isTrapFlagSet() {
         int64_t flags = getRegister(Register::Flags());
+        log_debug("flag register value: {}", flags);
+        return false; // TODO
         return (flags & ~TRAP_FLAG_MASK) >> 8;
     }
 }
