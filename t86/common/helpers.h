@@ -29,8 +29,12 @@ namespace utils {
         std::vector<std::string_view> result;
         while (!s.empty()) {
             auto size = s.find(delim);
-            result.emplace_back(s.substr(size));
-            s.remove_prefix(size);
+            if (size == s.npos) {
+                result.emplace_back(s);
+                break;
+            }
+            result.emplace_back(s.substr(0, size));
+            s.remove_prefix(size + 1);
         }
         return result;
     }

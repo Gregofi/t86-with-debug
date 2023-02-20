@@ -80,7 +80,8 @@ public:
             } else if (command.starts_with("POKEDATA")) {
             } else if (command.starts_with("PEEKREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
-                cpu.getRegister(reg);
+                auto val = cpu.getRegister(reg);
+                server.Send(fmt::format("Reg {} value: {}", commands.at(1), val));
             } else if (command.starts_with("POKEREGS")) {
             } else if (command == "SINGLESTEP") {
 
