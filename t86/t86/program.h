@@ -10,8 +10,7 @@ namespace tiny::t86 {
     /**
      * Simple wrapper for vector of instructions
      */
-    class Program {
-    public:
+    struct Program {
         Program(std::vector<Instruction*> instructions = {}, std::vector<int64_t> data = {})
             : instructions_(std::move(instructions)), data_(std::move(data)) {}
 
@@ -46,7 +45,6 @@ namespace tiny::t86 {
             }
         }
 
-    private:
         void deleteInstructions();
 
         std::vector<Instruction*> instructions_;

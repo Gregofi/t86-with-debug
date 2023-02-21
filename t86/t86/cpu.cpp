@@ -186,6 +186,15 @@ namespace tiny::t86 {
         ram_.set(address, value);
     }
 
+    const Instruction* Cpu::getText(uint64_t address) {
+        return program_.at(address);
+    }
+
+    void Cpu::setText(uint64_t address, Instruction* ins) {
+        program_.instructions_.at(address) = ins;
+    }
+
+
     void Cpu::jump(const ReservationStation::Entry& entry, bool taken) {
         uint64_t destination = entry.getUpdatedProgramCounter();
         if (taken) {

@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
+#include <span>
 #include "common/TCP.h"
 #include "common/logger.h"
 #include "common/helpers.h"
@@ -99,7 +100,18 @@ public:
                 const Instruction *ins = cpu.getText(index);
                 messenger->Send(fmt::format("INS AT {}: '{}'", index, ins->toString()));
             } else if (command.starts_with("POKETEXT")) {
-                NOT_IMPLEMENTED;
+                // We unfortunately broke the instruction into several parts, need to glue it back together
+                auto index = svtoidx(commands.at(1));
+                // Glue the operands together
+                auto insBegin = std::next(commands.begin(), 3);
+                // The commas are already included
+                auto operands = utils::join(insBegin, commands.end(), " ");
+
+                auto ins_s = std::string(commands.at(2)) + " " + operands;
+                log_info("Setting instruction '{}' at address {}", ins_s, index);
+                auto ins = ParseInstruction(ins_s);
+                cpu.setText(index, ins);
+                messenger->Send("Ok");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
                 messenger->Send(fmt::format("MEMORY {} VALUE: {}", index, cpu.getMemory(index)));
