@@ -178,11 +178,11 @@ namespace tiny::t86 {
         writesManager_.startWriting(id, ram_);
     }
 
-    uint64_t Cpu::getMemory(uint64_t address) const {
+    int64_t Cpu::getMemory(uint64_t address) const {
         return ram_.get(address);
     }
 
-    void Cpu::setMemory(uint64_t address, uint64_t value) {
+    void Cpu::setMemory(uint64_t address, int64_t value) {
         ram_.set(address, value);
     }
 

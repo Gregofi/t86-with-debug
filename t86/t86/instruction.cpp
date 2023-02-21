@@ -399,7 +399,7 @@ namespace tiny::t86 {
         }
     }
 
-    void CLF::retire(ReservationStation::Entry& entry) {
+    void CLF::retire(ReservationStation::Entry& entry) const {
         entry.setFlags(Alu::Flags{false, false, false, false});
     }
 

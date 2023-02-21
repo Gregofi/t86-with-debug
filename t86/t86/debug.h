@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 #include <string>
 #include <memory>
 #include "common/TCP.h"
@@ -7,6 +8,7 @@
 #include "t86/cpu/register.h"
 #include "t86/cpu.h"
 #include "common/messenger.h"
+#include "common/parser.h"
 
 namespace tiny::t86 {
 
@@ -33,6 +35,14 @@ public:
         }
     }
 
+    size_t svtoidx(std::string_view s) {
+        auto v = utils::svtoi64(s);
+        if (!v || *v < 0) {
+            throw std::runtime_error(fmt::format("Expected index, got '{}' {}", s, !v));
+        }
+        return static_cast<size_t>(*v);
+    }
+
     Register TranslateToRegister(std::string_view s) {
         if (s == "IP") {
             return Register::ProgramCounter();
@@ -43,8 +53,17 @@ public:
         } else if (s == "FLAGS") {
             return Register::Flags();
         } else {
-            NOT_IMPLEMENTED;
+            auto idx = svtoidx(s.substr(1));
+            log_debug("Register index: {}", idx);
+            return Register{static_cast<size_t>(idx)};
         }
+    }
+
+    Instruction* ParseInstruction(std::string_view s) {
+        std::istringstream is{std::string(s)};
+        Parser parser(is);
+        Instruction* ins = parser.Instruction();
+        return ins;
     }
 
     /// Use to pass control to the debug interface
@@ -76,24 +95,29 @@ public:
                 messenger->Send("OK");
                 break;
             } else if (command.starts_with("PEEKTEXT")) {
-                NOT_IMPLEMENTED;
+                auto index = svtoidx(commands.at(1));
+                const Instruction *ins = cpu.getText(index);
+                messenger->Send(fmt::format("INS AT {}: '{}'", index, ins->toString()));
             } else if (command.starts_with("POKETEXT")) {
                 NOT_IMPLEMENTED;
             } else if (command.starts_with("PEEKDATA")) {
-                NOT_IMPLEMENTED;
+                auto index = svtoidx(commands.at(1));
+                messenger->Send(fmt::format("MEMORY {} VALUE: {}", index, cpu.getMemory(index)));
             } else if (command.starts_with("POKEDATA")) {
-                NOT_IMPLEMENTED;
+                auto index = svtoidx(commands.at(1));
+                auto value = utils::svtoi64(commands.at(2));
+                if (!value) {
+                    throw std::runtime_error("Expected number as second arg");
+                }
+                cpu.setMemory(index, *value);
             } else if (command.starts_with("PEEKREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = cpu.getRegister(reg);
                 messenger->Send(fmt::format("Reg {} value: {}", commands.at(1), val));
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
-                auto val = utils::svtoi64(commands.at(2));
-                if (!val) {
-                    throw std::runtime_error("Couldn't convert POKEREGS arg to number");
-                }
-                cpu.setRegister(reg, *val);
+                auto val = svtoidx(commands.at(2));
+                cpu.setRegister(reg, val);
             } else if (command == "SINGLESTEP") {
                 cpu.setTrapFlag();
                 messenger->Send("OK");

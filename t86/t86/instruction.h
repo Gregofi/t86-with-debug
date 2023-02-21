@@ -511,7 +511,7 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void execute(ReservationStation::Entry&) const override {}
 
-        void retire(ReservationStation::Entry& entry);
+        void retire(ReservationStation::Entry& entry) const override;
     };
 
     class CMP : public Instruction {

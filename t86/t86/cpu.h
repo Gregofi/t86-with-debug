@@ -181,9 +181,13 @@ namespace tiny::t86 {
 
         void setFloatRegister(FloatRegister fReg, double value);
 
-        uint64_t getMemory(uint64_t address) const;
+        int64_t getMemory(uint64_t address) const;
 
-        void setMemory(uint64_t address, uint64_t value);
+        void setMemory(uint64_t address, int64_t value);
+
+        const Instruction* getText(uint64_t address);
+
+        void setText(uint64_t address, Instruction* ins);
 
         /// Sets trap flag
         /// TODO: Consider setting this at debugger level
