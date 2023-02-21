@@ -1,5 +1,6 @@
 #pragma once
 
+#include <numeric>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -8,6 +9,7 @@
 #include <string_view>
 #include <charconv>
 #include <optional>
+#include <functional>
 
 #define STR(...) static_cast<std::stringstream &&>(std::stringstream() << __VA_ARGS__).str()
 
@@ -41,6 +43,18 @@ namespace utils {
             s.remove_prefix(size + 1);
         }
         return result;
+    }
+
+    template<typename InputIt>
+    inline std::string join(InputIt begin, InputIt end, const std::string& j = " ") {
+        std::string res;
+        for (; begin < end; ++begin) {
+            res += *begin;
+            if (std::next(begin, 1) != end) {
+                res += j;
+            }
+        }
+        return res;
     }
 
     inline std::optional<int64_t> svtoi64(std::string_view s) {
