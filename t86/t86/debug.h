@@ -1,17 +1,19 @@
 #pragma once
 #include <string>
+#include <memory>
 #include "common/TCP.h"
 #include "common/logger.h"
 #include "common/helpers.h"
 #include "t86/cpu/register.h"
 #include "t86/cpu.h"
+#include "common/messenger.h"
 
 namespace tiny::t86 {
 
 /// A debugging interface provided by the VM.
 class Debug {
 public:
-    Debug(int port, Cpu& cpu): cpu(cpu), server(port) {}
+    Debug(Cpu& cpu, std::unique_ptr<Messenger> mess): cpu(cpu), messenger(std::move(mess)) {}
 
     enum class BreakReason {
         Begin,
@@ -20,13 +22,6 @@ public:
         SingleStep,
         Halt,
     };
-
-    /// Opens connection at specified port and
-    /// waits for debugger to connect.
-    /// This call is blocking.
-    void OpenConnection() {
-        server.Initialize();
-    }
 
     std::string ReasonToString(BreakReason reason) {
         switch (reason) {
@@ -61,11 +56,11 @@ public:
             cpu.unsetTrapFlag();
         } else {
             log_info("Sending stop message to the debugger");
-            server.Send("Program stopped");
+            messenger->Send("Program stopped");
         }
         while (true) {
             log_info("Waiting for message from the debugger");
-            auto message = server.Receive();
+            auto message = messenger->Receive();
             // TODO: This means that we received EOF, which shouldn't
             //       really happen.
             if (!message) {
@@ -76,9 +71,9 @@ public:
             auto command = commands[0];
             if (command == "REASON") {
                 std::string r = ReasonToString(reason);
-                server.Send(r);
+                messenger->Send(r);
             } else if (message == "CONTINUE") {
-                server.Send("OK");
+                messenger->Send("OK");
                 break;
             } else if (command.starts_with("PEEKTEXT")) {
                 NOT_IMPLEMENTED;
@@ -91,7 +86,7 @@ public:
             } else if (command.starts_with("PEEKREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = cpu.getRegister(reg);
-                server.Send(fmt::format("Reg {} value: {}", commands.at(1), val));
+                messenger->Send(fmt::format("Reg {} value: {}", commands.at(1), val));
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = utils::svtoi64(commands.at(2));
@@ -101,10 +96,10 @@ public:
                 cpu.setRegister(reg, *val);
             } else if (command == "SINGLESTEP") {
                 cpu.setTrapFlag();
-                server.Send("OK");
+                messenger->Send("OK");
                 break; // continue
             } else {
-                server.Send("Unknown command");
+                messenger->Send("Unknown command");
                 continue;
             }
         }
@@ -113,7 +108,6 @@ public:
     }
 private:
     Cpu& cpu;
-    TCP::TCPServer server;
-
+    std::unique_ptr<Messenger> messenger;
 };
 }

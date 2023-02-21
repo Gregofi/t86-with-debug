@@ -2,6 +2,7 @@
 #include <iostream>
 #include <argparse/argparse.hpp>
 
+#include "TCP.h"
 #include "common/parser.h"
 #include "t86/os.h"
 
@@ -41,7 +42,7 @@ int main(int argc, char* argv[]) {
         std::cerr << "Unable to open file `" << filename << "`\n";
         return 3;
     }
-    
+
     Parser parser(f);
     tiny::t86::Program program;
     try {
@@ -53,10 +54,12 @@ int main(int argc, char* argv[]) {
     }
 
     OS os;
-    
+
     if (args["debug"] == true) {
+        auto m = std::make_unique<TCP::TCPServer>(DEFAULT_DBG_PORT);
+        m->Initialize();
+        os.SetDebuggerComms(std::move(m));
         log_info("Listening for debugger connections");
-        os.ListenForDebugger(DEFAULT_DBG_PORT);
     }
 
     os.Run(std::move(program));

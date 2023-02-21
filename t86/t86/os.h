@@ -9,19 +9,14 @@ namespace tiny::t86 {
 class OS {
 public:
     OS() = default;
+    OS(std::unique_ptr<Messenger> messenger): debug_interface(std::in_place, cpu, std::move(messenger)) {
+    }
 
     void Run(Program program);
 
-    /// Litens for incoming debugger connections, blocking call.
-    void ListenForDebugger(int port) {
-        if (debug_interface) {
-            log_info("Debugging interface is already in place!");
-            return;
-        }
-        debug_interface.emplace(port, cpu);
-        debug_interface->OpenConnection();
+    void SetDebuggerComms(std::unique_ptr<Messenger> m) {
+        debug_interface.emplace(cpu, std::move(m));
     }
-
 private:
     void DispatchInterrupt(int n);
     /// If debug interface is present then sends message to it,

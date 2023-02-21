@@ -1,5 +1,7 @@
 #pragma once
 
+#include "messenger.h"
+
 #include <iostream>
 #include <vector>
 #include <cstdlib>
@@ -75,7 +77,7 @@ inline std::optional<std::string> Receive(int socket) {
 }
 
 template<typename T>
-class TCP {
+class TCP: public Messenger {
 public:
     TCP(int port): port(port) {}
     void Initialize() {
@@ -85,13 +87,13 @@ public:
         static_cast<T*>(this)->Initialize_();
         initialized = true;
     }
-    void Send(const std::string& s) {
+    void Send(const std::string& s) override {
         if (!initialized) {
             throw TCPError("Call to Send before Initialize");
         }
         ::TCP::Send(sock, s);
     }
-    std::optional<std::string> Receive() {
+    std::optional<std::string> Receive() override {
         if (!initialized) {
             throw TCPError("Call to Receive before Initialize");
         }
@@ -113,7 +115,6 @@ public:
             throw TCPError("Already connected");
         }
 
-        char buffer[1024];
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) {
             throw TCPError("Unable to open socket");
@@ -123,8 +124,10 @@ public:
             .sin_family = AF_INET,
             .sin_port = htons(port),
         };
-        
-        int client_fd = connect(sock, (sockaddr*)&serv_addr, sizeof(serv_addr));
+
+        if (connect(sock, (sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
+            throw TCPError("Unable to connect");
+        }
     }
 
     ~TCPClient() {
