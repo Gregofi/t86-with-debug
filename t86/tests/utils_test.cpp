@@ -51,7 +51,7 @@ TEST(svtoi64, All) {
 }
 
 TEST(merge_views, All) {
-    auto s = {"Hello", "World"};
+    std::vector<std::string> s = {"Hello", "World"};
     auto res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "Hello World");
 
