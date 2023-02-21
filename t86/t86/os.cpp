@@ -1,4 +1,6 @@
 #include <cassert>
+#include <exception>
+#include <fmt/core.h>
 
 #include "os.h"
 #include "debug.h"
@@ -10,10 +12,12 @@ void OS::DispatchInterrupt(int n) {
     case 3:
         DebuggerMessage(Debug::BreakReason::SoftwareBreakpoint);
         break;
+    case 1:
+        DebuggerMessage(Debug::BreakReason::SingleStep);
+        break;
     default:
         // TODO: Add logging!
-        log_error("No interrupt handler for interrupt no. {}!", n);
-        assert(false); 
+        throw std::runtime_error(fmt::format("No interrupt handler for interrupt no. {}!", n));
         break;
     }
 }

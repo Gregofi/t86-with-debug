@@ -86,7 +86,7 @@ namespace tiny::t86 {
 
         static constexpr int TRAP_FLAG_INTERRUPT = 1;
 
-        static constexpr uint64_t TRAP_FLAG_MASK = 0x0100;
+        static constexpr uint64_t TRAP_FLAG_MASK = 0x0400;
 
         Cpu();
 
@@ -160,6 +160,16 @@ namespace tiny::t86 {
         void unrollSpeculation(const RegisterAllocationTable& rat);
 
         void flushPipeline();
+
+        /// Checks if trap flag is set in FLAGS register.
+        bool isTrapFlagSet() const;
+        
+        /// Returns true if instruction was executed by the time trap flag
+        /// was set.
+        bool singleStepDone() const;
+
+        /// Tells the CPU that single step has been completed.
+        void singleStepped();
     public:
         /// Following function are for debug only
         /// In execution, version with PhysicalRegister should be used
@@ -175,6 +185,15 @@ namespace tiny::t86 {
 
         void setMemory(uint64_t address, uint64_t value);
 
+        /// Sets trap flag
+        /// TODO: Consider setting this at debugger level
+        void setTrapFlag();
+
+        /// Unsets trap flag
+        /// TODO: Consider setting this at debugger level
+        void unsetTrapFlag();
+
+        bool isTrapFlagSet();
     private:
         // Branch processing
         void checkBranchPrediction(const ReservationStation::Entry& entry, uint64_t destination);
@@ -182,9 +201,6 @@ namespace tiny::t86 {
         void registerBranchNotTaken(uint64_t sourcePc);
 
         void registerBranchTaken(uint64_t sourcePc, uint64_t destination);
-
-        /// Checks if trap flag is set in FLAGS register.
-        bool isTrapFlagSet();
 
         PhysicalRegister nextFreeRegister() const;
 
@@ -214,6 +230,14 @@ namespace tiny::t86 {
         std::size_t floatRegisterCnt_;
         std::size_t physicalRegisterCnt_;
 
+        /// Used for purposes of trap flag.
+        /// One tick does not guarantee that
+        /// program counter will advance.
+        /// This is used to check if the PC
+        /// changed from the time trap flag
+        /// was set.
+        int64_t lastPC;
+
         struct RegisterValue {
             int64_t value{0};
             bool ready{false};
@@ -236,6 +260,8 @@ namespace tiny::t86 {
         std::function<void(Cpu&)> breakHandler_;
 
         bool halted_{false};
+
+        bool single_stepped_{false};
 
         // Zero means that the program is not interrupted, any other number
         // means that interrupt has occured.

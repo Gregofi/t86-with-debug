@@ -301,6 +301,11 @@ namespace tiny::t86 {
 
     void ReservationStation::Entry::retire() {
         instruction_->retire(*this);
+        if (cpu_.isTrapFlagSet()) {
+            unrollSpeculation();
+            cpu_.singleStepped();
+        }
+        // assert(false && "maybe handle singlestep here");
     }
 
     Cpu& ReservationStation::Entry::cpu() const {

@@ -18,6 +18,8 @@ namespace tiny::t86::Alu {
         bool carryFlag;
 
         bool overflowFlag;
+        
+        bool trapFlag;
     };
 
     struct Result {

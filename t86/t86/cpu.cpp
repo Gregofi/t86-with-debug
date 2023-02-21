@@ -25,9 +25,9 @@ namespace tiny::t86 {
             return;
         }
 
-        if (isTrapFlagSet()) {
-            log_info("Trap flag is set - interrupting");
-            interrupted_ = TRAP_FLAG_INTERRUPT;
+        if (singleStepDone()) {
+            single_stepped_ = false;
+            interrupted_ = 1;
             return;
         }
 
@@ -55,6 +55,8 @@ namespace tiny::t86 {
         if (instructionDecode_) {
             StatsLogger::instance().logInstructionDecode(instructionDecode_->loggingId);
         }
+
+        log_debug("End of tick");
     }
 
     Cpu::InstructionEntry Cpu::fetchInstruction() {
@@ -368,8 +370,30 @@ namespace tiny::t86 {
 
     bool Cpu::isTrapFlagSet() {
         int64_t flags = getRegister(Register::Flags());
-        log_debug("flag register value: {}", flags);
-        return false; // TODO
-        return (flags & ~TRAP_FLAG_MASK) >> 8;
+        log_debug("flag register value: {:x}", flags);
+        return (flags & TRAP_FLAG_MASK) >> 10;
+    }
+
+    void Cpu::setTrapFlag() {
+        int64_t flags = getRegister(Register::Flags());
+        log_info("trap flag was set");
+        flags = flags | TRAP_FLAG_MASK;
+        lastPC = getRegister(Register::ProgramCounter());
+        setRegister(Register::Flags(), flags);
+    }
+
+    void Cpu::unsetTrapFlag() {
+        int64_t flags = getRegister(Register::Flags());
+        log_info("trap flag was unset");
+        flags = flags & ~TRAP_FLAG_MASK;
+        setRegister(Register::Flags(), flags);
+    }
+
+    bool Cpu::singleStepDone() const {
+        return single_stepped_;
+    }
+
+    void Cpu::singleStepped() {
+        single_stepped_ = true;
     }
 }
