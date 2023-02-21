@@ -35,20 +35,19 @@ FetchContent_Declare(fmt
 )
 FetchContent_MakeAvailable(fmt)
 
-
 add_executable(
-  parser_test
+  unittests
   tests/parser_test.cpp
+  tests/utils_test.cpp
 )
 
 target_link_libraries(
-  parser_test
+  unittests
   gtest
-  gtest_main
+  GTest::gtest_main
   fmt::fmt
   t86
   common
 )
-
 include(GoogleTest)
-gtest_discover_tests(parser_test)
+gtest_discover_tests(unittests)

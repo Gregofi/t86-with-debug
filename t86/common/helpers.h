@@ -31,14 +31,13 @@ namespace utils {
         std::vector<std::string_view> result;
         while (!s.empty()) {
             auto size = s.find(delim);
-            if (size == 0) {
-                continue;
-            }
             if (size == s.npos) {
                 result.emplace_back(s);
                 break;
             }
-            result.emplace_back(s.substr(0, size));
+            if (size != 0) {
+                result.emplace_back(s.substr(0, size));
+            }
             s.remove_prefix(size + 1);
         }
         return result;
@@ -48,8 +47,8 @@ namespace utils {
         int64_t result;
         auto [ptr, ec] { std::from_chars(s.data(), s.data() + s.size(), result) };
         if (ec == std::errc()) {
-            return std::nullopt;
+            return result;
         }
-        return result;
+        return std::nullopt;
     }
 }
