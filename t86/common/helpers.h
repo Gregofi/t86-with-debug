@@ -6,6 +6,8 @@
 #include <iostream>
 #include <vector>
 #include <string_view>
+#include <charconv>
+#include <optional>
 
 #define STR(...) static_cast<std::stringstream &&>(std::stringstream() << __VA_ARGS__).str()
 
@@ -38,6 +40,15 @@ namespace utils {
             }
             result.emplace_back(s.substr(0, size));
             s.remove_prefix(size + 1);
+        }
+        return result;
+    }
+
+    inline std::optional<int64_t> svtoi64(std::string_view s) {
+        int64_t result;
+        auto [ptr, ec] { std::from_chars(s.data(), s.data() + s.size(), result) };
+        if (ec == std::errc()) {
+            return std::nullopt;
         }
         return result;
     }
