@@ -39,6 +39,7 @@ add_executable(
   unittests
   tests/parser_test.cpp
   tests/utils_test.cpp
+  tests/debug_test.cpp
 )
 
 target_link_libraries(
