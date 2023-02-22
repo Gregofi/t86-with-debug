@@ -170,10 +170,15 @@ namespace tiny::t86 {
 
         /// Tells the CPU that single step has been completed.
         void singleStepped();
-    public:
+
         /// Following function are for debug only
         /// In execution, version with PhysicalRegister should be used
+        /// NOTE: Debug only but they are used anyway with special registers...
+        ///       to be sure new function was added that will ONLY be called
+        ///       for debugging purposes - getRegisterDebug.
         int64_t getRegister(Register reg) const;
+    public:
+        void setRegisterDebug(Register reg, int64_t value);
 
         double getFloatRegister(FloatRegister reg) const;
 

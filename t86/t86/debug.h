@@ -130,7 +130,7 @@ public:
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));
-                cpu.setRegister(reg, val);
+                cpu.setRegisterDebug(reg, val);
                 messenger->Send("Ok");
             } else if (command == "SINGLESTEP") {
                 cpu.setTrapFlag();

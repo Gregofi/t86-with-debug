@@ -111,14 +111,18 @@ namespace tiny::t86 {
         setRegister(Register::Flags(), 0);
         setRegister(Register::StackPointer(), ram_.size());
         setRegister(Register::StackBasePointer(), ram_.size());
-
     }
 
     void Cpu::setRegister(Register reg, int64_t value) {
+        setRegister(rat_.translate(reg), value);
+    }
+
+    void Cpu::setRegisterDebug(Register reg, int64_t value) {
+        setRegister(rat_.translate(reg), value);
         if (reg == Register::ProgramCounter()) {
+            log_info("Setting PC!");
             speculativeProgramCounter_ = value;
         }
-        setRegister(rat_.translate(reg), value);
     }
 
     void Cpu::setFloatRegister(FloatRegister fReg, double value) {
