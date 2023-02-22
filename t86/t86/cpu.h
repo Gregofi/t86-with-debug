@@ -234,14 +234,6 @@ namespace tiny::t86 {
         std::size_t floatRegisterCnt_;
         std::size_t physicalRegisterCnt_;
 
-        /// Used for purposes of trap flag.
-        /// One tick does not guarantee that
-        /// program counter will advance.
-        /// This is used to check if the PC
-        /// changed from the time trap flag
-        /// was set.
-        int64_t lastPC;
-
         struct RegisterValue {
             int64_t value{0};
             bool ready{false};

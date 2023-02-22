@@ -280,6 +280,8 @@ public:
             // TODO: This probably won't be used anymore. It would be very difficult (impossible) to
             //       to pass lambda in text file
             throw ParserError("DBG instruction is not supported");
+        } else if (ins_name == "BKPT") {
+            return new tiny::t86::BKPT{};
         } else if (ins_name == "BREAK") {
             return new tiny::t86::BREAK{};
         } else if (ins_name == "SUB") {

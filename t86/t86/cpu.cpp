@@ -115,6 +115,9 @@ namespace tiny::t86 {
     }
 
     void Cpu::setRegister(Register reg, int64_t value) {
+        if (reg == Register::ProgramCounter()) {
+            speculativeProgramCounter_ = value;
+        }
         setRegister(rat_.translate(reg), value);
     }
 
@@ -387,7 +390,6 @@ namespace tiny::t86 {
         int64_t flags = getRegister(Register::Flags());
         log_info("trap flag was set");
         flags = flags | TRAP_FLAG_MASK;
-        lastPC = getRegister(Register::ProgramCounter());
         setRegister(Register::Flags(), flags);
     }
 

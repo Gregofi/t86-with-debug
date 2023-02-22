@@ -738,9 +738,11 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
     class BKPT : public NoOpInstruction {
     public:
+        BKPT() {}
+
         Type type() const override { return Type::BKPT; }
 
-        std::size_t length() const override;
+        std::size_t length() const override { return 1; }
 
         void retire(ReservationStation::Entry& entry) const override;
     };

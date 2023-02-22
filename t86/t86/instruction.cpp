@@ -607,6 +607,8 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
 
     void BKPT::retire(ReservationStation::Entry& entry) const {
         entry.unrollSpeculation();
+        // TODO: Hardcoded
+        entry.cpu().interrupt(3);
     }
 
     void BREAK::retire(ReservationStation::Entry& entry) const {

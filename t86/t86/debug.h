@@ -122,6 +122,7 @@ public:
                     throw std::runtime_error("Expected number as second arg");
                 }
                 cpu.setMemory(index, *value);
+                messenger->Send("Ok");
             } else if (command.starts_with("PEEKREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = cpu.getRegister(reg);
@@ -130,6 +131,7 @@ public:
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));
                 cpu.setRegister(reg, val);
+                messenger->Send("Ok");
             } else if (command == "SINGLESTEP") {
                 cpu.setTrapFlag();
                 messenger->Send("OK");
