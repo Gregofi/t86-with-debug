@@ -10,6 +10,7 @@
 
 namespace tiny::t86 {
     void Cpu::tick() {
+        log_debug("main: flag register value: {:x}", getRegister(Register::Flags()));
         // Clear interrupt flag
         interrupted_ = 0;
 
@@ -26,8 +27,15 @@ namespace tiny::t86 {
         }
 
         if (singleStepDone()) {
+            log_info("Breaking on single step!");
             single_stepped_ = false;
             interrupted_ = 1;
+            return;
+        }
+
+        // TODO: Maybe not needed
+        if (interrupted_ != 0) {
+            log_info("Stop execution because of interrupt");
             return;
         }
 

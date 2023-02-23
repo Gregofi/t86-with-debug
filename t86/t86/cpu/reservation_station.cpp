@@ -1,6 +1,7 @@
 #include "reservation_station.h"
 #include "../cpu.h"
 #include "../utils/stats_logger.h"
+#include "logger.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -232,7 +233,12 @@ namespace tiny::t86 {
     }
 
     void ReservationStation::Entry::setFlags(Alu::Flags flags) {
+        bool isTrapFlagSet = cpu_.isTrapFlagSet();
         setRegister(Register::Flags(), flags);
+        log_debug("Setting flags to {}", flags);
+        if (isTrapFlagSet) {
+            cpu_.setTrapFlag();
+        }
     }
 
     void ReservationStation::Entry::setStackPointer(uint64_t address) {
@@ -305,6 +311,7 @@ namespace tiny::t86 {
             unrollSpeculation();
             cpu_.singleStepped();
         }
+        log_info("Retired instruction '{}'", instruction_->toString());
         // assert(false && "maybe handle singlestep here");
     }
 

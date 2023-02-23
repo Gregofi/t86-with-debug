@@ -76,7 +76,7 @@ public:
             cpu.unsetTrapFlag();
         } else {
             log_info("Sending stop message to the debugger");
-            messenger->Send("Program stopped");
+            messenger->Send("STOPPED");
         }
         while (true) {
             log_info("Waiting for message from the debugger");
@@ -98,7 +98,7 @@ public:
             } else if (command.starts_with("PEEKTEXT")) {
                 auto index = svtoidx(commands.at(1));
                 const Instruction *ins = cpu.getText(index);
-                messenger->Send(fmt::format("INS AT {}: '{}'", index, ins->toString()));
+                messenger->Send(fmt::format("ADDR {}:'{}'", index, ins->toString()));
             } else if (command.starts_with("POKETEXT")) {
                 // We unfortunately broke the instruction into several parts, need to glue it back together
                 auto index = svtoidx(commands.at(1));
@@ -111,10 +111,10 @@ public:
                 log_info("Setting instruction '{}' at address {}", ins_s, index);
                 auto ins = ParseInstruction(ins_s);
                 cpu.setText(index, ins);
-                messenger->Send("Ok");
+                messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
-                messenger->Send(fmt::format("MEMORY {} VALUE: {}", index, cpu.getMemory(index)));
+                messenger->Send(fmt::format("MEMORY:{} VALUE:{}", index, cpu.getMemory(index)));
             } else if (command.starts_with("POKEDATA")) {
                 auto index = svtoidx(commands.at(1));
                 auto value = utils::svtoi64(commands.at(2));
@@ -122,22 +122,22 @@ public:
                     throw std::runtime_error("Expected number as second arg");
                 }
                 cpu.setMemory(index, *value);
-                messenger->Send("Ok");
+                messenger->Send("OK");
             } else if (command.starts_with("PEEKREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = cpu.getRegister(reg);
-                messenger->Send(fmt::format("Reg {} value: {}", commands.at(1), val));
+                messenger->Send(fmt::format("REG:{} VALUE:{}", commands.at(1), val));
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));
                 cpu.setRegisterDebug(reg, val);
-                messenger->Send("Ok");
+                messenger->Send("OK");
             } else if (command == "SINGLESTEP") {
                 cpu.setTrapFlag();
                 messenger->Send("OK");
                 break; // continue
             } else {
-                messenger->Send("Unknown command");
+                messenger->Send("UNKNOWN COMMAND");
                 continue;
             }
         }
