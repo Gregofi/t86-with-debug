@@ -233,12 +233,8 @@ namespace tiny::t86 {
     }
 
     void ReservationStation::Entry::setFlags(Alu::Flags flags) {
-        bool isTrapFlagSet = cpu_.isTrapFlagSet();
+        // TODO: Can potentially cause trouble if we use flags for trap flag.
         setRegister(Register::Flags(), flags);
-        log_debug("Setting flags to {}", flags);
-        if (isTrapFlagSet) {
-            cpu_.setTrapFlag();
-        }
     }
 
     void ReservationStation::Entry::setStackPointer(uint64_t address) {
@@ -307,12 +303,12 @@ namespace tiny::t86 {
 
     void ReservationStation::Entry::retire() {
         instruction_->retire(*this);
+        // Handle single step with trapflags here
         if (cpu_.isTrapFlagSet()) {
             unrollSpeculation();
             cpu_.singleStepped();
         }
         log_info("Retired instruction '{}'", instruction_->toString());
-        // assert(false && "maybe handle singlestep here");
     }
 
     Cpu& ReservationStation::Entry::cpu() const {
