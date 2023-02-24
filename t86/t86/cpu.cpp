@@ -393,23 +393,26 @@ namespace tiny::t86 {
     }
 
     bool Cpu::isTrapFlagSet() {
-        int64_t flags = getRegister(Register::Flags());
-        log_debug("flag register value: {:x}", flags);
-        return (flags & TRAP_FLAG_MASK) >> 10;
+        // int64_t flags = getRegister(Register::Flags());
+        // log_debug("flag register value: {:x}", flags);
+        // return (flags & TRAP_FLAG_MASK) >> 10;
+        return trapFlag_;
     }
 
     void Cpu::setTrapFlag() {
-        int64_t flags = getRegister(Register::Flags());
-        log_info("trap flag was set");
-        flags = flags | TRAP_FLAG_MASK;
-        setRegister(Register::Flags(), flags);
+        // int64_t flags = getRegister(Register::Flags());
+        // log_info("trap flag was set");
+        // flags = flags | TRAP_FLAG_MASK;
+        // setRegister(Register::Flags(), flags);
+        trapFlag_ = true;
     }
 
     void Cpu::unsetTrapFlag() {
-        int64_t flags = getRegister(Register::Flags());
-        log_info("trap flag was unset");
-        flags = flags & ~TRAP_FLAG_MASK;
-        setRegister(Register::Flags(), flags);
+        // int64_t flags = getRegister(Register::Flags());
+        // log_info("trap flag was unset");
+        // flags = flags & ~TRAP_FLAG_MASK;
+        // setRegister(Register::Flags(), flags);
+        trapFlag_ = false;
     }
 
     bool Cpu::singleStepDone() const {

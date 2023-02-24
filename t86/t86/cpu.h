@@ -204,6 +204,14 @@ namespace tiny::t86 {
 
         bool isTrapFlagSet();
     private:
+        /// If true then after every retired instruction an interrupt 1 is sent.
+        /// TODO: This should really be a part of flags register. For now however,
+        /// it is a separate entity because the flags are often set with '=', which
+        /// resets the value of trap flag. They are also set as part of entity, which
+        /// makes it harder because it is done somewhere in the execution pipeline
+        /// and is non-transparent.
+        bool trapFlag_{false};
+
         // Branch processing
         void checkBranchPrediction(const ReservationStation::Entry& entry, uint64_t destination);
 
