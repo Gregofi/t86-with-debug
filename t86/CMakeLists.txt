@@ -18,6 +18,7 @@ enable_testing()
 cmake_policy(SET CMP0135 NEW)
 include(FetchContent)
 
+# Libraries ----------
 # GTEST
 FetchContent_Declare(
   googletest
@@ -27,6 +28,15 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+# GTEST
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG master
+)
+FetchContent_MakeAvailable(fmt)
+# Libraries END ------------
 
 add_executable(
   unittests
@@ -39,7 +49,7 @@ target_link_libraries(
   unittests
   gtest
   GTest::gtest_main
-  fmt
+  fmt::fmt
   t86
   common
 )
