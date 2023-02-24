@@ -28,13 +28,6 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-# FMT
-FetchContent_Declare(fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG master
-)
-FetchContent_MakeAvailable(fmt)
-
 add_executable(
   unittests
   tests/parser_test.cpp
@@ -46,7 +39,7 @@ target_link_libraries(
   unittests
   gtest
   GTest::gtest_main
-  fmt::fmt
+  fmt
   t86
   common
 )

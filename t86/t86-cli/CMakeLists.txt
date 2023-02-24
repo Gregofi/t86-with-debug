@@ -17,4 +17,4 @@ FetchContent_MakeAvailable(argparse)
 
 project(${PROJECT_NAME})
 add_executable(t86-cli main.cpp)
-target_link_libraries(t86-cli t86 common fmt::fmt argparse)
+target_link_libraries(t86-cli t86 common fmt argparse)
