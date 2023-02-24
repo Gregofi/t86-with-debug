@@ -31,9 +31,10 @@ public:
             case BreakReason::Begin: return "START";
             case BreakReason::SoftwareBreakpoint: return "SW_BKPT";
             case BreakReason::HardwareBreakpoint: return "HW_BKPT";
-            case BreakReason::SingleStep: return "SINGLE_STEP";
+            case BreakReason::SingleStep: return "SINGLESTEP";
             case BreakReason::Halt: return "HALT";
         }
+        UNREACHABLE;
     }
 
     size_t svtoidx(std::string_view s) {
