@@ -11,6 +11,7 @@ int main() {
         auto s = c.Receive();
         std::cout << *s << std::endl;
         std::string command;
+        std::cout << "> ";
         std::getline(std::cin, command);
         if (!std::cin) {
             break;
