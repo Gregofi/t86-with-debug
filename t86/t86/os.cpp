@@ -1,30 +1,41 @@
 #include <cassert>
+#include <exception>
+#include <fmt/core.h>
 
 #include "os.h"
 #include "debug.h"
+#include "common/logger.h"
 
 namespace tiny::t86 {
 void OS::DispatchInterrupt(int n) {
     switch (n) {
     case 3:
-        debug_interface->Work(Debug::BreakReason::SoftwareBreakpoint);
+        DebuggerMessage(Debug::BreakReason::SoftwareBreakpoint);
+        break;
+    case 1:
+        DebuggerMessage(Debug::BreakReason::SingleStep);
         break;
     default:
         // TODO: Add logging!
-        assert(false); 
+        throw std::runtime_error(fmt::format("No interrupt handler for interrupt no. {}!", n));
         break;
     }
 }
 
 void OS::Run(Program program) {
     cpu.start(std::move(program));
+    DebuggerMessage(Debug::BreakReason::Begin);
+    log_info("Starting execution\n");
     while (true) {
         cpu.tick();
         if (cpu.halted()) {
+            log_info("Halt");
+            DebuggerMessage(Debug::BreakReason::Halt);
             return;
         }
 
         if (int n = cpu.interrupted(); n > 0) {
+            log_info("Interrupt {} occurred", n);
             DispatchInterrupt(n);
         }
     }

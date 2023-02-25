@@ -19,8 +19,8 @@ namespace tiny::t86 {
                 return "NOP";
             case Type::HALT:
                 return "HALT";
-            case Type::BRKPT:
-                return "BRKPT";
+            case Type::BKPT:
+                return "BKPT";
             case Type::DBG:
                 return "DBG";
             case Type::BREAK:
@@ -399,7 +399,7 @@ namespace tiny::t86 {
         }
     }
 
-    void CLF::retire(ReservationStation::Entry& entry) {
+    void CLF::retire(ReservationStation::Entry& entry) const {
         entry.setFlags(Alu::Flags{false, false, false, false});
     }
 
@@ -605,8 +605,10 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
         debugFunction_(entry.cpu());
     }
 
-    void BRKPT::retire(ReservationStation::Entry& entry) const {
+    void BKPT::retire(ReservationStation::Entry& entry) const {
         entry.unrollSpeculation();
+        // TODO: Hardcoded
+        entry.cpu().interrupt(3);
     }
 
     void BREAK::retire(ReservationStation::Entry& entry) const {

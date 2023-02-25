@@ -6,9 +6,11 @@
 #include "utils/stats_logger.h"
 #include "cpu/branch_predictors/naive_branch_predictor.h"
 #include "common/config.h"
+#include "common/logger.h"
 
 namespace tiny::t86 {
     void Cpu::tick() {
+        log_debug("main: flag register value: {:x}", getRegister(Register::Flags()));
         // Clear interrupt flag
         interrupted_ = 0;
 
@@ -21,6 +23,19 @@ namespace tiny::t86 {
         reservationStation_.executeAndRetire();
 
         if (halted()) {
+            return;
+        }
+
+        if (singleStepDone()) {
+            log_info("Breaking on single step!");
+            single_stepped_ = false;
+            interrupted_ = 1;
+            return;
+        }
+
+        // TODO: Maybe not needed
+        if (interrupted_ != 0) {
+            log_info("Stop execution because of interrupt");
             return;
         }
 
@@ -48,6 +63,8 @@ namespace tiny::t86 {
         if (instructionDecode_) {
             StatsLogger::instance().logInstructionDecode(instructionDecode_->loggingId);
         }
+
+        log_debug("End of tick");
     }
 
     Cpu::InstructionEntry Cpu::fetchInstruction() {
@@ -102,11 +119,18 @@ namespace tiny::t86 {
         setRegister(Register::Flags(), 0);
         setRegister(Register::StackPointer(), ram_.size());
         setRegister(Register::StackBasePointer(), ram_.size());
-
     }
 
     void Cpu::setRegister(Register reg, int64_t value) {
         setRegister(rat_.translate(reg), value);
+    }
+
+    void Cpu::setRegisterDebug(Register reg, int64_t value) {
+        setRegister(rat_.translate(reg), value);
+        if (reg == Register::ProgramCounter()) {
+            log_info("Setting PC!");
+            speculativeProgramCounter_ = value;
+        }
     }
 
     void Cpu::setFloatRegister(FloatRegister fReg, double value) {
@@ -169,13 +193,22 @@ namespace tiny::t86 {
         writesManager_.startWriting(id, ram_);
     }
 
-    uint64_t Cpu::getMemory(uint64_t address) const {
+    int64_t Cpu::getMemory(uint64_t address) const {
         return ram_.get(address);
     }
 
-    void Cpu::setMemory(uint64_t address, uint64_t value) {
+    void Cpu::setMemory(uint64_t address, int64_t value) {
         ram_.set(address, value);
     }
+
+    const Instruction* Cpu::getText(uint64_t address) {
+        return program_.at(address);
+    }
+
+    void Cpu::setText(uint64_t address, Instruction* ins) {
+        program_.instructions_.at(address) = ins;
+    }
+
 
     void Cpu::jump(const ReservationStation::Entry& entry, bool taken) {
         uint64_t destination = entry.getUpdatedProgramCounter();
@@ -357,5 +390,36 @@ namespace tiny::t86 {
                                    std::to_string(Config::defaultRamSize));
         config.setDefaultIfMissing(Config::ramGatesCountConfigString,
                                    std::to_string(Config::defaultRamGatesCount));
+    }
+
+    bool Cpu::isTrapFlagSet() {
+        // int64_t flags = getRegister(Register::Flags());
+        // log_debug("flag register value: {:x}", flags);
+        // return (flags & TRAP_FLAG_MASK) >> 10;
+        return trapFlag_;
+    }
+
+    void Cpu::setTrapFlag() {
+        // int64_t flags = getRegister(Register::Flags());
+        // log_info("trap flag was set");
+        // flags = flags | TRAP_FLAG_MASK;
+        // setRegister(Register::Flags(), flags);
+        trapFlag_ = true;
+    }
+
+    void Cpu::unsetTrapFlag() {
+        // int64_t flags = getRegister(Register::Flags());
+        // log_info("trap flag was unset");
+        // flags = flags & ~TRAP_FLAG_MASK;
+        // setRegister(Register::Flags(), flags);
+        trapFlag_ = false;
+    }
+
+    bool Cpu::singleStepDone() const {
+        return single_stepped_;
+    }
+
+    void Cpu::singleStepped() {
+        single_stepped_ = true;
     }
 }

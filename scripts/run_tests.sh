@@ -18,7 +18,7 @@ for file in tests/*.tc; do
     diff="tests/diff/${BS%.tc}.diff"
 
     ${1} ${file} -x -r > "${out}.t86"
-    ${2} run "${out}.t86" > "${out}.out"
+    ${2} "${out}.t86" > "${out}.out"
     diff ${out}.out ${ref} > ${diff}
     if [[ $? -ne 0 ]]; then
         echo "Test ${file} failed"

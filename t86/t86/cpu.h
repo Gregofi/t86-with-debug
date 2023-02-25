@@ -56,8 +56,6 @@ namespace tiny::t86 {
 
             constexpr static const char* debuggerPortString = "-debuggerPort";
 
-            const static int debuggerPort = 9121;
-
             std::size_t registerCnt() const;
 
             std::size_t floatRegisterCnt() const;
@@ -85,6 +83,10 @@ namespace tiny::t86 {
         // This is how many renamed registers can be in use translate once for once instruction
         //  (it is quite generous, usually around 3 will be used translate once)
         static constexpr std::size_t possibleRenamedRegisterCnt = maxInstructionOperands + specialRegistersCnt;
+
+        static constexpr int TRAP_FLAG_INTERRUPT = 1;
+
+        static constexpr uint64_t TRAP_FLAG_MASK = 0x0400;
 
         Cpu();
 
@@ -158,10 +160,25 @@ namespace tiny::t86 {
         void unrollSpeculation(const RegisterAllocationTable& rat);
 
         void flushPipeline();
-    public:
+
+        /// Checks if trap flag is set in FLAGS register.
+        bool isTrapFlagSet() const;
+        
+        /// Returns true if instruction was executed by the time trap flag
+        /// was set.
+        bool singleStepDone() const;
+
+        /// Tells the CPU that single step has been completed.
+        void singleStepped();
+
         /// Following function are for debug only
         /// In execution, version with PhysicalRegister should be used
+        /// NOTE: Debug only but they are used anyway with special registers...
+        ///       to be sure new function was added that will ONLY be called
+        ///       for debugging purposes - getRegisterDebug.
         int64_t getRegister(Register reg) const;
+    public:
+        void setRegisterDebug(Register reg, int64_t value);
 
         double getFloatRegister(FloatRegister reg) const;
 
@@ -169,11 +186,32 @@ namespace tiny::t86 {
 
         void setFloatRegister(FloatRegister fReg, double value);
 
-        uint64_t getMemory(uint64_t address) const;
+        int64_t getMemory(uint64_t address) const;
 
-        void setMemory(uint64_t address, uint64_t value);
+        void setMemory(uint64_t address, int64_t value);
 
+        const Instruction* getText(uint64_t address);
+
+        void setText(uint64_t address, Instruction* ins);
+
+        /// Sets trap flag
+        /// TODO: Consider setting this at debugger level
+        void setTrapFlag();
+
+        /// Unsets trap flag
+        /// TODO: Consider setting this at debugger level
+        void unsetTrapFlag();
+
+        bool isTrapFlagSet();
     private:
+        /// If true then after every retired instruction an interrupt 1 is sent.
+        /// TODO: This should really be a part of flags register. For now however,
+        /// it is a separate entity because the flags are often set with '=', which
+        /// resets the value of trap flag. They are also set as part of entity, which
+        /// makes it harder because it is done somewhere in the execution pipeline
+        /// and is non-transparent.
+        bool trapFlag_{false};
+
         // Branch processing
         void checkBranchPrediction(const ReservationStation::Entry& entry, uint64_t destination);
 
@@ -231,6 +269,8 @@ namespace tiny::t86 {
         std::function<void(Cpu&)> breakHandler_;
 
         bool halted_{false};
+
+        bool single_stepped_{false};
 
         // Zero means that the program is not interrupted, any other number
         // means that interrupt has occured.
