@@ -32,6 +32,8 @@ public:
 
     virtual std::map<std::string, int64_t> FetchRegisters() = 0;
     virtual void SetRegisters(const std::map<std::string, int64_t>& regs) = 0;
+    virtual uint64_t GetIP() = 0;
+    virtual size_t TextSize() = 0;
 protected:
 };
 

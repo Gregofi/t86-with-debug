@@ -14,10 +14,13 @@
 #include "Breakpoint.h"
 #include "DebuggerError.h"
 #include "common/TCP.h"
+#include "common/logger.h"
 
 class Native {
 public:
-    Native(std::unique_ptr<Process> process): process(std::move(process)) { }
+    Native(std::unique_ptr<Process> process): process(std::move(process)) {
+
+    }
     /// Constructs instance of Native with debugging support for 
     /// machine set in Arch singleton.
     Native(int debug_port) {
@@ -27,6 +30,15 @@ public:
         } else {
             throw std::runtime_error("Specified machine is not supported");
         }
+    }
+
+    void Initialize(int port) {
+        if (process) {
+            log_warning("Native: Call to Initialize but process is already set!");
+        }
+        auto tcp = std::make_unique<TCP::TCPClient>(port);
+        tcp->Initialize();
+        process = std::make_unique<T86Process>(std::move(tcp));
     }
 
     /// Returns SW BP opcode for current architecture.

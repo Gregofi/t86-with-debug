@@ -13,7 +13,9 @@
 class T86Process: public Process {
 public:
   T86Process(std::unique_ptr<Messenger> process)
-      : process(std::move(process)) {}
+      : process(std::move(process)) {
+        
+    }
 
     void WriteText(uint64_t address,
                    const std::vector<std::string> &data) override {
@@ -88,12 +90,50 @@ public:
     }
 
     std::map<std::string, int64_t> FetchRegisters() override {
-
+        std::map<std::string, int64_t> result;
+        result["IP"] = GetRegister("IP");
+        result["BP"] = GetRegister("BP");
+        result["SP"] = GetRegister("SP");
+        result["FLAGS"] = GetRegister("FLAGS");
+        for (size_t i = 0; i < gen_purpose_regs_count; ++i) {
+            auto name = fmt::format("R{}", i);
+            result[name] = GetRegister(name);
+        }
+        return result;
     }
 
     void SetRegisters(const std::map<std::string, int64_t>& regs) override {
+        for (const auto& [name, val]: regs) {
+            process->Send(fmt::format("POKEREGS {} {}", name, val));
+            CheckResponse("POKEREGS error");
+        }
+    }
+
+    uint64_t GetIP() override {
+        return GetRegister("IP");
+    }
+
+    size_t TextSize() override {
+        process->Send("TEXTSIZE");
+        auto response = process->Receive();
+        if (!response) {
+            throw DebuggerError("TEXTSIZE error");
+        }
+        size_t result = std::stoull(response->c_str() + strlen("TEXTSIZE:"));
+        return result;
     }
 private:
+    int64_t GetRegister(std::string_view name) {
+        process->Send(fmt::format("PEEKREGS {}", name));
+        auto response = process->Receive();
+        if (!response) {
+            throw DebuggerError("PEEKREGS error");
+        }
+        auto offset = response->find("VALUE:") + strlen("VALUE:");
+        auto value = std::stoll(response->c_str() + offset);
+        return value;
+    }
+
     void CheckResponse(std::string_view error_message) {
         auto message = process->Receive();
         if (!message || message != "OK") {
@@ -103,5 +143,8 @@ private:
     }
 
     std::unique_ptr<Messenger> process;
+    size_t data_size{0};
+    size_t text_size{0};
+    size_t gen_purpose_regs_count{0};
 };
 
