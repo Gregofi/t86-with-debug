@@ -1,30 +1,14 @@
 #include <gtest/gtest.h>
+
 #include "t86/os.h"
 #include "common/parser.h"
 #include "messenger.h"
+#include "MockMessenger.h"
+
 #include <string>
 #include <queue>
 
 using namespace tiny::t86;
-
-class Comms: public Messenger {
-public:
-    Comms(std::queue<std::string> in, std::vector<std::string>& out): in(std::move(in)), out(out) { }
-    void Send(const std::string&s) override {
-        out.push_back(s);
-    }
-
-    std::optional<std::string> Receive() override {
-        if (in.empty()) {
-            return std::nullopt;
-        }
-        auto x = in.front();
-        in.pop();
-        return x;
-    }
-    std::queue<std::string> in;
-    std::vector<std::string>& out;
-};
 
 TEST(DebugTest, SimpleCommands) {
     OS os;
@@ -211,7 +195,7 @@ R"(
     auto it = out.begin();
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "OK");
-    ASSERT_EQ(*it++, "ADDR 2:'BKPT'");
+    ASSERT_EQ(*it++, "TEXT:2 VALUE:BKPT");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "REG:R0 VALUE:1");

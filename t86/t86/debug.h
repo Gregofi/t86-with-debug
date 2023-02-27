@@ -99,7 +99,7 @@ public:
             } else if (command.starts_with("PEEKTEXT")) {
                 auto index = svtoidx(commands.at(1));
                 const Instruction *ins = cpu.getText(index);
-                messenger->Send(fmt::format("ADDR {}:'{}'", index, ins->toString()));
+                messenger->Send(fmt::format("TEXT:{} VALUE:{}", index, ins->toString()));
             } else if (command.starts_with("POKETEXT")) {
                 // We unfortunately broke the instruction into several parts, need to glue it back together
                 auto index = svtoidx(commands.at(1));
@@ -115,7 +115,7 @@ public:
                 messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
-                messenger->Send(fmt::format("MEMORY:{} VALUE:{}", index, cpu.getMemory(index)));
+                messenger->Send(fmt::format("DATA:{} VALUE:{}", index, cpu.getMemory(index)));
             } else if (command.starts_with("POKEDATA")) {
                 auto index = svtoidx(commands.at(1));
                 auto value = utils::svtoi64(commands.at(2));
@@ -131,6 +131,7 @@ public:
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));
+                // TODO: Handle bad registers
                 cpu.setRegisterDebug(reg, val);
                 messenger->Send("OK");
             } else if (command == "SINGLESTEP") {
