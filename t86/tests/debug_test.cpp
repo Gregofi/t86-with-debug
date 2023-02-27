@@ -208,3 +208,38 @@ R"(
     ASSERT_EQ(*it++, "HALT");
 }
 
+TEST(DebugTest, Sizes) {
+    OS os;
+    std::queue<std::string> in({
+        "REGCOUNT",
+        "TEXTSIZE",
+        "DATASIZE",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV R0, 1
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+    
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "REGCOUNT:10");
+    ASSERT_EQ(*it++, "TEXTSIZE:5");
+    ASSERT_EQ(*it++, "DATASIZE:1024");
+}

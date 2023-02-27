@@ -190,6 +190,8 @@ namespace tiny::t86 {
 
         void setMemory(uint64_t address, int64_t value);
 
+        size_t textSize() const { return program_.instructions().size(); }
+
         const Instruction* getText(uint64_t address);
 
         void setText(uint64_t address, Instruction* ins);

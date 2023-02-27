@@ -88,7 +88,7 @@ public:
                 return false;
             }
             log_info("Received message '{}' from debugger", *message);
-            auto commands = utils::split(*message, ' ');
+            auto commands = utils::split_v(*message, ' ');
             auto command = commands[0];
             if (command == "REASON") {
                 std::string r = ReasonToString(reason);
@@ -115,7 +115,8 @@ public:
                 messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
-                messenger->Send(fmt::format("DATA:{} VALUE:{}", index, cpu.getMemory(index)));
+                messenger->Send(fmt::format("DATA:{} VALUE:{}", index,
+                                            cpu.getMemory(index)));
             } else if (command.starts_with("POKEDATA")) {
                 auto index = svtoidx(commands.at(1));
                 auto value = utils::svtoi64(commands.at(2));
@@ -138,6 +139,14 @@ public:
                 cpu.setTrapFlag();
                 messenger->Send("OK");
                 break; // continue
+            } else if (command == "REGCOUNT") {
+                messenger->Send(fmt::format(
+                    "REGCOUNT:{}", Cpu::Config::instance().registerCnt()));
+            } else if (command == "TEXTSIZE") {
+                messenger->Send(fmt::format("TEXTSIZE:{}", cpu.textSize()));
+            } else if (command == "DATASIZE") {
+                messenger->Send(fmt::format("DATASIZE:{}",
+                                            Cpu::Config::instance().ramSize()));
             } else {
                 messenger->Send("UNKNOWN COMMAND");
                 continue;
