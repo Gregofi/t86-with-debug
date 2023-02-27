@@ -43,6 +43,7 @@ add_executable(
   tests/parser_test.cpp
   tests/utils_test.cpp
   tests/debug_test.cpp
+  tests/debugger_test.cpp
 )
 
 target_link_libraries(

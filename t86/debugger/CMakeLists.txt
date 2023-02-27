@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOG_LEVEL=4")
 set(CMAKE_CXX_FLAGS_RELEASE "-Wall -DLOG_LEVEL=1")
 
 project(${PROJECT_NAME})
-file(GLOB_RECURSE SRC "*.cpp" "*.h")
+file(GLOB_RECURSE SRC "*.cpp" "*.c" "*.h")
 
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} fmt::fmt argparse)

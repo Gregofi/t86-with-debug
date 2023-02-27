@@ -1,0 +1,5 @@
+FROM archlinux
+
+RUN pacman -Syu gcc make cmake git --noconfirm
+
+COPY t86 t86
