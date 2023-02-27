@@ -29,7 +29,7 @@ namespace utils {
     /// lifetime of the string which was viewed by 's'.
     /// To use this outside of that lifetime, convert
     /// the string_views to strings.
-    inline std::vector<std::string_view> split(std::string_view s, char delim) {
+    inline std::vector<std::string_view> split_v(std::string_view s, char delim = ' ') {
         std::vector<std::string_view> result;
         while (!s.empty()) {
             auto size = s.find(delim);
@@ -43,6 +43,14 @@ namespace utils {
             s.remove_prefix(size + 1);
         }
         return result;
+    }
+
+    /// Same as split_v but returns vector of strings instead of views.
+    inline std::vector<std::string> split(std::string_view s, char delim = ' ') {
+        auto splitted = split_v(s, delim);
+        std::vector<std::string> res;
+        std::transform(splitted.begin(), splitted.end(), std::back_inserter(res), [](auto &&v) { return std::string(v); });
+        return res;
     }
 
     template<typename InputIt>
