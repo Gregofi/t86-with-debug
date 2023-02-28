@@ -13,6 +13,7 @@
 #include "T86Process.h"
 #include "Breakpoint.h"
 #include "DebuggerError.h"
+#include "DebugEvent.h"
 #include "common/TCP.h"
 #include "common/logger.h"
 
@@ -21,24 +22,17 @@ public:
     Native(std::unique_ptr<Process> process): process(std::move(process)) {
 
     }
-    /// Constructs instance of Native with debugging support for 
-    /// machine set in Arch singleton.
-    Native(int debug_port) {
+
+    /// Tries to connect to a process at given port and returns
+    /// new Native object that represents that process.
+    static std::unique_ptr<Process> Initialize(int port) {
+        auto tcp = std::make_unique<TCP::TCPClient>(port);
+        tcp->Initialize();
         if (Arch::GetMachine() == Arch::Machine::T86) {
-            process = std::make_unique<T86Process>(
-                std::make_unique<TCP::TCPClient>(debug_port));
+            return std::make_unique<T86Process>(std::move(tcp));
         } else {
             throw std::runtime_error("Specified machine is not supported");
         }
-    }
-
-    void Initialize(int port) {
-        if (process) {
-            log_warning("Native: Call to Initialize but process is already set!");
-        }
-        auto tcp = std::make_unique<TCP::TCPClient>(port);
-        tcp->Initialize();
-        process = std::make_unique<T86Process>(std::move(tcp));
     }
 
     /// Returns SW BP opcode for current architecture.
@@ -114,6 +108,10 @@ public:
         }
     }
 
+    std::vector<std::string> ReadText(uint64_t address, size_t amount) {
+        return process->ReadText(address, amount);
+    }
+
     void PerformSingleStep() {
         if (!Arch::SupportHardwareLevelSingleStep()) {
             // Requires instruction emulator.
@@ -121,6 +119,33 @@ public:
         } else {
             process->Singlestep();
         }
+    }
+
+    size_t TextSize() {
+        return process->TextSize();
+    }
+
+    int64_t GetRegister(const std::string& name) {
+        auto regs = process->FetchRegisters();
+        auto reg = regs.find(name);
+        if (reg == regs.end()) {
+            throw DebuggerError(fmt::format("No register '{}' in target", name));
+        }
+        return reg->second;
+    }
+
+    uint64_t GetIP() {
+        // TODO: Not architecture independent (take IP name from Arch singleton)
+        return GetRegister("IP"); 
+    }
+
+    DebugEvent WaitForDebugEvent() {
+        process->Wait();
+        return process->GetReason();
+    }
+
+    void ContinueExecution() {
+        process->ResumeExecution();
     }
     
     void MovePCBack();
