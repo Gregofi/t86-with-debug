@@ -97,6 +97,10 @@ namespace tiny::t86 {
         return *reinterpret_cast<double*>(&val);
     }
 
+    Cpu::Cpu(size_t registerCount)
+        : Cpu(registerCount, Cpu::Config::instance().floatRegisterCnt(),
+              Cpu::Config::instance().aluCnt()) {}
+
     Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt)
             : Cpu(registerCount, floatRegisterCount, aluCnt, aluCnt * 2, Config::instance().ramSize(), Config::instance().ramGatesCount()) {}
 

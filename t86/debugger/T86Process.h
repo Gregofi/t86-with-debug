@@ -108,14 +108,14 @@ public:
     }
 
     std::map<std::string, int64_t> FetchRegisters() override {
+        process->Send("PEEKREGS");
+        auto regs = process->Receive();
+        auto lines = utils::split_v(*regs, '\n');
         std::map<std::string, int64_t> result;
-        result["IP"] = GetRegister("IP");
-        result["BP"] = GetRegister("BP");
-        result["SP"] = GetRegister("SP");
-        result["FLAGS"] = GetRegister("FLAGS");
-        for (size_t i = 0; i < gen_purpose_regs_count; ++i) {
-            auto name = fmt::format("R{}", i);
-            result[name] = GetRegister(name);
+        for (const auto& line: lines) {
+            log_info("Got register '{}'", line);
+            auto reg = utils::split(line, ':');
+            result[reg.at(0)] = std::stoll(reg.at(1));
         }
         return result;
     }

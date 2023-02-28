@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "debugger/T86Process.h"
-#include "MockMessenger.h"
+#include "../MockMessenger.h"
 
 class MockMessenger : public Messenger {
 public:
@@ -89,12 +89,12 @@ public:
 
 TEST(T86ProcessTest, ReadRegisters) {
     std::queue<std::string> in({
-        "REG:IP VALUE:0",
-        "REG:BP VALUE:1",
-        "REG:SP VALUE:2",
-        "REG:FLAGS VALUE:33",
-        "REG:R0 VALUE:3",
-        "REG:R1 VALUE:-12",
+        "IP:0\n"
+        "BP:1\n"
+        "SP:2\n"
+        "FLAGS:33\n"
+        "R0:3\n"
+        "R1:-12\n"
     });
     std::vector<std::string> out;
     T86Process process(std::make_unique<HardcodedMessenger>(in, out), 2);

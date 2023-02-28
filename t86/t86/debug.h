@@ -68,6 +68,18 @@ public:
         return ins;
     }
 
+    std::string RegistersToString() const {
+        std::string acc;
+        acc += fmt::format("IP:{}\n", cpu.getRegister(Register::ProgramCounter()));
+        acc += fmt::format("BP:{}\n", cpu.getRegister(Register::StackBasePointer()));
+        acc += fmt::format("SP:{}\n", cpu.getRegister(Register::StackPointer()));
+        size_t reg_cnt = cpu.registersCount();
+        for (size_t i = 0; i < reg_cnt; ++i) {
+            acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register{i}));
+        }
+        return acc;
+    }
+
     /// Use to pass control to the debug interface
     /// which will communicate with the client.
     /// Should be called on any break situation.
@@ -125,10 +137,9 @@ public:
                 }
                 cpu.setMemory(index, *value);
                 messenger->Send("OK");
-            } else if (command.starts_with("PEEKREGS")) {
-                auto reg = TranslateToRegister(commands.at(1));
-                auto val = cpu.getRegister(reg);
-                messenger->Send(fmt::format("REG:{} VALUE:{}", commands.at(1), val));
+            } else if (command == "PEEKREGS") {
+                auto regs = RegistersToString();
+                messenger->Send(regs);
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));
