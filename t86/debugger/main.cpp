@@ -1,24 +1,12 @@
-#include <iostream>
+#include "CLI.h"
+#include "Native.h"
 
-#include "common/TCP.h"
-#include "common/logger.h"
-
-int main() {
-    TCP::TCPClient c(9110);
-    c.Initialize();
-    log_info("Connected to VM");
-    while (true) {
-        auto s = c.Receive();
-        std::cout << *s << std::endl;
-        std::string command;
-        std::cout << "> ";
-        std::getline(std::cin, command);
-        if (!std::cin) {
-            break;
-        }
-        c.Send(command);
-        if (command == "CONTINUE") {
-            c.Receive();
-        }
-    }
+int main(int argc, char* argv[]) {
+    // Initialize connection to debuggee
+    auto debuggee_process = Native::Initialize(9110);
+    // Set up the native manager
+    Native native(std::move(debuggee_process));
+    // Run CLI
+    CLI cli(std::move(native));
+    return cli.Run();
 }

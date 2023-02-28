@@ -34,6 +34,10 @@ namespace tiny::t86 {
             return data_;
         }
 
+        const std::vector<Instruction*>& instructions() const {
+            return instructions_;
+        }
+
         std::vector<Instruction*> moveInstructions() {
             return std::move(instructions_);
         }

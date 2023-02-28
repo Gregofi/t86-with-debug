@@ -62,8 +62,8 @@ namespace tiny::t86 {
     }
 
     void StatsLogger::processDetailedStats(std::ostream& os) {
-        std::size_t totalTicks = ticks_.size();
-        std::size_t totalInstructions = instructions_.size();
+        [[maybe_unused]] std::size_t totalTicks = ticks_.size();
+        [[maybe_unused]] std::size_t totalInstructions = instructions_.size();
         std::unordered_map<std::size_t, InstructionLifeTime> lifetimes;
         std::map<Instruction::Signature, std::pair<InstructionLifeTime, std::size_t>> lifetimesBySignature;
         InstructionLifeTime accumulativeInstructionLifeTime;

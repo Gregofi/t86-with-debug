@@ -161,7 +161,7 @@ namespace tiny::t86 {
 
         void flushPipeline();
 
-        /// Checks if trap flag is set in FLAGS register.
+        /// Checks if trap flag is set.
         bool isTrapFlagSet() const;
         
         /// Returns true if instruction was executed by the time trap flag
@@ -177,7 +177,7 @@ namespace tiny::t86 {
         ///       to be sure new function was added that will ONLY be called
         ///       for debugging purposes - getRegisterDebug.
         int64_t getRegister(Register reg) const;
-    public:
+
         void setRegisterDebug(Register reg, int64_t value);
 
         double getFloatRegister(FloatRegister reg) const;
@@ -189,6 +189,8 @@ namespace tiny::t86 {
         int64_t getMemory(uint64_t address) const;
 
         void setMemory(uint64_t address, int64_t value);
+
+        size_t textSize() const { return program_.instructions().size(); }
 
         const Instruction* getText(uint64_t address);
 
