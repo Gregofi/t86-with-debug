@@ -35,6 +35,10 @@ public:
     }
 */
 
+    /// Writes into the processes text area, overwriting instructions.
+    /// You can only write up to the size of the program.
+    /// Caller is responsible that the text size of the program is
+    /// respected.
     void WriteText(uint64_t address,
                    const std::vector<std::string> &data) override {
         for (size_t i = 0; i < data.size(); ++i) {
@@ -43,6 +47,9 @@ public:
         }
     }
 
+    /// Returns range of instructions of length 'amount' starting at 'address'.
+    /// Caller is responsible that the size of the program is respected.
+    /// Use the TextSize for getting the size of text.
     std::vector<std::string> ReadText(uint64_t address, size_t amount) override {
         process->Send(fmt::format("PEEKTEXT {} {}", address, amount));
         auto text = process->Receive();
