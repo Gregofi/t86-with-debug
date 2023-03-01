@@ -140,6 +140,12 @@ public:
         CheckResponse("CONTINUE fail");
     }
     
+    void Wait() override {
+        auto message = process->Receive();
+        if (!message || message != "STOPPED") {
+            throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
+        }
+    }
 private:
     int64_t GetRegister(std::string_view name) {
         process->Send(fmt::format("PEEKREGS {}", name));
@@ -175,13 +181,6 @@ private:
         if (!message || message != "OK") {
             throw DebuggerError(fmt::format(
                 "Error communicating with T86 VM: {}", error_message));
-        }
-    }
-
-    void Wait() override {
-        auto message = process->Receive();
-        if (!message || message != "STOPPED") {
-            throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
         }
     }
 
