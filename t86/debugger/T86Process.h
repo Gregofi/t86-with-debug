@@ -35,6 +35,10 @@ public:
     }
 */
 
+    /// Writes into the processes text area, overwriting instructions.
+    /// You can only write up to the size of the program.
+    /// Caller is responsible that the text size of the program is
+    /// respected.
     void WriteText(uint64_t address,
                    const std::vector<std::string> &data) override {
         for (size_t i = 0; i < data.size(); ++i) {
@@ -43,6 +47,9 @@ public:
         }
     }
 
+    /// Returns range of instructions of length 'amount' starting at 'address'.
+    /// Caller is responsible that the size of the program is respected.
+    /// Use the TextSize for getting the size of text.
     std::vector<std::string> ReadText(uint64_t address, size_t amount) override {
         process->Send(fmt::format("PEEKTEXT {} {}", address, amount));
         auto text = process->Receive();
@@ -67,7 +74,7 @@ public:
             throw DebuggerError("PEEKDATA err");
         }
 
-        auto splitted = utils::split(*data);
+        auto splitted = utils::split(*data, '\n');
         std::vector<uint64_t> result;
         std::transform(splitted.begin(), splitted.end(), std::back_inserter(result),
                 [](auto&& s) { return std::stoull(s); });
@@ -140,6 +147,12 @@ public:
         CheckResponse("CONTINUE fail");
     }
     
+    void Wait() override {
+        auto message = process->Receive();
+        if (!message || message != "STOPPED") {
+            throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
+        }
+    }
 private:
     int64_t GetRegister(std::string_view name) {
         process->Send(fmt::format("PEEKREGS {}", name));
@@ -175,13 +188,6 @@ private:
         if (!message || message != "OK") {
             throw DebuggerError(fmt::format(
                 "Error communicating with T86 VM: {}", error_message));
-        }
-    }
-
-    void Wait() override {
-        auto message = process->Receive();
-        if (!message || message != "STOPPED") {
-            throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
         }
     }
 

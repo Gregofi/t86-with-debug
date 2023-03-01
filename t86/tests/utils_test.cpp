@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "common/helpers.h"
+#include "common/threads_messenger.h"
 
 TEST(SplitTest, All) {
     std::string_view s1 = "X Y Z";
@@ -62,4 +63,73 @@ TEST(merge_views, All) {
     s = {};
     res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "");
+}
+
+using MessagesT = std::vector<std::pair<std::vector<std::string>, std::vector<std::string>>>;
+
+/// Contains vector of vector of messages. 
+/// For each vector, sends all messages and then calls receive
+/// For example, for { {"A", "B"}, {"C"} }, calls twice
+/// Send with "A" and "B", then one Receive, then
+/// Send with "C", and then final Receive.
+void RunThread(ThreadMessenger m, MessagesT messages) {
+    for (const auto& [msgs, responses]: messages) {
+        for (const auto& message: msgs) {
+             m.Send(message);
+        }
+        for (const auto& response: responses) {
+            ASSERT_EQ(*m.Receive(), response);
+        }
+    }
+}
+
+TEST(ThreadMessenger, OneThreadNoWaiting) {
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+
+    ThreadMessenger m1(q1, q2);
+    ThreadMessenger m2(q2, q1);
+    
+    m1.Send("Hello");
+    m1.Send(" ,");
+    m1.Send("World!");
+    ASSERT_EQ(*m2.Receive(), "Hello");
+    ASSERT_EQ(*m2.Receive(), " ,");
+    ASSERT_EQ(*m2.Receive(), "World!");
+}
+
+TEST(ThreadMessenger, SimpleWaiting) {
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+
+    ThreadMessenger s1(q1, q2);
+    ThreadMessenger s2(q2, q1);
+
+    MessagesT m1({{{"Hello", "World"}, {"Thanks!"}}});
+    MessagesT m2({{{"Thanks!"}, {"Hello", "World"}}});
+    std::thread t1(RunThread, s1, m1);
+    std::thread t2(RunThread, s2, m2);
+    t1.join();
+    t2.join();
+}
+
+TEST(ThreadMessenger, MultipleMessages) {
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+
+    ThreadMessenger s1(q1, q2);
+    ThreadMessenger s2(q2, q1);
+
+    MessagesT m1({
+            {{"A"}, {"B"}},
+            {{}, {"C"}}
+        });
+    MessagesT m2({
+            {{"B"}, {"A"}},
+            {{"C"}, {}}
+        });
+    std::thread t1(RunThread, s1, m1);
+    std::thread t2(RunThread, s2, m2);
+    t1.join();
+    t2.join();
 }

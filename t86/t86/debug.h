@@ -87,10 +87,10 @@ public:
         if (reason == BreakReason::SingleStep) {
             log_info("Debug handler: After singlestep");
             cpu.unsetTrapFlag();
-        } else {
-            log_info("Sending stop message to the debugger");
-            messenger->Send("STOPPED");
-        }
+        } 
+        log_info("Sending stop message to the debugger");
+        messenger->Send("STOPPED");
+        
         while (true) {
             log_info("Waiting for message from the debugger");
             auto message = messenger->Receive();
