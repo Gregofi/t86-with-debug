@@ -121,12 +121,20 @@ public:
         process->WriteText(address, text);
     }
 
-    void PerformSingleStep() {
+    /// Does singlestep, also steps over breakpoints.
+    DebugEvent PerformSingleStep() {
         if (!Arch::SupportHardwareLevelSingleStep()) {
             // Requires instruction emulator.
-            NOT_IMPLEMENTED;
+            throw DebuggerError(
+                "Singlestep is not supported for current architecture");
         } else {
-            process->Singlestep();
+            auto ip = GetIP();
+            auto bp = software_breakpoints.find(ip);
+            if (bp != software_breakpoints.end() && bp->second.enabled) {
+                return StepOverBreakpoint(ip);
+            } else {
+                return DoSingleStep();
+            }
         }
     }
 
@@ -192,11 +200,16 @@ public:
     void ContinueExecution() {
         auto ip = GetIP();
         auto bp = software_breakpoints.find(ip);
-        // If breakpoint is 
-        if (bp == software_breakpoints.end()) {
+        // If breakpoint is not set
+        if (bp == software_breakpoints.end() || !bp->second.enabled) {
             process->ResumeExecution();
         } else {
-            StepOverBreakpoint(ip);
+            auto event = StepOverBreakpoint(ip);
+            // If something other than singlestep occured
+            // then do not continue (for example HALT)
+            if (event == DebugEvent::Singlestep) {
+                ContinueExecution();
+            }
         }
     }
     
@@ -210,16 +223,24 @@ protected:
         return opcode_map.at(Arch::GetMachine());
     }
 
-    void StepOverBreakpoint(size_t ip) {
+    /// Does singlestep, does not check for breakpoints.
+    DebugEvent DoSingleStep() {
+        process->Singlestep();
+        return WaitForDebugEvent();
+    }
+
+    /// Removes breakpoint at current ip,
+    /// singlesteps and sets the breakpoint
+    /// back. Return DebugEvent which occured
+    /// from executing instruction at breakpoint.
+    DebugEvent StepOverBreakpoint(size_t ip) {
         DisableSoftwareBreakpoint(ip);
-        PerformSingleStep();
-        auto event = WaitForDebugEvent();
+        // Even though PerformSingleStep calls this function
+        // it does not matter because we turn off the breakpoint
+        // on above line.
+        auto event = PerformSingleStep();
         EnableSoftwareBreakpoint(ip); 
-        // If something other than singlestep occured
-        // then do not continue (for example HALT)
-        if (event == DebugEvent::Singlestep) {
-            ContinueExecution();
-        }
+        return event;
     }
 
     std::unique_ptr<Process> process;
