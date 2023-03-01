@@ -92,10 +92,12 @@ HALT
     ASSERT_EQ(*it++, "IP:0\nBP:1024\nSP:1024\n"
                      "R0:0\nR1:0\n");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "SINGLESTEP");
     ASSERT_EQ(*it++, "IP:1\nBP:1024\nSP:1024\n"
                      "R0:1\nR1:0\n");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:2\nBP:1024\nSP:1024\n"
                      "R0:1\nR1:2\n");
     ASSERT_EQ(*it++, "OK");
@@ -152,19 +154,25 @@ R"(
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "START");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:2\nBP:1024\nSP:1024\n"
                      "R0:1\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
                      "R0:3\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
                      "R0:5\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
                      "R0:7\nR1:2\nR2:7\n");
 }
@@ -217,6 +225,7 @@ R"(
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
                      "R0:3\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
