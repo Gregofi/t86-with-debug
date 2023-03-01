@@ -36,13 +36,13 @@ public:
     }
 
     /// Creates new breakpoint at given address and enables it.
-    std::optional<std::string> SetBreakpoint(uint64_t address) {
+    void SetBreakpoint(uint64_t address) {
         if (software_breakpoints.contains(address)) {
-            return fmt::format("Breakpoint at {} is already set!", address);
+            throw DebuggerError(
+                fmt::format("Breakpoint at {} is already set!", address));
         }
         auto bp = CreateSoftwareBreakpoint(address);
         software_breakpoints.emplace(address, bp);
-        return std::nullopt;
     }
 
     /// Disables and removes breakpoint from address.
@@ -151,6 +151,24 @@ public:
         return reg->second;
     }
 
+    void SetRegisters(const std::map<std::string, int64_t>& regs) {
+        process->SetRegisters(regs);
+    }
+
+    /// Sets one register to given value, throws DebuggerError if the register
+    /// name is invalid. If setting multiple registers use the SetRegisters,
+    /// which will be faster.
+    void SetRegister(const std::string& name, int64_t value) {
+        auto regs = GetRegisters();
+        if (regs.count(name) == 0) {
+            // TODO: Make the error message more heplful (list the name of available
+            // registers).
+            throw DebuggerError(fmt::format("Unknown '{}' register name!", name)); 
+        }
+        regs.at(name) = value;
+        SetRegisters(regs);
+    }
+
     uint64_t GetIP() {
         // TODO: Not architecture independent (take IP name from Arch singleton)
         return GetRegister("IP"); 
@@ -158,15 +176,30 @@ public:
 
     DebugEvent WaitForDebugEvent() {
         process->Wait();
-        return process->GetReason();
+        auto reason = process->GetReason();
+        // Some architectures move the IP when executing BP
+        // We need to move the IP back to the previous ins.
+        if (reason == DebugEvent::SoftwareBreakpointHit) {
+            if (Arch::GetMachine() == Arch::Machine::T86) {
+                auto regs = GetRegisters();
+                regs.at("IP") -= 1;
+                SetRegisters(regs);
+            }
+        }
+        return reason;
     }
 
     void ContinueExecution() {
-        process->ResumeExecution();
+        auto ip = GetIP();
+        auto bp = software_breakpoints.find(ip);
+        // If breakpoint is 
+        if (bp == software_breakpoints.end()) {
+            process->ResumeExecution();
+        } else {
+            StepOverBreakpoint(ip);
+        }
     }
     
-    void MovePCBack();
-
     int64_t ReadMemory();
 protected:
     /// Returns SW BP opcode for current architecture.
@@ -175,6 +208,18 @@ protected:
             {Arch::Machine::T86, "BKPT"},
         };
         return opcode_map.at(Arch::GetMachine());
+    }
+
+    void StepOverBreakpoint(size_t ip) {
+        DisableSoftwareBreakpoint(ip);
+        PerformSingleStep();
+        auto event = WaitForDebugEvent();
+        EnableSoftwareBreakpoint(ip); 
+        // If something other than singlestep occured
+        // then do not continue (for example HALT)
+        if (event == DebugEvent::Singlestep) {
+            ContinueExecution();
+        }
     }
 
     std::unique_ptr<Process> process;

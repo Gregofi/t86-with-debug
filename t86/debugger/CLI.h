@@ -44,12 +44,7 @@ public:
         // Breakpoint on raw address
         if (command.at(1) == "set-address") {
             auto loc = std::stoull(command.at(2));
-            auto err = process.SetBreakpoint(loc);
-            if (err) {
-                fmt::print(stderr, "Error while setting breakpoint: {}\n", *err);
-            } else {
-                fmt::print("Breakpoint set at address {}\n", loc);
-            }
+            process.SetBreakpoint(loc);
         // Breakpoint on line
         } else if (command.at(1) == "set") {
             NOT_IMPLEMENTED;
