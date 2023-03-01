@@ -183,16 +183,21 @@ public:
     }
 
     DebugEvent WaitForDebugEvent() {
-        process->Wait();
-        auto reason = process->GetReason();
-        // Some architectures move the IP when executing BP
-        // We need to move the IP back to the previous ins.
+        DebugEvent reason;
+        // If, for some reason, we got the event in some other
+        // inner function (ie. ContinueExecution), return it now and empty it.
+        if (cached_event) {
+            reason = *cached_event;
+            cached_event.reset();
+        } else {
+            process->Wait();
+            reason = process->GetReason();
+        }
+
         if (reason == DebugEvent::SoftwareBreakpointHit) {
-            if (Arch::GetMachine() == Arch::Machine::T86) {
-                auto regs = GetRegisters();
-                regs.at("IP") -= 1;
-                SetRegisters(regs);
-            }
+            auto regs = GetRegisters();
+            regs.at("IP") -= 1;
+            SetRegisters(regs);
         }
         return reason;
     }
@@ -205,14 +210,17 @@ public:
             process->ResumeExecution();
         } else {
             auto event = StepOverBreakpoint(ip);
-            // If something other than singlestep occured
-            // then do not continue (for example HALT)
-            if (event == DebugEvent::Singlestep) {
-                ContinueExecution();
+            // If some other thing happened other than singlestep
+            // that requires pause cache the event here and return
+            // it in WaitForDebugEvent.
+            if (event != DebugEvent::Singlestep) {
+                cached_event.emplace(event);
+                return;
             }
+            ContinueExecution();
         }
     }
-    
+
     int64_t ReadMemory();
 protected:
     /// Returns SW BP opcode for current architecture.
@@ -237,7 +245,7 @@ protected:
         DisableSoftwareBreakpoint(ip);
         // Even though PerformSingleStep calls this function
         // it does not matter because we turn off the breakpoint
-        // on above line.
+        // on the line above.
         auto event = PerformSingleStep();
         EnableSoftwareBreakpoint(ip); 
         return event;
@@ -245,4 +253,5 @@ protected:
 
     std::unique_ptr<Process> process;
     std::map<uint64_t, SoftwareBreakpoint> software_breakpoints;
+    std::optional<DebugEvent> cached_event;
 };

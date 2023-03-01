@@ -165,7 +165,7 @@ TEST(NativeWT86Test, SimpleBreakpoint) {
     t_os.join();
 }
 
-TEST(NativeWT86Test, StepAfterBreakpoint) {
+TEST(NativeWT86Test, StepOverBreakpoint) {
     const size_t REG_COUNT = 3;
     ThreadQueue<std::string> q1;
     ThreadQueue<std::string> q2;
@@ -191,11 +191,72 @@ TEST(NativeWT86Test, StepAfterBreakpoint) {
     ASSERT_EQ(native.GetRegister("R0"), 3);
     ASSERT_EQ(native.GetRegister("R1"), 2);
 
-    ASSERT_EQ(native.PerformSingleStep(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(native.PerformSingleStep(), DebugEvent::Singlestep);
     // Check that the ADD R0, R1 was executed even though it
     // was replaced by a breakpoint.
     ASSERT_EQ(native.GetRegister("R0"), 5);
     ASSERT_EQ(native.GetRegister("R2"), 0);
+    native.ContinueExecution();
+    native.WaitForDebugEvent();
+    ASSERT_EQ(native.GetRegister("R0"), 5);
+    ASSERT_EQ(native.GetRegister("R2"), 5);
+    native.ContinueExecution();
+    t_os.join();
+}
+
+TEST(NativeWT86Test, BreakpointAtHaltSinglestep) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+    native.SetBreakpoint(4);
+
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_EQ(native.PerformSingleStep(), DebugEvent::ExecutionEnd);
+    native.ContinueExecution();
+    t_os.join();
+}
+
+TEST(NativeWT86Test, BreakpointAtHaltContinue) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+    native.SetBreakpoint(4);
+
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionEnd);
     native.ContinueExecution();
     t_os.join();
 }
