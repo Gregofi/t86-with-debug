@@ -44,17 +44,13 @@ public:
     }
 
     std::vector<std::string> ReadText(uint64_t address, size_t amount) override {
-        std::vector<std::string> result;
-        for (size_t i = 0; i < amount; ++i) {
-            process->Send(fmt::format("PEEKTEXT {}", i + address));
-            auto text = process->Receive();
-            if (!text) {
-                throw DebuggerError("Peektext error");
-            }
-            size_t offset = text->find_last_of(':');
-            result.emplace_back(text->substr(offset + 1));
+        process->Send(fmt::format("PEEKTEXT {} {}", address, amount));
+        auto text = process->Receive();
+        if (!text) {
+            throw DebuggerError("PEEKTEXT err");
         }
-        return result;
+
+        return utils::split(*text, '\n');
     }
 
     void WriteMemory(uint64_t address, std::vector<uint64_t> data) override {
@@ -65,18 +61,16 @@ public:
     }
 
     std::vector<uint64_t> ReadMemory(uint64_t address, size_t amount) override {
-        std::vector<uint64_t> result;
-        for (size_t i = 0; i < amount; ++i) {
-            process->Send(fmt::format("PEEKDATA {}", i + address));
-            auto message = process->Receive();
-            if (!message) {
-                throw DebuggerError(fmt::format("PEEKDATA error"));
-            }
-            
-            size_t val_offset = message->find("VALUE:");
-            auto num_s = message->substr(val_offset + strlen("VALUE:"));
-            result.emplace_back(std::stoll(num_s));
+        process->Send(fmt::format("PEEKDATA {} {}", address, amount));
+        auto data = process->Receive();
+        if (!data) {
+            throw DebuggerError("PEEKDATA err");
         }
+
+        auto splitted = utils::split(*data);
+        std::vector<uint64_t> result;
+        std::transform(splitted.begin(), splitted.end(), std::back_inserter(result),
+                [](auto&& s) { return std::stoull(s); });
         return result;
     }
 

@@ -110,10 +110,15 @@ public:
                 break;
             } else if (command.starts_with("PEEKTEXT")) {
                 auto index = svtoidx(commands.at(1));
-                const Instruction *ins = cpu.getText(index);
-                messenger->Send(fmt::format("TEXT:{} VALUE:{}", index, ins->toString()));
+                auto count = svtoidx(commands.at(2));
+                std::string result;
+                for (size_t i = index; i < index + count; ++i) {
+                    result += cpu.getText(i)->toString() + "\n";
+                }
+                messenger->Send(result);
             } else if (command.starts_with("POKETEXT")) {
-                // We unfortunately broke the instruction into several parts, need to glue it back together
+                // We unfortunately broke the instruction into several parts,
+                // need to glue it back together
                 auto index = svtoidx(commands.at(1));
                 // Glue the operands together
                 auto insBegin = std::next(commands.begin(), 3);
@@ -127,8 +132,12 @@ public:
                 messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
-                messenger->Send(fmt::format("DATA:{} VALUE:{}", index,
-                                            cpu.getMemory(index)));
+                auto count = svtoidx(commands.at(2));
+                std::string result;
+                for (size_t i = index; i < index + count; ++i) {
+                    result += fmt::format("{}\n", cpu.getMemory(i)); 
+                }
+                messenger->Send(result);
             } else if (command.starts_with("POKEDATA")) {
                 auto index = svtoidx(commands.at(1));
                 auto value = utils::svtoi64(commands.at(2));
