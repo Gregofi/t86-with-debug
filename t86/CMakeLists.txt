@@ -44,10 +44,10 @@ FetchContent_MakeAvailable(fmt)
 
 add_executable(
   unittests
-  tests/parser_test.cpp
+  tests/t86/parser_test.cpp
+  tests/t86/debug_test.cpp
   tests/utils_test.cpp
-  tests/debug_test.cpp
-  tests/debugger_test.cpp
+  tests/debugger/t86process_test.cpp
 )
 
 target_link_libraries(

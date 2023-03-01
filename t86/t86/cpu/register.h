@@ -94,7 +94,7 @@ namespace tiny::t86 {
                 case Flags().index_:
                     return "Flags";
                 default:
-                    return "Reg" + std::to_string(index_);
+                    return "R" + std::to_string(index_);
             }
         }
 

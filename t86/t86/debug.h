@@ -68,6 +68,18 @@ public:
         return ins;
     }
 
+    std::string RegistersToString() const {
+        std::string acc;
+        acc += fmt::format("IP:{}\n", cpu.getRegister(Register::ProgramCounter()));
+        acc += fmt::format("BP:{}\n", cpu.getRegister(Register::StackBasePointer()));
+        acc += fmt::format("SP:{}\n", cpu.getRegister(Register::StackPointer()));
+        size_t reg_cnt = cpu.registersCount();
+        for (size_t i = 0; i < reg_cnt; ++i) {
+            acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register{i}));
+        }
+        return acc;
+    }
+
     /// Use to pass control to the debug interface
     /// which will communicate with the client.
     /// Should be called on any break situation.
@@ -98,10 +110,15 @@ public:
                 break;
             } else if (command.starts_with("PEEKTEXT")) {
                 auto index = svtoidx(commands.at(1));
-                const Instruction *ins = cpu.getText(index);
-                messenger->Send(fmt::format("TEXT:{} VALUE:{}", index, ins->toString()));
+                auto count = svtoidx(commands.at(2));
+                std::string result;
+                for (size_t i = index; i < index + count; ++i) {
+                    result += cpu.getText(i)->toString() + "\n";
+                }
+                messenger->Send(result);
             } else if (command.starts_with("POKETEXT")) {
-                // We unfortunately broke the instruction into several parts, need to glue it back together
+                // We unfortunately broke the instruction into several parts,
+                // need to glue it back together
                 auto index = svtoidx(commands.at(1));
                 // Glue the operands together
                 auto insBegin = std::next(commands.begin(), 3);
@@ -115,8 +132,12 @@ public:
                 messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));
-                messenger->Send(fmt::format("DATA:{} VALUE:{}", index,
-                                            cpu.getMemory(index)));
+                auto count = svtoidx(commands.at(2));
+                std::string result;
+                for (size_t i = index; i < index + count; ++i) {
+                    result += fmt::format("{}\n", cpu.getMemory(i)); 
+                }
+                messenger->Send(result);
             } else if (command.starts_with("POKEDATA")) {
                 auto index = svtoidx(commands.at(1));
                 auto value = utils::svtoi64(commands.at(2));
@@ -125,10 +146,9 @@ public:
                 }
                 cpu.setMemory(index, *value);
                 messenger->Send("OK");
-            } else if (command.starts_with("PEEKREGS")) {
-                auto reg = TranslateToRegister(commands.at(1));
-                auto val = cpu.getRegister(reg);
-                messenger->Send(fmt::format("REG:{} VALUE:{}", commands.at(1), val));
+            } else if (command == "PEEKREGS") {
+                auto regs = RegistersToString();
+                messenger->Send(regs);
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
                 auto val = svtoidx(commands.at(2));

@@ -31,6 +31,23 @@ private:
     std::string message;
 };
 
+class Batch {
+public:
+    Batch& AddMessage(std::string message) {
+        data.emplace_back(std::move(message));
+        return *this;
+    }
+
+    /// Moves the contents of the class out of
+    /// this batch. The class shouldn't be used
+    /// after this call.
+    std::vector<std::string> YieldBatch() {
+        return std::move(data);
+    }
+private:
+    std::vector<std::string> data;
+};
+
 /// C++20: Use std::span
 inline void SendRaw(int socket, const uint8_t* data, size_t size) {
     size_t sent = 0;
@@ -87,12 +104,14 @@ public:
         static_cast<T*>(this)->Initialize_();
         initialized = true;
     }
+
     void Send(const std::string& s) override {
         if (!initialized) {
             throw TCPError("Call to Send before Initialize");
         }
         ::TCP::Send(sock, s);
     }
+
     std::optional<std::string> Receive() override {
         if (!initialized) {
             throw TCPError("Call to Receive before Initialize");
