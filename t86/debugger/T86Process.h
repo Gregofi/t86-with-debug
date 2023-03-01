@@ -74,7 +74,7 @@ public:
             throw DebuggerError("PEEKDATA err");
         }
 
-        auto splitted = utils::split(*data);
+        auto splitted = utils::split(*data, '\n');
         std::vector<uint64_t> result;
         std::transform(splitted.begin(), splitted.end(), std::back_inserter(result),
                 [](auto&& s) { return std::stoull(s); });
