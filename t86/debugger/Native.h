@@ -35,14 +35,6 @@ public:
         }
     }
 
-    /// Returns SW BP opcode for current architecture.
-    std::string_view GetSoftwareBreakpointOpcode() {
-        static const std::map<Arch::Machine, std::string_view> opcode_map = {
-            {Arch::Machine::T86, "BKPT"},
-        };
-        return opcode_map.at(Arch::GetMachine());
-    }
-
     /// Creates new breakpoint at given address and enables it.
     std::optional<std::string> SetBreakpoint(uint64_t address) {
         if (software_breakpoints.contains(address)) {
@@ -109,7 +101,24 @@ public:
     }
 
     std::vector<std::string> ReadText(uint64_t address, size_t amount) {
+        // TODO: Needs to replace if some breakpoints are set.
+        auto text_size = TextSize();
+        if (address + amount > text_size) {
+            throw DebuggerError(
+                fmt::format("Reading text at range {}-{}, but text size is {}",
+                            address, address + amount, text_size));
+        }
         return process->ReadText(address, amount);
+    }
+
+    void WriteText(uint64_t address, const std::vector<std::string>& text) {
+        auto text_size = TextSize();
+        if (address + text.size() > text_size) {
+            throw DebuggerError(
+                fmt::format("Writing text at range {}-{}, but text size is {}",
+                            address, address + text.size(), text_size));
+        }
+        process->WriteText(address, text);
     }
 
     void PerformSingleStep() {
@@ -125,6 +134,14 @@ public:
         return process->TextSize();
     }
 
+    std::map<std::string, int64_t> GetRegisters() {
+        return process->FetchRegisters();
+    }
+
+    /// Returns value of single register, if you need
+    /// multiple registers use the FetchRegisters function
+    /// which will be faster.
+    /// Throws DebuggerError if register does not exist.
     int64_t GetRegister(const std::string& name) {
         auto regs = process->FetchRegisters();
         auto reg = regs.find(name);
@@ -152,6 +169,14 @@ public:
 
     int64_t ReadMemory();
 protected:
+    /// Returns SW BP opcode for current architecture.
+    std::string_view GetSoftwareBreakpointOpcode() {
+        static const std::map<Arch::Machine, std::string_view> opcode_map = {
+            {Arch::Machine::T86, "BKPT"},
+        };
+        return opcode_map.at(Arch::GetMachine());
+    }
+
     std::unique_ptr<Process> process;
     std::map<uint64_t, SoftwareBreakpoint> software_breakpoints;
 };
