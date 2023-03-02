@@ -21,7 +21,7 @@ jobs:
           retention-days: 1
         
   build-t86:
-    name: Build T86
+    name: Build and Unit test T86 and TC
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,7 +41,25 @@ jobs:
           path: ${{ github.workspace }}/t86/build/t86-cli/t86-cli 
           retention-days: 1
             
-  test-interpreter:
+  test-t86-cli:
+    needs: [build-t86]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download T86
+        uses: actions/download-artifact@v3
+        with:
+          name: t86
+      # The artifacts are not executable by default
+      - name: permissions
+        run: chmod +x ${{ github.workspace }}/t86-cli
+      - name: Run tests
+        run: |
+          cd ${{ github.workspace }}/t86
+          ./scripts/run_tests.sh ../t86-cli
+
+  test-compiler-to-binary:
     needs: [build-t86, build-tinyc]
     runs-on: ubuntu-latest
     steps:
