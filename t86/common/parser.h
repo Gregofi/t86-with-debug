@@ -12,6 +12,16 @@
 #include "fmt/core.h"
 #include "common/logger.h"
 
+class ParserError : std::exception {
+public:
+    ParserError(std::string message) : message(std::move(message)) { }
+    const char* what() const noexcept override {
+        return message.c_str();
+    }
+private:
+    std::string message;
+};
+
 enum class Token {
     ID,
     DOT,
@@ -23,12 +33,38 @@ enum class Token {
     PLUS,
     TIMES,
     COMMA,
+    STRING,
 };
 
 /// Parses text representation of T86 into in-memory representation
 class Lexer {
 public:
     explicit Lexer(std::istream& input) noexcept : input(input) { }
+
+    void ParseString() {
+        char c;
+        str.clear();
+        while ((c = input.get()) != '"') {
+            if (c == EOF) {
+                throw ParserError("Unterminated string!");
+            } else if (c == '\\') {
+                c = input.get();
+                if (c == 'n') {
+                    str += '\n';
+                } else if (c == 't') {
+                    str += '\t';
+                } else if (c == '\\') {
+                    str += '\\';
+                } else if (c == '\"') {
+                    str += '\"';
+                } else {
+                    throw ParserError(fmt::format("Unknown escape sequence: '\\{}'", c));
+                }
+            } else {
+                str += c;
+            }
+        }
+    }
 
     Token getNext() {
         char c = input.get();
@@ -56,6 +92,9 @@ public:
             return Token::TIMES;
         } else if (c == '.') {
             return Token::DOT;
+        } else if (c == '"') {
+            ParseString();
+            return Token::STRING;
         } else if (isdigit(c) || c == '-') {
             int neg = c == '-' ? -1 : 1;
             if (neg == -1) {
@@ -89,20 +128,12 @@ public:
 
     std::string getId() const { return id; }
     int getNumber() const noexcept { return number; }
+    std::string getStr() const noexcept { return str; }
 private:
     int number{-1};
     std::string id;
     std::istream& input;
-};
-
-class ParserError : std::exception {
-public:
-    ParserError(std::string message) : message(std::move(message)) { }
-    const char* what() const noexcept override {
-        return message.c_str();
-    }
-private:
-    std::string message;
+    std::string str;
 };
 
 class Parser {
@@ -128,14 +159,19 @@ public:
     void Section() {
         ExpectTok(Token::ID, curtok, []{ return "Expected '.section_name'"; });
         std::string section_name = lex.getId();
-        log_info("Parsing '{}' section", section_name);
         GetNextPrev();
+        log_info("Parsing '{}' section", section_name);
         if (section_name == "text") {
             Text();
+        } else if (section_name == "data") {
+            Data();
         } else {
-            throw ParserError("Invalid section name");
+            log_info("Skipping '{}' section", section_name);
+            GetNext();
+            while (curtok != Token::DOT && curtok != Token::END) {
+                GetNext();
+            };
         }
-        log_info("Finished parsing '{}' section", section_name);
     }
 
     tiny::t86::Register getRegister(std::string_view regname) {
@@ -266,13 +302,11 @@ public:
             auto dest = Operand();
             CHECK_COMMA();
             auto from = Operand();
-
             return std::make_unique<tiny::t86::ADD>(dest.getRegister(), from);
         } else if (ins_name == "LEA") {
             auto dest = Operand();
             CHECK_COMMA();
             auto from = Operand();
-
             return std::make_unique<tiny::t86::LEA>(dest.getRegister(), from);
         } else if (ins_name == "HALT") {
             return std::make_unique<tiny::t86::HALT>();
@@ -492,6 +526,20 @@ public:
         }
     }
 
+    void Data() {
+        while (curtok == Token::STRING || curtok == Token::NUM) {
+            if (curtok == Token::STRING) {
+                auto string = lex.getStr();
+                std::transform(string.begin(), string.end(),
+                               std::back_inserter(data),
+                               [](auto &&c) { return c; });
+            } else if (curtok == Token::NUM) {
+                data.emplace_back(lex.getNumber());
+            }
+            GetNext();
+        }
+    }
+
     tiny::t86::Program Parse() {
         if (curtok != Token::DOT) {
             throw ParserError("File does not contain any section");
@@ -499,12 +547,12 @@ public:
         while (GetNextPrev() == Token::DOT) {
             Section();
         }
-        return std::move(program);
+        return {std::move(program), std::move(data)};
     }
 private:
     Lexer lex;
     Token curtok;
     std::vector<std::unique_ptr<tiny::t86::Instruction>> program;
-    tiny::t86::ProgramBuilder builder;
+    std::vector<int64_t> data;
 };
 
