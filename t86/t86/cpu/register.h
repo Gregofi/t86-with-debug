@@ -86,13 +86,13 @@ namespace tiny::t86 {
         std::string toString() const {
             switch (index_) {
                 case ProgramCounter().index_:
-                    return "Pc";
+                    return "IP";
                 case StackPointer().index_:
-                    return "Sp";
+                    return "SP";
                 case StackBasePointer().index_:
-                    return "Bp";
+                    return "BP";
                 case Flags().index_:
-                    return "Flags";
+                    return "FLAGS";
                 default:
                     return "R" + std::to_string(index_);
             }
