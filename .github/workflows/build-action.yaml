@@ -21,7 +21,7 @@ jobs:
           retention-days: 1
         
   build-t86:
-    name: Build and Unit test T86 and TC
+    name: Build and Unit test T86
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,7 +29,10 @@ jobs:
       - name: Build
         run: |
           cd ${{ github.workspace }}/t86
-          ./scripts/build.sh
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Sanitizers
+          make -j
       - name: Unit tests
         run: |
           cd ${{ github.workspace }}/t86/build
