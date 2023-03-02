@@ -69,7 +69,7 @@ namespace tiny::t86 {
 
     Cpu::InstructionEntry Cpu::fetchInstruction() {
         std::size_t oldPc = speculativeProgramCounter_;
-        const auto* instruction = program_.at(speculativeProgramCounter_);
+        const auto* instruction = &program_.at(speculativeProgramCounter_);
         if (auto jumpInstruction = dynamic_cast<const JumpInstruction*>(instruction); jumpInstruction) {
             speculativeProgramCounter_ = branchPredictor_->nextGuess(speculativeProgramCounter_, *jumpInstruction);
             predictions_.push_back(speculativeProgramCounter_);
@@ -205,12 +205,12 @@ namespace tiny::t86 {
         ram_.set(address, value);
     }
 
-    const Instruction* Cpu::getText(uint64_t address) {
+    const Instruction& Cpu::getText(uint64_t address) {
         return program_.at(address);
     }
 
-    void Cpu::setText(uint64_t address, Instruction* ins) {
-        program_.instructions_.at(address) = ins;
+    void Cpu::setText(uint64_t address, std::unique_ptr<Instruction> ins) {
+        program_.instructions_.at(address) = std::move(ins);
     }
 
 

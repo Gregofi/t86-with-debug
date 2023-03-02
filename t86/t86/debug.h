@@ -61,10 +61,10 @@ public:
         }
     }
 
-    Instruction* ParseInstruction(std::string_view s) {
+    std::unique_ptr<Instruction> ParseInstruction(std::string_view s) {
         std::istringstream is{std::string(s)};
         Parser parser(is);
-        Instruction* ins = parser.Instruction();
+        auto ins = parser.Instruction();
         return ins;
     }
 
@@ -113,7 +113,7 @@ public:
                 auto count = svtoidx(commands.at(2));
                 std::string result;
                 for (size_t i = index; i < index + count; ++i) {
-                    result += cpu.getText(i)->toString() + "\n";
+                    result += cpu.getText(i).toString() + "\n";
                 }
                 messenger->Send(result);
             } else if (command.starts_with("POKETEXT")) {
@@ -128,7 +128,7 @@ public:
                 auto ins_s = std::string(commands.at(2)) + " " + operands;
                 log_info("Setting instruction '{}' at address {}", ins_s, index);
                 auto ins = ParseInstruction(ins_s);
-                cpu.setText(index, ins);
+                cpu.setText(index, std::move(ins));
                 messenger->Send("OK");
             } else if (command.starts_with("PEEKDATA")) {
                 auto index = svtoidx(commands.at(1));

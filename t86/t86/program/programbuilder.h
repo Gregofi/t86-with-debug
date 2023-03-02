@@ -20,19 +20,19 @@ namespace tiny::t86 {
         template<typename T>
         Label add(const T& instruction) {
             instruction.validate();
-            instructions_.push_back(new T(instruction));
+            instructions_.push_back(std::make_unique<T>(instruction));
             return Label(instructions_.size() - 1);
         }
 
-        Label add(Instruction* ins) {
+        Label add(std::unique_ptr<Instruction> ins) {
             ins->validate();
-            instructions_.push_back(ins);
+            instructions_.push_back(std::move(ins));
             return Label(instructions_.size() - 1);
         }
 
         Label add(const DBG& instruction) {
             if (!release_) {
-                instructions_.push_back(new DBG(instruction));
+                instructions_.emplace_back(std::make_unique<DBG>(instruction));
                 return instructions_.size() - 1;
             }
             // This returns the next added instruction
@@ -71,8 +71,8 @@ namespace tiny::t86 {
         }
 
         void patch(Label instruction, Label destination) {
-            Instruction* ins = instructions_.at(instruction);
-            auto* jmpInstruction = dynamic_cast<PatchableJumpInstruction*>(ins);
+            auto& ins = instructions_.at(instruction);
+            auto* jmpInstruction = dynamic_cast<PatchableJumpInstruction*>(ins.get());
             assert(jmpInstruction && "You can patch only jump instructions");
             jmpInstruction->setDestination(destination);
         }
@@ -82,7 +82,7 @@ namespace tiny::t86 {
         }
 
     private:
-        std::vector<Instruction*> instructions_;
+        std::vector<std::unique_ptr<Instruction>> instructions_;
 
         std::vector<int64_t> data_;
 
