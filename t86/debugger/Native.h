@@ -66,24 +66,6 @@ public:
         }
     }
 
-    /// Creates new enabled software breakpoint at given address.
-    SoftwareBreakpoint CreateSoftwareBreakpoint(uint64_t address) {
-        auto opcode = GetSoftwareBreakpointOpcode();
-        auto backup = process->ReadText(address, 1).at(0);
-
-        std::vector<std::string> data = {std::string(opcode)};
-        process->WriteText(address, data);
-   
-        auto new_opcode = process->ReadText(address, 1).at(0);
-        if (new_opcode != opcode) {
-            throw DebuggerError(fmt::format(
-                "Failed to set breakpoint! Expected opcode '{}', got '{}'",
-                opcode, new_opcode));
-        }
-
-        return SoftwareBreakpoint{backup, true};
-    }
-
     /// Disables BP at given address. If BP is already disabled then noop,
     /// if BP doesn't exist then throws DebuggerError.
     void DisableSoftwareBreakpoint(uint64_t address) {
@@ -242,8 +224,6 @@ public:
             ContinueExecution();
         }
     }
-
-    int64_t ReadMemory();
 protected:
     /// Returns SW BP opcode for current architecture.
     std::string_view GetSoftwareBreakpointOpcode() {
@@ -257,6 +237,24 @@ protected:
     DebugEvent DoSingleStep() {
         process->Singlestep();
         return WaitForDebugEvent();
+    }
+
+    /// Creates new enabled software breakpoint at given address.
+    SoftwareBreakpoint CreateSoftwareBreakpoint(uint64_t address) {
+        auto opcode = GetSoftwareBreakpointOpcode();
+        auto backup = process->ReadText(address, 1).at(0);
+
+        std::vector<std::string> data = {std::string(opcode)};
+        process->WriteText(address, data);
+   
+        auto new_opcode = process->ReadText(address, 1).at(0);
+        if (new_opcode != opcode) {
+            throw DebuggerError(fmt::format(
+                "Failed to set breakpoint! Expected opcode '{}', got '{}'",
+                opcode, new_opcode));
+        }
+
+        return SoftwareBreakpoint{backup, true};
     }
 
     /// Removes breakpoint at current ip,
