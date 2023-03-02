@@ -407,3 +407,114 @@ TEST(NativeWT86Test, EnableDisableBreakpoints) {
     native.ContinueExecution();
     t_os.join();
 }
+
+TEST(NativeWT86Test, PeekTextWithBreakpoints) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+    native.SetBreakpoint(1);
+    auto text = native.ReadText(0, 3);
+    ASSERT_EQ(text[0], "MOV R0, 3");
+    ASSERT_EQ(text[1], "MOV R1, 2"); // Not BKPT!!
+    ASSERT_EQ(text[2], "ADD R0, R1");
+
+    native.DisableSoftwareBreakpoint(1);
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    native.ContinueExecution();
+    t_os.join();
+}
+
+TEST(NativeWT86Test, PokeTextWithBreakpoints) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+    native.SetBreakpoint(1);
+    native.WriteText(0, {
+        "MOV R0, 3",
+        "MOV R1, 2",
+        "ADD R0, R1",
+    });
+    auto text = native.ReadText(0, 3);
+    ASSERT_EQ(text[0], "MOV R0, 3");
+    ASSERT_EQ(text[1], "MOV R1, 2");
+    ASSERT_EQ(text[2], "ADD R0, R1");
+
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_EQ(native.GetRegister("R0"), 3);
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(native.GetRegister("R1"), 2);
+    native.ContinueExecution();
+    t_os.join();
+}
+
+TEST(NativeWT86Test, BreakpointsInvalid) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 ADD R0, R1
+3 MOV R2, R0
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+
+    ASSERT_THROW({native.EnableSoftwareBreakpoint(2);}, DebuggerError);
+    ASSERT_THROW({native.DisableSoftwareBreakpoint(2);}, DebuggerError);
+    ASSERT_THROW({native.UnsetBreakpoint(2);}, DebuggerError);
+    native.SetBreakpoint(2);
+    ASSERT_THROW({native.SetBreakpoint(2);}, DebuggerError);
+    native.UnsetBreakpoint(2);
+    ASSERT_THROW({native.UnsetBreakpoint(2);}, DebuggerError);
+    ASSERT_THROW({native.EnableSoftwareBreakpoint(2);}, DebuggerError);
+    ASSERT_THROW({native.DisableSoftwareBreakpoint(2);}, DebuggerError);
+    
+    native.ContinueExecution();
+    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(native.GetRegister("R0"), 5);
+    ASSERT_EQ(native.GetRegister("R1"), 2);
+    ASSERT_EQ(native.GetRegister("R2"), 5);
+    native.ContinueExecution();
+    t_os.join();
+}

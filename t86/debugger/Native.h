@@ -66,24 +66,6 @@ public:
         }
     }
 
-    /// Creates new enabled software breakpoint at given address.
-    SoftwareBreakpoint CreateSoftwareBreakpoint(uint64_t address) {
-        auto opcode = GetSoftwareBreakpointOpcode();
-        auto backup = process->ReadText(address, 1).at(0);
-
-        std::vector<std::string> data = {std::string(opcode)};
-        process->WriteText(address, data);
-   
-        auto new_opcode = process->ReadText(address, 1).at(0);
-        if (new_opcode != opcode) {
-            throw DebuggerError(fmt::format(
-                "Failed to set breakpoint! Expected opcode '{}', got '{}'",
-                opcode, new_opcode));
-        }
-
-        return SoftwareBreakpoint{backup, true};
-    }
-
     /// Disables BP at given address. If BP is already disabled then noop,
     /// if BP doesn't exist then throws DebuggerError.
     void DisableSoftwareBreakpoint(uint64_t address) {
@@ -108,15 +90,37 @@ public:
                 fmt::format("Reading text at range {}-{}, but text size is {}",
                             address, address + amount, text_size));
         }
-        return process->ReadText(address, amount);
+        // If breakpoints we're set it will contain BKPT
+        // instead of the current instruction, we remedy
+        // that here.
+        auto text = process->ReadText(address, amount);
+        for (size_t i = 0; i < text.size(); ++i) {
+            auto it = software_breakpoints.find(i + address);
+            if (it != software_breakpoints.end()) {
+                text.at(i) = it->second.data;
+            }
+        }
+        return text;
     }
 
-    void WriteText(uint64_t address, const std::vector<std::string>& text) {
+    void WriteText(uint64_t address, std::vector<std::string> text) {
         auto text_size = TextSize();
         if (address + text.size() > text_size) {
             throw DebuggerError(
                 fmt::format("Writing text at range {}-{}, but text size is {}",
                             address, address + text.size(), text_size));
+        }
+        // Some of the code we want to rewrite might
+        // be occupied by a breakpoint, so instead
+        // we write it into its saved data and
+        // persist the breakpoint in the debuggee.
+        for (size_t i = 0; i < text.size(); ++i) {
+            uint64_t curr_addr = i + address;
+            auto bp = software_breakpoints.find(curr_addr);
+            if (bp != software_breakpoints.end()) {
+                bp->second.data = text[i];
+                text[i] = GetSoftwareBreakpointOpcode();
+            }
         }
         process->WriteText(address, text);
     }
@@ -220,8 +224,6 @@ public:
             ContinueExecution();
         }
     }
-
-    int64_t ReadMemory();
 protected:
     /// Returns SW BP opcode for current architecture.
     std::string_view GetSoftwareBreakpointOpcode() {
@@ -235,6 +237,24 @@ protected:
     DebugEvent DoSingleStep() {
         process->Singlestep();
         return WaitForDebugEvent();
+    }
+
+    /// Creates new enabled software breakpoint at given address.
+    SoftwareBreakpoint CreateSoftwareBreakpoint(uint64_t address) {
+        auto opcode = GetSoftwareBreakpointOpcode();
+        auto backup = process->ReadText(address, 1).at(0);
+
+        std::vector<std::string> data = {std::string(opcode)};
+        process->WriteText(address, data);
+   
+        auto new_opcode = process->ReadText(address, 1).at(0);
+        if (new_opcode != opcode) {
+            throw DebuggerError(fmt::format(
+                "Failed to set breakpoint! Expected opcode '{}', got '{}'",
+                opcode, new_opcode));
+        }
+
+        return SoftwareBreakpoint{backup, true};
     }
 
     /// Removes breakpoint at current ip,
