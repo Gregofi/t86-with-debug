@@ -67,5 +67,47 @@ auto program = R"(
     std::istringstream iss{program};
     Parser parser(iss);
     auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 1);
+}
 
+TEST(ParserTest, SkipSection1) {
+    auto program = R"(
+.text
+0 MOV R0, [BP + -1]
+.unknown_nonsensical_section_name
+)";
+    std::istringstream iss{program};
+    Parser parser(iss);
+    auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 1);
+}
+
+TEST(ParserTest, SkipSection2) {
+    auto program = R"(
+.text
+0 MOV R0, [BP + -1]
+.unknown_nonsensical_section_name
+blablabla
+Very interesting
+section
+)";
+    std::istringstream iss{program};
+    Parser parser(iss);
+    auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 1);
+}
+
+TEST(ParserTest, SkipSection3) {
+    auto program = R"(
+.unknown_nonsensical_section_name0
+.text
+0 MOV R0, [BP + -1]
+.unknown_nonsensical_section_name1
+ABCD
+.unknown_nonsensical_section_name2
+)";
+    std::istringstream iss{program};
+    Parser parser(iss);
+    auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 1);
 }
