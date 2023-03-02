@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numeric>
+#include <cctype>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -72,5 +73,38 @@ namespace utils {
             return result;
         }
         return std::nullopt;
+    }
+
+    inline bool is_prefix_of(std::string_view prefix, std::string_view of) {
+        if (prefix.size() > of.size()) {
+            return false;
+        }
+        for (size_t i = 0; i < prefix.size(); i++) {
+            if (prefix[i] != of[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    inline std::string squash_strip_whitespace(std::string_view s) {
+        std::string result;
+        bool last_space = true;
+        while (!s.empty() && std::isspace(s.back())) {
+            s.remove_suffix(1);
+        }
+        while (!s.empty() && std::isspace(s.front())) {
+            s.remove_prefix(1);
+        }
+        for (const auto c: s) {
+            if (!std::isspace(c)) {
+                result.push_back(c);
+                last_space = false;
+            } else if (!last_space) {
+                result.push_back(c);
+                last_space = true;
+            }
+        }
+        return result;
     }
 }

@@ -2,7 +2,7 @@
 #include "common/helpers.h"
 #include "common/threads_messenger.h"
 
-TEST(SplitTest, All) {
+TEST(Utils, Split) {
     std::string_view s1 = "X Y Z";
     auto v1 = utils::split(s1, ' ');
 
@@ -35,7 +35,7 @@ TEST(SplitTest, All) {
     ASSERT_EQ(v5.at(0), "A");
 }
 
-TEST(svtoi64, All) {
+TEST(Utils, svtoi64) {
     std::string_view s = "1";
     auto res = utils::svtoi64(s);
     ASSERT_TRUE(res);
@@ -51,7 +51,7 @@ TEST(svtoi64, All) {
     ASSERT_FALSE(res);
 }
 
-TEST(merge_views, All) {
+TEST(Utils, join) {
     std::vector<std::string> s = {"Hello", "World"};
     auto res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "Hello World");
@@ -63,6 +63,31 @@ TEST(merge_views, All) {
     s = {};
     res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "");
+}
+
+TEST(Utils, is_prefix_of) {
+    ASSERT_TRUE(utils::is_prefix_of("Hello", "Hello"));
+    ASSERT_TRUE(utils::is_prefix_of("Hell", "Hello"));
+    ASSERT_TRUE(utils::is_prefix_of("Hel", "Hello"));
+    ASSERT_TRUE(utils::is_prefix_of("He", "Hello"));
+    ASSERT_TRUE(utils::is_prefix_of("H", "Hello"));
+    ASSERT_TRUE(utils::is_prefix_of("", "Hello"));
+    ASSERT_FALSE(utils::is_prefix_of("G", "Hello"));
+    ASSERT_FALSE(utils::is_prefix_of("Helg", "Hello"));
+    ASSERT_FALSE(utils::is_prefix_of("Hello!", "Hello"));
+}
+
+TEST(Utils, squash_strip_whitespace) {
+    ASSERT_EQ(utils::squash_strip_whitespace(" A "), "A");
+    ASSERT_EQ(utils::squash_strip_whitespace("A "), "A");
+    ASSERT_EQ(utils::squash_strip_whitespace(" A"), "A");
+    ASSERT_EQ(utils::squash_strip_whitespace("A"), "A");
+    ASSERT_EQ(utils::squash_strip_whitespace("A B C"), "A B C");
+    ASSERT_EQ(utils::squash_strip_whitespace("A    B C"), "A B C");
+    ASSERT_EQ(utils::squash_strip_whitespace("A    B     C"), "A B C");
+    ASSERT_EQ(utils::squash_strip_whitespace("  A    B     C"), "A B C");
+    ASSERT_EQ(utils::squash_strip_whitespace(""), "");
+    ASSERT_EQ(utils::squash_strip_whitespace(" "), "");
 }
 
 using MessagesT = std::vector<std::pair<std::vector<std::string>, std::vector<std::string>>>;

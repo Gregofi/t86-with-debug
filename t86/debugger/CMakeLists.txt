@@ -10,4 +10,4 @@ project(${PROJECT_NAME})
 file(GLOB_RECURSE SRC "*.cpp" "*.c" "*.h")
 
 add_executable(${PROJECT_NAME} ${SRC})
-target_link_libraries(${PROJECT_NAME} fmt::fmt argparse)
+target_link_libraries(${PROJECT_NAME} t86 common fmt::fmt argparse::argparse)
