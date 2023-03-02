@@ -108,15 +108,37 @@ public:
                 fmt::format("Reading text at range {}-{}, but text size is {}",
                             address, address + amount, text_size));
         }
-        return process->ReadText(address, amount);
+        // If breakpoints we're set it will contain BKPT
+        // instead of the current instruction, we remedy
+        // that here.
+        auto text = process->ReadText(address, amount);
+        for (size_t i = 0; i < text.size(); ++i) {
+            auto it = software_breakpoints.find(i + address);
+            if (it != software_breakpoints.end()) {
+                text.at(i) = it->second.data;
+            }
+        }
+        return text;
     }
 
-    void WriteText(uint64_t address, const std::vector<std::string>& text) {
+    void WriteText(uint64_t address, std::vector<std::string> text) {
         auto text_size = TextSize();
         if (address + text.size() > text_size) {
             throw DebuggerError(
                 fmt::format("Writing text at range {}-{}, but text size is {}",
                             address, address + text.size(), text_size));
+        }
+        // Some of the code we want to rewrite might
+        // be occupied by a breakpoint, so instead
+        // we write it into its saved data and
+        // persist the breakpoint in the debuggee.
+        for (size_t i = 0; i < text.size(); ++i) {
+            uint64_t curr_addr = i + address;
+            auto bp = software_breakpoints.find(curr_addr);
+            if (bp != software_breakpoints.end()) {
+                bp->second.data = text[i];
+                text[i] = GetSoftwareBreakpointOpcode();
+            }
         }
         process->WriteText(address, text);
     }
