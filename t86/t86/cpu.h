@@ -194,9 +194,9 @@ namespace tiny::t86 {
 
         size_t textSize() const { return program_.instructions().size(); }
 
-        const Instruction* getText(uint64_t address);
+        const Instruction& getText(uint64_t address);
 
-        void setText(uint64_t address, Instruction* ins);
+        void setText(uint64_t address, std::unique_ptr<Instruction> ins);
 
         /// Sets trap flag
         /// TODO: Consider setting this at debugger level
