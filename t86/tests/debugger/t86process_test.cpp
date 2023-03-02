@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "debugger/T86Process.h"
-#include "../MockMessenger.h"
 #include "common/parser.h"
 #include "t86/os.h"
-#include "threads_messenger.h"
+#include "common/threads_messenger.h"
+#include "utils.h"
 
 class HardcodedMessenger : public Messenger {
 public:
@@ -124,16 +124,6 @@ TEST(T86ProcessTest, WrongRegisters) {
     EXPECT_THROW({
         process.SetRegisters(regs);
     }, DebuggerError);
-}
-
-void RunCPU(std::unique_ptr<ThreadMessenger> messenger, const std::string& program, size_t register_cnt = 4) {
-    std::istringstream iss{program};
-    Parser parser(iss);
-    auto p = parser.Parse();
-    
-    tiny::t86::OS os(register_cnt);
-    os.SetDebuggerComms(std::move(messenger));
-    os.Run(std::move(p));
 }
 
 TEST(CommunicationTest, Communication) {

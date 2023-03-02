@@ -35,22 +35,14 @@ public:
         }
     }
 
-    /// Returns SW BP opcode for current architecture.
-    std::string_view GetSoftwareBreakpointOpcode() {
-        static const std::map<Arch::Machine, std::string_view> opcode_map = {
-            {Arch::Machine::T86, "BKPT"},
-        };
-        return opcode_map.at(Arch::GetMachine());
-    }
-
     /// Creates new breakpoint at given address and enables it.
-    std::optional<std::string> SetBreakpoint(uint64_t address) {
+    void SetBreakpoint(uint64_t address) {
         if (software_breakpoints.contains(address)) {
-            return fmt::format("Breakpoint at {} is already set!", address);
+            throw DebuggerError(
+                fmt::format("Breakpoint at {} is already set!", address));
         }
         auto bp = CreateSoftwareBreakpoint(address);
         software_breakpoints.emplace(address, bp);
-        return std::nullopt;
     }
 
     /// Disables and removes breakpoint from address.
@@ -109,15 +101,40 @@ public:
     }
 
     std::vector<std::string> ReadText(uint64_t address, size_t amount) {
+        // TODO: Needs to replace if some breakpoints are set.
+        auto text_size = TextSize();
+        if (address + amount > text_size) {
+            throw DebuggerError(
+                fmt::format("Reading text at range {}-{}, but text size is {}",
+                            address, address + amount, text_size));
+        }
         return process->ReadText(address, amount);
     }
 
-    void PerformSingleStep() {
+    void WriteText(uint64_t address, const std::vector<std::string>& text) {
+        auto text_size = TextSize();
+        if (address + text.size() > text_size) {
+            throw DebuggerError(
+                fmt::format("Writing text at range {}-{}, but text size is {}",
+                            address, address + text.size(), text_size));
+        }
+        process->WriteText(address, text);
+    }
+
+    /// Does singlestep, also steps over breakpoints.
+    DebugEvent PerformSingleStep() {
         if (!Arch::SupportHardwareLevelSingleStep()) {
             // Requires instruction emulator.
-            NOT_IMPLEMENTED;
+            throw DebuggerError(
+                "Singlestep is not supported for current architecture");
         } else {
-            process->Singlestep();
+            auto ip = GetIP();
+            auto bp = software_breakpoints.find(ip);
+            if (bp != software_breakpoints.end() && bp->second.enabled) {
+                return StepOverBreakpoint(ip);
+            } else {
+                return DoSingleStep();
+            }
         }
     }
 
@@ -125,6 +142,14 @@ public:
         return process->TextSize();
     }
 
+    std::map<std::string, int64_t> GetRegisters() {
+        return process->FetchRegisters();
+    }
+
+    /// Returns value of single register, if you need
+    /// multiple registers use the FetchRegisters function
+    /// which will be faster.
+    /// Throws DebuggerError if register does not exist.
     int64_t GetRegister(const std::string& name) {
         auto regs = process->FetchRegisters();
         auto reg = regs.find(name);
@@ -134,24 +159,99 @@ public:
         return reg->second;
     }
 
+    void SetRegisters(const std::map<std::string, int64_t>& regs) {
+        process->SetRegisters(regs);
+    }
+
+    /// Sets one register to given value, throws DebuggerError if the register
+    /// name is invalid. If setting multiple registers use the SetRegisters,
+    /// which will be faster.
+    void SetRegister(const std::string& name, int64_t value) {
+        auto regs = GetRegisters();
+        if (regs.count(name) == 0) {
+            // TODO: Make the error message more heplful (list the name of available
+            // registers).
+            throw DebuggerError(fmt::format("Unknown '{}' register name!", name)); 
+        }
+        regs.at(name) = value;
+        SetRegisters(regs);
+    }
+
     uint64_t GetIP() {
         // TODO: Not architecture independent (take IP name from Arch singleton)
         return GetRegister("IP"); 
     }
 
     DebugEvent WaitForDebugEvent() {
-        process->Wait();
-        return process->GetReason();
+        DebugEvent reason;
+        // If, for some reason, we got the event in some other
+        // inner function (ie. ContinueExecution), return it now and empty it.
+        if (cached_event) {
+            reason = *cached_event;
+            cached_event.reset();
+        } else {
+            process->Wait();
+            reason = process->GetReason();
+        }
+
+        if (reason == DebugEvent::SoftwareBreakpointHit) {
+            auto regs = GetRegisters();
+            regs.at("IP") -= 1;
+            SetRegisters(regs);
+        }
+        return reason;
     }
 
     void ContinueExecution() {
-        process->ResumeExecution();
+        auto ip = GetIP();
+        auto bp = software_breakpoints.find(ip);
+        // If breakpoint is not set
+        if (bp == software_breakpoints.end() || !bp->second.enabled) {
+            process->ResumeExecution();
+        } else {
+            auto event = StepOverBreakpoint(ip);
+            // If some other thing happened other than singlestep
+            // that requires pause cache the event here and return
+            // it in WaitForDebugEvent.
+            if (event != DebugEvent::Singlestep) {
+                cached_event.emplace(event);
+                return;
+            }
+            ContinueExecution();
+        }
     }
-    
-    void MovePCBack();
 
     int64_t ReadMemory();
 protected:
+    /// Returns SW BP opcode for current architecture.
+    std::string_view GetSoftwareBreakpointOpcode() {
+        static const std::map<Arch::Machine, std::string_view> opcode_map = {
+            {Arch::Machine::T86, "BKPT"},
+        };
+        return opcode_map.at(Arch::GetMachine());
+    }
+
+    /// Does singlestep, does not check for breakpoints.
+    DebugEvent DoSingleStep() {
+        process->Singlestep();
+        return WaitForDebugEvent();
+    }
+
+    /// Removes breakpoint at current ip,
+    /// singlesteps and sets the breakpoint
+    /// back. Return DebugEvent which occured
+    /// from executing instruction at breakpoint.
+    DebugEvent StepOverBreakpoint(size_t ip) {
+        DisableSoftwareBreakpoint(ip);
+        // Even though PerformSingleStep calls this function
+        // it does not matter because we turn off the breakpoint
+        // on the line above.
+        auto event = PerformSingleStep();
+        EnableSoftwareBreakpoint(ip); 
+        return event;
+    }
+
     std::unique_ptr<Process> process;
     std::map<uint64_t, SoftwareBreakpoint> software_breakpoints;
+    std::optional<DebugEvent> cached_event;
 };
