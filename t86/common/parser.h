@@ -12,7 +12,7 @@
 #include "fmt/core.h"
 #include "common/logger.h"
 
-class ParserError : std::exception {
+class ParserError : public std::exception {
 public:
     ParserError(std::string message) : message(std::move(message)) { }
     const char* what() const noexcept override {
@@ -22,7 +22,7 @@ private:
     std::string message;
 };
 
-enum class Token {
+enum class TokenKind {
     ID,
     DOT,
     NUM,
@@ -36,93 +36,128 @@ enum class Token {
     STRING,
 };
 
+struct Token {
+    TokenKind kind;
+    size_t row;
+    size_t col;
+    friend bool operator==(const Token& t1, const Token& t2) = default;
+};
+
+
+
 /// Parses text representation of T86 into in-memory representation
 class Lexer {
 public:
-    explicit Lexer(std::istream& input) noexcept : input(input) { }
+    explicit Lexer(std::istream& input) noexcept : input(input), lookahead(input.get()) { }
 
     void ParseString() {
-        char c;
         str.clear();
-        while ((c = input.get()) != '"') {
-            if (c == EOF) {
+        while (GetChar() != '"') {
+            if (lookahead == EOF) {
                 throw ParserError("Unterminated string!");
-            } else if (c == '\\') {
-                c = input.get();
-                if (c == 'n') {
+            } else if (lookahead == '\\') {
+                GetChar();
+                if (lookahead == 'n') {
                     str += '\n';
-                } else if (c == 't') {
+                } else if (lookahead == 't') {
                     str += '\t';
-                } else if (c == '\\') {
+                } else if (lookahead == '\\') {
                     str += '\\';
-                } else if (c == '\"') {
+                } else if (lookahead == '\"') {
                     str += '\"';
                 } else {
-                    throw ParserError(fmt::format("Unknown escape sequence: '\\{}'", c));
+                    throw ParserError(fmt::format("Unknown escape sequence: '\\{}'", lookahead));
                 }
             } else {
-                str += c;
+                str += lookahead;
             }
         }
+        GetChar();
+    }
+
+    void ParseNumber() {
+        int neg = lookahead == '-' ? -1 : 1;
+        if (neg == -1) {
+            lookahead = GetChar();
+        }
+        std::string num{lookahead};
+        while (true) {
+            lookahead = GetChar();
+            if (!isdigit(lookahead)) {
+                break;
+            }
+            num += lookahead;
+        }
+        number = neg * std::stoi(num);
+    }
+
+    void ParseIdentifier() {
+        std::string str{lookahead};
+        while (true) {
+            GetChar();
+            if (!isalnum(lookahead) && lookahead != '_') {
+                break;
+            }
+            str += lookahead;
+        }
+        id = str;
+    }
+
+    Token MakeToken(TokenKind kind) {
+        Token tok{kind, tok_begin_row, tok_begin_col};
+        return tok;
     }
 
     Token getNext() {
-        char c = input.get();
-        
-        if (c == '#') {
-            while(c != EOF && c != '\n') {
-                c = input.get();
+        if (lookahead == '#') {
+            while(lookahead != EOF && lookahead != '\n') {
+                GetChar();
+            }
+            if (lookahead == '\n') {
+                GetChar();
             }
             return getNext();
-        } else if (c == EOF) {
-            return Token::END;
-        } else if (isspace(c)) {
+        } else if (isspace(lookahead)) {
+            GetChar();
             return getNext();
-        } else if (c == ';') {
-            return Token::SEMICOLON;
-        } else if (c == ',') {
-            return Token::COMMA;
-        } else if (c == '[') {
-            return Token::LBRACKET;
-        } else if (c == ']') {
-            return Token::RBRACKET;
-        } else if (c == '+') {
-           return Token::PLUS;
-        } else if (c == '*') {
-            return Token::TIMES;
-        } else if (c == '.') {
-            return Token::DOT;
-        } else if (c == '"') {
+        }
+
+        RecordTokLoc();
+        if (lookahead == EOF) {
+            return MakeToken(TokenKind::END);
+        } else if (lookahead == ';') {
+            GetChar();
+            return MakeToken(TokenKind::SEMICOLON);
+        } else if (lookahead == ',') {
+            GetChar();
+            return MakeToken(TokenKind::COMMA);
+        } else if (lookahead == '[') {
+            GetChar();
+            return MakeToken(TokenKind::LBRACKET);
+        } else if (lookahead == ']') {
+            GetChar();
+            return MakeToken(TokenKind::RBRACKET);
+        } else if (lookahead == '+') {
+            GetChar();
+           return MakeToken(TokenKind::PLUS);
+        } else if (lookahead == '*') {
+            GetChar();
+            return MakeToken(TokenKind::TIMES);
+        } else if (lookahead == '.') {
+            GetChar();
+            return MakeToken(TokenKind::DOT);
+        } else if (lookahead == '"') {
             ParseString();
-            return Token::STRING;
-        } else if (isdigit(c) || c == '-') {
-            int neg = c == '-' ? -1 : 1;
-            if (neg == -1) {
-                c = input.get();
-            }
-            std::string num{c};
-            while (true) {
-                c = input.get();
-                if (!isdigit(c)) {
-                    input.unget();
-                    break;
-                }
-                num += c;
-            }
-            number = neg * std::stoi(num);
-            return Token::NUM;
+            return MakeToken(TokenKind::STRING);
+        } else if (isdigit(lookahead) || lookahead == '-') {
+            ParseNumber();
+            return MakeToken(TokenKind::NUM);
+        } else if (isalpha(lookahead) || lookahead == '_') { // identifier
+            ParseIdentifier();
+            return MakeToken(TokenKind::ID);
         } else {
-            std::string str{c};
-            while (true) {
-                c = input.get();
-                if (!isalnum(c)) {
-                    input.unget();
-                    break;
-                }
-                str += c;
-            }
-            id = str;
-            return Token::ID;
+            throw ParserError(fmt::format("{}:{}:No token beginning with '{}'",
+                                          row, col, lookahead));
         }
     }
 
@@ -130,36 +165,62 @@ public:
     int getNumber() const noexcept { return number; }
     std::string getStr() const noexcept { return str; }
 private:
+    char GetChar() {
+        if (lookahead == '\n') {
+            row += 1;
+            col = 0;
+        } else {
+            col += 1;
+        }
+        lookahead = input.get();
+        return lookahead;
+    }
+
+    void RecordTokLoc() {
+        tok_begin_row = row;
+        tok_begin_col = col;
+    }
+
+    size_t row{0};
+    size_t col{0};
+
+    size_t tok_begin_row{0};
+    size_t tok_begin_col{0};
+
     int number{-1};
     std::string id;
-    std::istream& input;
     std::string str;
+
+    std::istream& input;
+    char lookahead;
 };
 
 class Parser {
 public:
     Parser(std::istream& is) : lex(is) { curtok = lex.getNext(); }
-    static void ExpectTok(Token expected, Token tok, std::function<std::string()> message) {
+    static void ExpectTok(TokenKind expected, TokenKind tok, std::function<std::string()> message) {
         if (expected != tok) {
             throw ParserError(message());
         }
     }
 
-    /// Fetches new token and returns previous (the one that was in curtok until this function call) one.
-    Token GetNextPrev() {
+    /// Fetches new token and returns previous (the one that was in curtok.kind until this function call) one.
+    TokenKind GetNextPrev() {
         auto prev = curtok;
         curtok = lex.getNext();
-        return prev;
+        return prev.kind;
     }
 
-    Token GetNext() {
-        return curtok = lex.getNext();
+    TokenKind GetNext() {
+        curtok = lex.getNext();
+        return curtok.kind;
     }
 
     void Section() {
-        ExpectTok(Token::ID, curtok, []{ return "Expected '.section_name'"; });
+        ExpectTok(TokenKind::ID, curtok.kind, []{ return "Expected '.section_name'"; });
         std::string section_name = lex.getId();
-        GetNextPrev();
+        GetNext();
+
         log_info("Parsing '{}' section", section_name);
         if (section_name == "text") {
             Text();
@@ -167,8 +228,7 @@ public:
             Data();
         } else {
             log_info("Skipping '{}' section", section_name);
-            GetNext();
-            while (curtok != Token::DOT && curtok != Token::END) {
+            while (curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {
                 GetNext();
             };
         }
@@ -190,12 +250,12 @@ public:
 
     tiny::t86::Operand Operand() {
         using namespace tiny::t86;
-        if (curtok == Token::ID) {
+        if (curtok.kind == TokenKind::ID) {
             std::string regname = lex.getId();
             GetNext();
             // Reg + Imm
-            if (curtok == Token::PLUS) {
-                if (GetNext() != Token::NUM) {
+            if (curtok.kind == TokenKind::PLUS) {
+                if (GetNext() != TokenKind::NUM) {
                     throw ParserError("After Reg + _ there can be only number");
                 }
                 int imm = lex.getNumber();
@@ -204,71 +264,71 @@ public:
             }
             auto reg = getRegister(regname);
             return reg;
-        } else if (curtok == Token::NUM) {
+        } else if (curtok.kind == TokenKind::NUM) {
             int imm = lex.getNumber();
             GetNext();
             return imm;
-        } else if (curtok == Token::LBRACKET) {
+        } else if (curtok.kind == TokenKind::LBRACKET) {
             // First is imm
-            if (GetNext() == Token::NUM) {
+            if (GetNext() == TokenKind::NUM) {
                 auto val = lex.getNumber();
                 GetNext(); // 'num'
                 GetNext(); // ']'
                 // [i]
                 return Mem(static_cast<uint64_t>(val));
             // First is register
-            } else if (curtok == Token::ID) {
+            } else if (curtok.kind == TokenKind::ID) {
                 auto regname = lex.getId();
                 auto reg = getRegister(regname);
                 // Only register
-                if (GetNext() == Token::RBRACKET) {
+                if (GetNext() == TokenKind::RBRACKET) {
                     GetNext();
                     // [Rx]
                     return Mem(reg);
                 }
                 // Has second with +
-                if (curtok == Token::PLUS) {
+                if (curtok.kind == TokenKind::PLUS) {
                     GetNext();
                     // Can either be imm or register
-                    if (curtok == Token::ID) {
+                    if (curtok.kind == TokenKind::ID) {
                         auto reg2 = getRegister(lex.getId());
-                        if (GetNext() == Token::RBRACKET) {
+                        if (GetNext() == TokenKind::RBRACKET) {
                             GetNext();
                             return Mem(reg + reg2);
-                        } else if (curtok == Token::TIMES && GetNext() == Token::NUM) {
+                        } else if (curtok.kind == TokenKind::TIMES && GetNext() == TokenKind::NUM) {
                             auto val = lex.getNumber();
-                            ExpectTok(Token::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference\n"; });
+                            ExpectTok(TokenKind::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference\n"; });
                             return Mem(reg + reg2 * val);
                         }
-                    } else if (curtok == Token::NUM) {
+                    } else if (curtok.kind == TokenKind::NUM) {
                         auto val = lex.getNumber();
-                        if (GetNext() == Token::RBRACKET) {
+                        if (GetNext() == TokenKind::RBRACKET) {
                             GetNext();
                             return Mem(reg + val);
                         }
-                        if (curtok != Token::PLUS || GetNext() != Token::ID) {
+                        if (curtok.kind != TokenKind::PLUS || GetNext() != TokenKind::ID) {
                             throw ParserError("Dereference of form [R1 + i ...] must always contain `+ R` after i");
                         }
 
                         auto reg2 = getRegister(lex.getId());
-                        if (GetNext() == Token::RBRACKET) {
+                        if (GetNext() == TokenKind::RBRACKET) {
                             GetNext();
                             return Mem(reg + val + reg2);
                         }
-                        ExpectTok(Token::TIMES, curtok, []{ return "After `[R1 + i + R2` there must always be a `*` or `]`"; });
-                        ExpectTok(Token::NUM, GetNext(), []{ return "After `[R1 + i + R2 *` there must always be an imm"; });
+                        ExpectTok(TokenKind::TIMES, curtok.kind, []{ return "After `[R1 + i + R2` there must always be a `*` or `]`"; });
+                        ExpectTok(TokenKind::NUM, GetNext(), []{ return "After `[R1 + i + R2 *` there must always be an imm"; });
                         auto val2 = lex.getNumber();
                         
-                        ExpectTok(Token::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference "; });
+                        ExpectTok(TokenKind::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference "; });
                         GetNext(); // Eat ']'
                         return Mem(reg + val + reg2 * val2);
                     }
                 // Has second with *
-                } else if (curtok == Token::TIMES) {
+                } else if (curtok.kind == TokenKind::TIMES) {
                     // There must be imm now
-                    ExpectTok(Token::NUM, GetNext(), []{ return "After [R1 * ...] there must always be an imm"; });
+                    ExpectTok(TokenKind::NUM, GetNext(), []{ return "After [R1 * ...] there must always be an imm"; });
                     int val = lex.getNumber();
-                    if (GetNext() != Token::RBRACKET) {
+                    if (GetNext() != TokenKind::RBRACKET) {
                         throw ParserError("Expected ']' to close dereference");
                     }
                     GetNext(); // ']'
@@ -281,15 +341,15 @@ public:
         UNREACHABLE;
     }
 
-#define CHECK_COMMA() do { ExpectTok(Token::COMMA, GetNextPrev(), []{ return "Expected comma to separate arguments"; });} while (false)
+#define CHECK_COMMA() do { ExpectTok(TokenKind::COMMA, GetNextPrev(), []{ return "Expected comma to separate arguments"; });} while (false)
 
     std::unique_ptr<tiny::t86::Instruction> Instruction() {
         // Address at the beginning is optional
-        if (curtok == Token::NUM) {
+        if (curtok.kind == TokenKind::NUM) {
             GetNextPrev();
         }
 
-        ExpectTok(Token::ID, curtok, []{ return "Expected register name"; });
+        ExpectTok(TokenKind::ID, curtok.kind, []{ return "Expected register name"; });
         std::string ins_name = lex.getId();
         GetNextPrev();
 
@@ -517,23 +577,23 @@ public:
 #undef CHECK_COMMA
 
     void Text() {
-        while (curtok == Token::NUM || curtok == Token::ID) {
+        while (curtok.kind == TokenKind::NUM || curtok.kind == TokenKind::ID) {
             auto ins = Instruction();
             program.push_back(std::move(ins));
-            // if (GetNextPrev() != Token::SEMICOLON) {
+            // if (GetNextPrev() != TokenKind::SEMICOLON) {
             //     throw ParserError("Instruction must be terminated by semicolon");
             // }
         }
     }
 
     void Data() {
-        while (curtok == Token::STRING || curtok == Token::NUM) {
-            if (curtok == Token::STRING) {
+        while (curtok.kind == TokenKind::STRING || curtok.kind == TokenKind::NUM) {
+            if (curtok.kind == TokenKind::STRING) {
                 auto string = lex.getStr();
                 std::transform(string.begin(), string.end(),
                                std::back_inserter(data),
                                [](auto &&c) { return c; });
-            } else if (curtok == Token::NUM) {
+            } else if (curtok.kind == TokenKind::NUM) {
                 data.emplace_back(lex.getNumber());
             }
             GetNext();
@@ -541,13 +601,20 @@ public:
     }
 
     tiny::t86::Program Parse() {
-        if (curtok != Token::DOT) {
+        if (curtok.kind != TokenKind::DOT) {
             throw ParserError("File does not contain any section");
         }
-        while (GetNextPrev() == Token::DOT) {
+        while (GetNextPrev() == TokenKind::DOT) {
             Section();
         }
         return {std::move(program), std::move(data)};
+    }
+
+    template<typename ...Args>
+    ParserError CreateError(fmt::format_string<Args...> format, Args&& ...args) {
+        return ParserError(fmt::format("Error:{}:{}:{}", curtok.row,
+                    curtok.col, fmt::format(format,
+                        std::forward<Args>(args)...)));
     }
 private:
     Lexer lex;
