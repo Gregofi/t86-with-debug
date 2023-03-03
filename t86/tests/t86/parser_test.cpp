@@ -2,60 +2,104 @@
 #include <sstream>
 #include "common/parser.h"
 
+Token _T(TokenKind kind, size_t row, size_t col) {
+    return Token{kind, row, col};
+}
+
 TEST(TokenizerTest, OnlyIds) {
-    std::istringstream iss("A B C D");
+    std::istringstream iss("A B   C D");
     Lexer l(iss);
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
     ASSERT_EQ(l.getId(), "A");
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 2));
     ASSERT_EQ(l.getId(), "B");
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 6));
     ASSERT_EQ(l.getId(), "C");
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 8));
     ASSERT_EQ(l.getId(), "D");
-    ASSERT_EQ(l.getNext(), Token::END);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::END, 0, 9));
 }
 
 TEST(TokenizerTest, MixedTokens) {
-    std::istringstream iss(".text 12 MOV[1]; 23 MOV R0 [R0 + 1 + R2 * 2]");
+    std::istringstream iss(
+".text 12 MOV[1]; 23 MOV R0 [R0 + 1 + R2 * 2]");
     Lexer l(iss);
-    ASSERT_EQ(l.getNext(), Token::DOT);
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::DOT, 0, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 1));
     ASSERT_EQ(l.getId(), "text");
-    ASSERT_EQ(l.getNext(), Token::NUM);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 6));
     ASSERT_EQ(l.getNumber(), 12);
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 9));
     ASSERT_EQ(l.getId(), "MOV");
-    ASSERT_EQ(l.getNext(), Token::LBRACKET);
-    ASSERT_EQ(l.getNext(), Token::NUM);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 0, 12));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 13));
     ASSERT_EQ(l.getNumber(), 1);
-    ASSERT_EQ(l.getNext(), Token::RBRACKET);
-    ASSERT_EQ(l.getNext(), Token::SEMICOLON);
-    ASSERT_EQ(l.getNext(), Token::NUM);
-    ASSERT_EQ(l.getNext(), Token::ID);
-    ASSERT_EQ(l.getNext(), Token::ID);
-    ASSERT_EQ(l.getNext(), Token::LBRACKET);
-    ASSERT_EQ(l.getNext(), Token::ID);
-    ASSERT_EQ(l.getNext(), Token::PLUS);
-    ASSERT_EQ(l.getNext(), Token::NUM);
-    ASSERT_EQ(l.getNext(), Token::PLUS);
-    ASSERT_EQ(l.getNext(), Token::ID);
-    ASSERT_EQ(l.getNext(), Token::TIMES);
-    ASSERT_EQ(l.getNext(), Token::NUM);
-    ASSERT_EQ(l.getNext(), Token::RBRACKET);
-    ASSERT_EQ(l.getNext(), Token::END);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 0, 14));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::SEMICOLON, 0, 15));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 17));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 20));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 24));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 0, 27));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 28));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::PLUS, 0, 31));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 33));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::PLUS, 0, 35));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 37));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::TIMES, 0, 40));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 42));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 0, 43));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::END, 0, 44));
 }
 
 TEST(TokenizerTest, Minus) {
     std::istringstream iss("MOV [-1], R0");
     Lexer l(iss);
-    ASSERT_EQ(l.getNext(), Token::ID);
-    ASSERT_EQ(l.getNext(), Token::LBRACKET);
-    ASSERT_EQ(l.getNext(), Token::NUM);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 0, 4));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 5));
     ASSERT_EQ(l.getNumber(), -1);
-    ASSERT_EQ(l.getNext(), Token::RBRACKET);
-    ASSERT_EQ(l.getNext(), Token::COMMA);
-    ASSERT_EQ(l.getNext(), Token::ID);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 0, 7));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::COMMA, 0, 8));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 10));
+}
+
+TEST(TokenizerTest, String) {
+    std::istringstream iss("\"Hello\" 1 2 [R0]");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::STRING, 0, 0));
+    ASSERT_EQ(l.getStr(), "Hello");
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 8));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 10));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 0, 12));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 13));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 0, 15));
+}
+
+TEST(TokenizerTest, MultilineInput) {
+    std::istringstream iss("\"Hello\" 1\n 1 2\n[R0\n]\n");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::STRING, 0, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 8));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 1, 1));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 1, 3));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 2, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 2, 1));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 3, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::END, 4, 0));
+}
+
+TEST(TokenizerTest, UnknownToken) {
+    std::istringstream iss(" 1 // A comment");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 1));
+    ASSERT_THROW({l.getNext();}, ParserError);
+}
+
+TEST(TokenizerTest, UnterminatedString) {
+    std::istringstream iss("1 \"Hello 2");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 0));
+    ASSERT_THROW({l.getNext();}, ParserError);
 }
 
 TEST(ParserTest, Minuses) {
@@ -307,4 +351,62 @@ TEST(ParserTest, WrongEscapeSequence) {
     ASSERT_THROW({
         auto p = parser.Parse();
         }, ParserError);
+}
+
+void Parse(std::string_view program) {
+    std::istringstream iss{std::string(program)};
+    Parser parser(iss);
+    parser.Parse();
+}
+
+TEST(ParserTest, BadBinaryInstructions) {
+    auto program = R"(
+.text
+0 MOV ADD 1, 2
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD 1
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+
+    program = R"(
+.text
+0 MOV ADD 1, [1 + 1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD 1, [R0 * 2]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD [2], 3
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+}
+
+TEST(ParserTest, BadUnaryInstructions) {
+    auto program = R"(
+.text
+0 JMP [0]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 JMP [R1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 POP 0
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 PUSH [0]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
 }

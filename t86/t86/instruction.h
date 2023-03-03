@@ -214,7 +214,7 @@ namespace tiny::t86 {
         INS_NAME(Register reg, Memory::Immediate val);         \
         INS_NAME(Register reg, Memory::Register val);          \
         INS_NAME(Register reg, Memory::RegisterOffset val);    \
-        INS_NAME(Register reg, Operand val);    \
+        INS_NAME(Register reg, Operand val);                   \
         INS_NAME(Register dest, Register reg, int64_t val);    \
         INS_NAME(Register dest, Register reg, Register val);   \
         Type type() const override { return Type::INS_NAME; }  \
@@ -823,6 +823,8 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         JMP(uint64_t address) : PatchableJumpInstruction(address) {}
 
+        JMP(Operand operand) : PatchableJumpInstruction(operand) {}
+
         Type type() const override { return Type::JMP; }
 
         std::size_t length() const override;
@@ -888,6 +890,10 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         LOOP(Register reg, uint64_t address)
                 : PatchableJumpInstruction{address}, reg_{reg} {}
+
+        LOOP(Operand reg, Operand address)
+                : PatchableJumpInstruction{address}, reg_{reg.getRegister()} {}
+
 
         Type type() const override { return Type::LOOP; }
 
