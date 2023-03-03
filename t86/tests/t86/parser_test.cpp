@@ -378,6 +378,19 @@ void Parse(std::string_view program) {
     parser.Parse();
 }
 
+TEST(ParserTest, AddressingOperands) {
+    auto program = R"(
+.text
+0 ADD R0, 2
+0 ADD R0, R1
+0 ADD R0, R1 + 3
+0 ADD R0, [2]
+0 ADD R0, [R1]
+0 ADD R0, [R1 + 1]
+)";
+    Parse(program);
+}
+
 TEST(ParserTest, BadBinaryInstructions) {
     auto program = R"(
 .text
@@ -403,6 +416,11 @@ TEST(ParserTest, BadBinaryInstructions) {
     program = R"(
 .text
 0 MOV ADD [2], 3
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD R0, 3.0
 )";
     ASSERT_THROW({Parse(program);}, ParserError);
 }
@@ -441,4 +459,57 @@ auto program = R"(
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 2);
+}
+
+TEST(ParserTest, LeaMemory) {
+auto program = R"(
+.text
+
+0 LEA R0, [R1 + 1]
+0 LEA R0, [R1 + R2]
+0 LEA R0, [R1 * 2]
+0 LEA R0, [R1 + 1 + R2]
+0 LEA R0, [R1 + R2 * 2]
+0 LEA R0, [R1 + 1 + R2 * 2]
+)";
+    std::istringstream iss{program};
+    Parser parser(iss);
+    auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 6);
+
+    program = R"(
+.text
+0 LEA R0, [R1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, [1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, R1
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, [R1 + ]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, [R1 * ]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, [R1 + 1 + ]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 LEA R0, [R1 + 1 + R2 * ]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
 }

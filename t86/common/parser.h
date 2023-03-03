@@ -335,8 +335,10 @@ public:
     }
 
     /// Allows R or R + i
-    tiny::t86::Operand RegisterOrRegisterPlusImm() {
-        if (curtok.kind == TokenKind::ID) {
+    tiny::t86::Operand ImmOrRegisterOrRegisterPlusImm() {
+        if (curtok.kind == TokenKind::NUM) {
+            return Imm();
+        } else if (curtok.kind == TokenKind::ID) {
             auto reg = Register();
             if (curtok.kind == TokenKind::PLUS) {
                 GetNext();
@@ -344,6 +346,8 @@ public:
                 return reg + imm;
             }
             return reg;
+        } else {
+            throw CreateError("Expected either i, R or R + i");
         }
     }
 
@@ -399,6 +403,112 @@ public:
         } else {
             throw CreateError("Expected either i, R, [i], [R] or [R + i]");
         }
+    }
+
+
+    /// Allows R, i, R + i, [i], [R], [R + i]
+    tiny::t86::Operand ImmOrRegisterPlusImmOrSimpleMemory() {
+        if (curtok.kind == TokenKind::ID || curtok.kind == TokenKind::NUM) {
+            return ImmOrRegisterOrRegisterPlusImm();
+        } else if (curtok.kind == TokenKind::LBRACKET) {
+            return SimpleMemory();
+        } else {
+            throw CreateError("Expected either i, R, R + i, [i], [R] or [R + i]");
+        }
+    }
+
+    /// Allows [i], [R], [R + i], [R1 + R2], [R1 + R2 * i],
+    /// [R1 + i + R2] and [R1 + i1 + R2 * i2]
+    tiny::t86::Operand Memory() {
+        using namespace tiny::t86;
+        std::optional<tiny::t86::Operand> result;
+        if (curtok.kind == TokenKind::LBRACKET) {
+            GetNext();
+            // Must be [i]
+            if (curtok.kind == TokenKind::NUM) {
+                auto imm = lex.getNumber();
+                GetNext();
+                result = Mem(imm);
+            } else if (curtok.kind == TokenKind::ID) {
+                auto regname1 = lex.getId();
+                auto reg1 = getRegister(regname1);
+                GetNext();
+                if (curtok.kind == TokenKind::PLUS) {
+                    GetNext();
+                    // Can be [R + i], [R + i + R] or [R + i + R * i]
+                    if (curtok.kind == TokenKind::NUM) {
+                        auto imm1 = lex.getNumber();
+                        GetNext();
+                        // Can be either [R + i + R] or [R + i + R * i]
+                        if (curtok.kind == TokenKind::PLUS) {
+                            GetNext();
+                            if (curtok.kind == TokenKind::ID) {
+                                auto regname2 = lex.getId();
+                                auto reg2 = getRegister(regname2);
+                                GetNext();
+                                // Must be [R + i + R * i]
+                                if (curtok.kind == TokenKind::TIMES) {
+                                    GetNext();
+                                    auto imm2 = lex.getNumber();
+                                    GetNext();
+                                    result = Mem(reg1 + imm1 + reg2 * imm2);
+                                // Must be [R + i + R]
+                                } else {
+                                    result = Mem(reg1 + imm1 + reg2);
+                                }
+                            } else {
+                                throw CreateError("Expected R");
+                            }
+                        // Must be [R + i]
+                        } else {
+                            result = Mem(reg1 + imm1);
+                        }
+                    } else if (curtok.kind == TokenKind::ID) {
+                        auto regname2 = lex.getId();
+                        auto reg2 = getRegister(regname2);
+                        GetNext();
+                        // Must be [R + R + i]
+                        if (curtok.kind == TokenKind::TIMES) {
+                            GetNext();
+                            if (curtok.kind == TokenKind::NUM) {
+                                auto imm = lex.getNumber();
+                                GetNext();
+                                result = Mem(reg1 + reg2 * imm);
+                            }
+                        // Must be [R + R]
+                        } else {
+                            result = Mem(reg1 + reg2);
+                        }
+                    } else {
+                        throw CreateError("Expected either i or R");
+                    }
+                // Must be [R * i]
+                } else if (curtok.kind == TokenKind::TIMES) {
+                    GetNext();
+                    if (curtok.kind == TokenKind::NUM) {
+                        auto imm = lex.getNumber();
+                        GetNext();
+                        result = Mem(reg1 * imm);
+                    } else {
+                        throw CreateError("Expected 'i'");
+                    }
+                // Must be [R]
+                } else {
+                    GetNext();
+                    result = Mem(reg1);
+                }
+            } else {
+                throw CreateError("Expected either R or i");
+            }
+        } else {
+            throw CreateError("Expected '['");
+        }
+        if (curtok.kind != TokenKind::RBRACKET) {
+            throw CreateError("Expected ']'");
+        }
+        GetNext();
+        assert(result);
+        return *result;
     }
 
     /// Parses every kind of operand, specially for MOV
@@ -541,28 +651,31 @@ public:
             return std::make_unique<tiny::t86::MOV>(dest, from);
         }
 
-        // LEA is not documented.
         if (ins_name == "LEA") {
-            auto dest = Operand();
+            auto dest = Register();
             if (curtok.kind != TokenKind::COMMA) {
                 throw CreateError("Expected ','");
             }
             GetNext();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::LEA>(dest.getRegister(), from);
+            auto from = Memory();
+            // Memory allows [R], which LEA doesn't like.
+            if (from.isMemoryRegister() || from.isMemoryImmediate()) {
+                throw CreateError("LEA doesn't support [R] or [i]");
+            }
+            return std::make_unique<tiny::t86::LEA>(dest, from);
         }
 
-        PARSE_BINARY(ADD, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(SUB, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(MUL, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(DIV, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(IMUL, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(IDIV, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(AND, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(OR, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(XOR, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(LSH, Register, ImmOrRegisterOrSimpleMemory);
-        PARSE_BINARY(RSH, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(ADD, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(SUB, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(MUL, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(DIV, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(IMUL, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(IDIV, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(AND, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(OR, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(XOR, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(LSH, Register, ImmOrRegisterPlusImmOrSimpleMemory);
+        PARSE_BINARY(RSH, Register, ImmOrRegisterPlusImmOrSimpleMemory);
         PARSE_BINARY(CMP, Register, ImmOrRegisterOrSimpleMemory);
         PARSE_BINARY(LOOP, Register, ImmOrRegister);
         PARSE_BINARY(FADD, FloatRegister, FloatImmOrRegister);
