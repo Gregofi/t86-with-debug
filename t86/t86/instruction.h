@@ -257,6 +257,8 @@ namespace tiny::t86 {
 
         FloatBinaryArithmeticInstruction(std::function<Alu::FloatResult(double, double)> op, FloatRegister fReg, double val)
             : op_(std::move(op)), fReg_(fReg), val_(val) {}
+        FloatBinaryArithmeticInstruction(std::function<Alu::FloatResult(double, double)> op, FloatRegister fReg, Operand val)
+            : op_(std::move(op)), fReg_(fReg), val_(val) {}
 
         bool needsAlu() const override {
             return true;
@@ -287,6 +289,7 @@ namespace tiny::t86 {
     public:                                                    \
         INS_NAME(FloatRegister reg, FloatRegister val);        \
         INS_NAME(FloatRegister reg, double val);               \
+        INS_NAME(FloatRegister reg, Operand val);              \
         Type type() const override { return Type::INS_NAME; }  \
         std::size_t length() const override;                   \
     };
@@ -564,6 +567,8 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         FCMP(FloatRegister fReg, double value) : fReg_(fReg), value_(value) {}
 
         FCMP(FloatRegister fReg, FloatRegister value) : fReg_(fReg), value_(value) {}
+
+        FCMP(FloatRegister fReg, Operand value) : fReg_(fReg), value_(value) {}
 
         bool needsAlu() const override {
             return true;

@@ -429,3 +429,16 @@ TEST(ParserTest, BadUnaryInstructions) {
 )";
     ASSERT_THROW({Parse(program);}, ParserError);
 }
+
+TEST(ParserTest, FloatInstructions) {
+auto program = R"(
+.text
+
+0 FADD F0, 3.14
+1 FSUB F0, F1
+)";
+    std::istringstream iss{program};
+    Parser parser(iss);
+    auto p = parser.Parse();
+    ASSERT_EQ(p.instructions().size(), 2);
+}

@@ -261,6 +261,14 @@ public:
         return tiny::t86::Register{static_cast<size_t>(std::atoi(regname.data()))};
     }
 
+    tiny::t86::FloatRegister getFloatRegister(std::string_view regname) {
+        if (regname[0] != 'F') {
+            throw CreateError("Float registers must begin with an F");
+        }
+        regname.remove_prefix(1);
+        return tiny::t86::FloatRegister{static_cast<size_t>(std::atoi(regname.data()))};
+    }
+
     /// Allows only register as operand
     tiny::t86::Register Register() {
         if (curtok.kind == TokenKind::ID) {
@@ -273,6 +281,17 @@ public:
         }
     }
 
+    tiny::t86::FloatRegister FloatRegister() {
+        if (curtok.kind == TokenKind::ID) {
+            std::string regname = lex.getId();
+            auto reg = getFloatRegister(regname);
+            GetNext();
+            return reg;
+        } else {
+            throw CreateError("Expected F");
+        }
+    }
+
     /// Allows only immediate as operand
     int64_t Imm() {
         if (curtok.kind == TokenKind::NUM) {
@@ -281,6 +300,26 @@ public:
             return val;
         } else {
             throw CreateError("Expected i");
+        }
+    }
+
+    double FloatImm() {
+        if (curtok.kind == TokenKind::FLOAT) {
+            auto val = lex.getFloat();
+            GetNext();
+            return val;
+        } else {
+            throw CreateError("Expected f");
+        }
+    }
+
+    tiny::t86::Operand FloatImmOrRegister() {
+        if (curtok.kind == TokenKind::ID) {
+            return FloatRegister();
+        } else if (curtok.kind == TokenKind::FLOAT) {
+            return FloatImm();
+        } else {
+            throw CreateError("Expected either f or F");
         }
     }
 
@@ -526,10 +565,17 @@ public:
         PARSE_BINARY(RSH, Register, ImmOrRegisterOrSimpleMemory);
         PARSE_BINARY(CMP, Register, ImmOrRegisterOrSimpleMemory);
         PARSE_BINARY(LOOP, Register, ImmOrRegister);
+        PARSE_BINARY(FADD, FloatRegister, FloatImmOrRegister);
+        PARSE_BINARY(FSUB, FloatRegister, FloatImmOrRegister);
+        PARSE_BINARY(FMUL, FloatRegister, FloatImmOrRegister);
+        PARSE_BINARY(FDIV, FloatRegister, FloatImmOrRegister);
+        PARSE_BINARY(FCMP, FloatRegister, FloatImmOrRegister);
         // FIXME: The second 'Operand' is wrong, as it only allows
         // everything operand does but only memory accesses, ie.
         // [R1 + 1 + R2 * 3] is fine but R1 + 1 is not.
         PARSE_BINARY(LEA, Register, Operand);
+        PARSE_BINARY(EXT, FloatRegister, Register);
+        PARSE_BINARY(NRW, Register, FloatRegister);
 
         PARSE_UNARY(INC, Register);
         PARSE_UNARY(DEC, Register);
@@ -554,7 +600,9 @@ public:
         PARSE_UNARY(JNS, ImmOrRegisterOrSimpleMemory);
         PARSE_UNARY(CALL, ImmOrRegister);
         PARSE_UNARY(PUSH, ImmOrRegister);
+        PARSE_UNARY(PUSH, FloatImmOrRegister);
         PARSE_UNARY(POP, Register);
+        PARSE_UNARY(FPOP, FloatRegister);
         PARSE_UNARY(PUTCHAR, Register);
         PARSE_UNARY(PUTNUM, Register);
         PARSE_UNARY(GETCHAR, Register);
