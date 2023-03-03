@@ -2,5 +2,5 @@
 
 namespace tiny {
 
-    Config config;
+Config config;
 } // namespace tiny

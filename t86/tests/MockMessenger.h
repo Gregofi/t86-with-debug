@@ -1,17 +1,17 @@
 #pragma once
-#include <vector>
+#include <optional>
 #include <queue>
 #include <string>
-#include <optional>
+#include <vector>
 
 #include "messenger.h"
 
-class Comms: public Messenger {
+class Comms : public Messenger {
 public:
-    Comms(std::queue<std::string> in, std::vector<std::string>& out): in(std::move(in)), out(out) { }
-    void Send(const std::string&s) override {
-        out.push_back(s);
-    }
+    Comms(std::queue<std::string> in, std::vector<std::string>& out)
+        : in(std::move(in))
+        , out(out) { }
+    void Send(const std::string& s) override { out.push_back(s); }
 
     std::optional<std::string> Receive() override {
         if (in.empty()) {
@@ -24,5 +24,3 @@ public:
     std::queue<std::string> in;
     std::vector<std::string>& out;
 };
-
-

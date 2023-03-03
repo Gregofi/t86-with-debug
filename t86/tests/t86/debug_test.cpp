@@ -1,30 +1,25 @@
 #include <gtest/gtest.h>
 
-#include "t86/os.h"
-#include "t86-parser/parser.h"
-#include "messenger.h"
 #include "../MockMessenger.h"
+#include "messenger.h"
+#include "t86-parser/parser.h"
+#include "t86/os.h"
 
-#include <string>
 #include <queue>
+#include <string>
 
 using namespace tiny::t86;
 
 TEST(DebugTest, SimpleCommands) {
     OS os(2);
-    std::queue<std::string> in({
-            "REASON",
-            "PEEKREGS",
-            "CONTINUE",
-            "REASON",
-            "PEEKREGS",
-            "CONTINUE"});
+    std::queue<std::string> in({ "REASON", "PEEKREGS", "CONTINUE", "REASON",
+        "PEEKREGS", "CONTINUE" });
     std::vector<std::string> out;
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 MOV R0, 1
@@ -42,13 +37,15 @@ HALT
     auto it = out.begin();
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "START");
-    ASSERT_EQ(*it++, "IP:0\nBP:1024\nSP:1024\n"
-                     "R0:0\nR1:0\n");
+    ASSERT_EQ(*it++,
+        "IP:0\nBP:1024\nSP:1024\n"
+        "R0:0\nR1:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "HALT");
-    ASSERT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
-                     "R0:3\nR1:2\n");
+    ASSERT_EQ(*it++,
+        "IP:4\nBP:1024\nSP:1024\n"
+        "R0:3\nR1:2\n");
     ASSERT_EQ(*it++, "OK");
 }
 
@@ -65,13 +62,13 @@ TEST(DebugTest, SingleStep) {
         "CONTINUE",
         "REASON",
         "PEEKREGS",
-        });
+    });
     std::vector<std::string> out;
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 MOV R0, 1
@@ -89,22 +86,26 @@ HALT
     auto it = out.begin();
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "START");
-    ASSERT_EQ(*it++, "IP:0\nBP:1024\nSP:1024\n"
-                     "R0:0\nR1:0\n");
+    ASSERT_EQ(*it++,
+        "IP:0\nBP:1024\nSP:1024\n"
+        "R0:0\nR1:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "SINGLESTEP");
-    ASSERT_EQ(*it++, "IP:1\nBP:1024\nSP:1024\n"
-                     "R0:1\nR1:0\n");
+    ASSERT_EQ(*it++,
+        "IP:1\nBP:1024\nSP:1024\n"
+        "R0:1\nR1:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:2\nBP:1024\nSP:1024\n"
-                     "R0:1\nR1:2\n");
+    ASSERT_EQ(*it++,
+        "IP:2\nBP:1024\nSP:1024\n"
+        "R0:1\nR1:2\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "HALT");
-    ASSERT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
-                     "R0:3\nR1:2\n");
+    ASSERT_EQ(*it++,
+        "IP:4\nBP:1024\nSP:1024\n"
+        "R0:3\nR1:2\n");
 }
 
 TEST(DebugTest, IPManipulation) {
@@ -133,8 +134,8 @@ TEST(DebugTest, IPManipulation) {
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 0 MOV R0, 1
@@ -157,39 +158,43 @@ R"(
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:2\nBP:1024\nSP:1024\n"
-                     "R0:1\nR1:2\nR2:0\n");
+    ASSERT_EQ(*it++,
+        "IP:2\nBP:1024\nSP:1024\n"
+        "R0:1\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
-                     "R0:3\nR1:2\nR2:0\n");
-    ASSERT_EQ(*it++, "OK");
-    ASSERT_EQ(*it++, "OK");
-    ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
-                     "R0:5\nR1:2\nR2:0\n");
+    ASSERT_EQ(*it++,
+        "IP:3\nBP:1024\nSP:1024\n"
+        "R0:3\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++,
+        "IP:3\nBP:1024\nSP:1024\n"
+        "R0:5\nR1:2\nR2:0\n");
+    ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
-                     "R0:7\nR1:2\nR2:7\n");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++,
+        "IP:4\nBP:1024\nSP:1024\n"
+        "R0:7\nR1:2\nR2:7\n");
 }
 
 TEST(DebugTest, Breakpoint) {
     OS os(3);
     std::queue<std::string> in({
-            "POKETEXT 2 BKPT",
-            "PEEKTEXT 2 1",
-            "CONTINUE",
-            "PEEKREGS R0",
-            "POKEREGS IP 2",
-            "POKETEXT 2 ADD R0, R1",
-            "SINGLESTEP",
-            "PEEKREGS R0",
-            "CONTINUE",
-            "REASON",
+        "POKETEXT 2 BKPT",
+        "PEEKTEXT 2 1",
+        "CONTINUE",
+        "PEEKREGS R0",
+        "POKEREGS IP 2",
+        "POKETEXT 2 ADD R0, R1",
+        "SINGLESTEP",
+        "PEEKREGS R0",
+        "CONTINUE",
+        "REASON",
 
     });
 
@@ -197,8 +202,8 @@ TEST(DebugTest, Breakpoint) {
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 0 MOV R0, 1
@@ -220,14 +225,16 @@ R"(
     ASSERT_EQ(*it++, "BKPT\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
-                     "R0:1\nR1:2\nR2:0\n");
+    ASSERT_EQ(*it++,
+        "IP:3\nBP:1024\nSP:1024\n"
+        "R0:1\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    ASSERT_EQ(*it++, "IP:3\nBP:1024\nSP:1024\n"
-                     "R0:3\nR1:2\nR2:0\n");
+    ASSERT_EQ(*it++,
+        "IP:3\nBP:1024\nSP:1024\n"
+        "R0:3\nR1:2\nR2:0\n");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "HALT");
@@ -236,18 +243,18 @@ R"(
 TEST(DebugTest, PeekDataText) {
     OS os(3);
     std::queue<std::string> in({
-            "CONTINUE",
-            "PEEKTEXT 2 3",
-            "PEEKDATA 1 3",
-            "PEEKREGS",
+        "CONTINUE",
+        "PEEKTEXT 2 3",
+        "PEEKDATA 1 3",
+        "PEEKREGS",
     });
 
     std::vector<std::string> out;
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 0 MOV [1], 1
@@ -269,8 +276,9 @@ R"(
     ASSERT_EQ(*it++, "STOPPED");
     EXPECT_EQ(*it++, "ADD R0, [1]\nMOV R2, R0\nHALT\n");
     EXPECT_EQ(*it++, "1\n0\n2\n");
-    EXPECT_EQ(*it++, "IP:5\nBP:1024\nSP:1024\n"
-                     "R0:1\nR1:0\nR2:1\n");
+    EXPECT_EQ(*it++,
+        "IP:5\nBP:1024\nSP:1024\n"
+        "R0:1\nR1:0\nR2:1\n");
 }
 
 TEST(DebugTest, Sizes) {
@@ -285,8 +293,8 @@ TEST(DebugTest, Sizes) {
 
     os.SetDebuggerComms(std::make_unique<Comms>(in, out));
 
-    std::istringstream iss{
-R"(
+    std::istringstream iss {
+        R"(
 .text
 
 0 MOV R0, 1
@@ -301,7 +309,7 @@ R"(
     Program p = parser.Parse();
 
     os.Run(std::move(p));
-    
+
     auto it = out.begin();
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "REGCOUNT:10");

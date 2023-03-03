@@ -2,48 +2,49 @@
 
 #include <variant>
 
-
-#include "operand.h"
 #include "../cpu/memory.h"
 #include "../cpu/register.h"
+#include "operand.h"
 
 namespace tiny::t86 {
-    class Product {
-    public:
-        Product(Register reg)
-                : product_(reg) {}
+class Product {
+public:
+    Product(Register reg)
+        : product_(reg) { }
 
-        Product(FloatRegister fReg)
-                : product_(fReg) {}
+    Product(FloatRegister fReg)
+        : product_(fReg) { }
 
-        Product(Memory::Immediate mem)
-                : product_(mem) {}
+    Product(Memory::Immediate mem)
+        : product_(mem) { }
 
-        Product(Memory::Register)
-                : product_(MemoryRegister()) {}
+    Product(Memory::Register)
+        : product_(MemoryRegister()) { }
 
-        static Product fromOperand(Operand op);
+    static Product fromOperand(Operand op);
 
-        bool isRegister() const;
+    bool isRegister() const;
 
-        Register getRegister() const;
+    Register getRegister() const;
 
-        bool isFloatRegister() const;
+    bool isFloatRegister() const;
 
-        FloatRegister getFloatRegister() const;
+    FloatRegister getFloatRegister() const;
 
-        bool isMemoryImmediate() const;
+    bool isMemoryImmediate() const;
 
-        Memory::Immediate getMemoryImmediate() const;
+    Memory::Immediate getMemoryImmediate() const;
 
-        bool isMemoryRegister() const;
+    bool isMemoryRegister() const;
 
-    private:
-        // Helper struct representing "unknown memory address based on register(s)"
-        struct MemoryRegister {};
+private:
+    // Helper struct representing "unknown memory address based on register(s)"
+    struct MemoryRegister { };
 
-        Product(MemoryRegister memReg) : product_(memReg) {}
+    Product(MemoryRegister memReg)
+        : product_(memReg) { }
 
-        std::variant<Register, FloatRegister, Memory::Immediate, MemoryRegister> product_;
-    };
-}
+    std::variant<Register, FloatRegister, Memory::Immediate, MemoryRegister>
+        product_;
+};
+} // namespace tiny::t86

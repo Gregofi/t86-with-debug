@@ -3,6 +3,17 @@ name: build
 on: [push, pull_request]
 
 jobs:
+  check-format-t86:
+    name: T86 - Check format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Run clang-format
+        run: |
+          cd ${{ github.workspace }}/t86
+          ./scripts/check_format.sh
+
   build-tinyc:
     name: Build TinyC
     runs-on: ubuntu-latest

@@ -1,0 +1,5 @@
+---
+BasedOnStyle: WebKit
+ColumnLimit: 79
+BreakBeforeBraces: Attach
+---

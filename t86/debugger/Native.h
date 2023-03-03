@@ -1,27 +1,26 @@
 #pragma once
 #include <cstdint>
-#include <vector>
 #include <map>
 #include <memory>
-#include <string>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include <fmt/core.h>
 
 #include "Arch.h"
+#include "Breakpoint.h"
+#include "DebugEvent.h"
+#include "DebuggerError.h"
 #include "Process.h"
 #include "T86Process.h"
-#include "Breakpoint.h"
-#include "DebuggerError.h"
-#include "DebugEvent.h"
 #include "common/TCP.h"
 #include "common/logger.h"
 
 class Native {
 public:
-    Native(std::unique_ptr<Process> process): process(std::move(process)) {
-
-    }
+    Native(std::unique_ptr<Process> process)
+        : process(std::move(process)) { }
 
     /// Tries to connect to a process at given port and returns
     /// new Native object that represents that process.
@@ -57,9 +56,10 @@ public:
     void EnableSoftwareBreakpoint(uint64_t address) {
         auto it = software_breakpoints.find(address);
         if (it == software_breakpoints.end()) {
-            throw DebuggerError(fmt::format("No breakpoint at address {}!", address));
+            throw DebuggerError(
+                fmt::format("No breakpoint at address {}!", address));
         }
-        auto &bp = it->second;
+        auto& bp = it->second;
 
         if (!bp.enabled) {
             bp = CreateSoftwareBreakpoint(address);
@@ -71,12 +71,13 @@ public:
     void DisableSoftwareBreakpoint(uint64_t address) {
         auto it = software_breakpoints.find(address);
         if (it == software_breakpoints.end()) {
-            throw DebuggerError(fmt::format("No breakpoint at address {}!", address));
+            throw DebuggerError(
+                fmt::format("No breakpoint at address {}!", address));
         }
         auto& bp = it->second;
 
         if (bp.enabled) {
-            std::vector<std::string> prev_data = {bp.data};
+            std::vector<std::string> prev_data = { bp.data };
             process->WriteText(address, prev_data);
             bp.enabled = false;
         }
@@ -88,7 +89,7 @@ public:
         if (address + amount > text_size) {
             throw DebuggerError(
                 fmt::format("Reading text at range {}-{}, but text size is {}",
-                            address, address + amount, text_size));
+                    address, address + amount, text_size));
         }
         // If breakpoints we're set it will contain BKPT
         // instead of the current instruction, we remedy
@@ -108,7 +109,7 @@ public:
         if (address + text.size() > text_size) {
             throw DebuggerError(
                 fmt::format("Writing text at range {}-{}, but text size is {}",
-                            address, address + text.size(), text_size));
+                    address, address + text.size(), text_size));
         }
         // Some of the code we want to rewrite might
         // be occupied by a breakpoint, so instead
@@ -142,9 +143,7 @@ public:
         }
     }
 
-    size_t TextSize() {
-        return process->TextSize();
-    }
+    size_t TextSize() { return process->TextSize(); }
 
     std::map<std::string, int64_t> GetRegisters() {
         return process->FetchRegisters();
@@ -158,7 +157,8 @@ public:
         auto regs = process->FetchRegisters();
         auto reg = regs.find(name);
         if (reg == regs.end()) {
-            throw DebuggerError(fmt::format("No register '{}' in target", name));
+            throw DebuggerError(
+                fmt::format("No register '{}' in target", name));
         }
         return reg->second;
     }
@@ -173,17 +173,19 @@ public:
     void SetRegister(const std::string& name, int64_t value) {
         auto regs = GetRegisters();
         if (regs.count(name) == 0) {
-            // TODO: Make the error message more heplful (list the name of available
-            // registers).
-            throw DebuggerError(fmt::format("Unknown '{}' register name!", name)); 
+            // TODO: Make the error message more heplful (list the name of
+            // available registers).
+            throw DebuggerError(
+                fmt::format("Unknown '{}' register name!", name));
         }
         regs.at(name) = value;
         SetRegisters(regs);
     }
 
     uint64_t GetIP() {
-        // TODO: Not architecture independent (take IP name from Arch singleton)
-        return GetRegister("IP"); 
+        // TODO: Not architecture independent (take IP name from Arch
+        // singleton)
+        return GetRegister("IP");
     }
 
     DebugEvent WaitForDebugEvent() {
@@ -224,11 +226,12 @@ public:
             ContinueExecution();
         }
     }
+
 protected:
     /// Returns SW BP opcode for current architecture.
     std::string_view GetSoftwareBreakpointOpcode() {
         static const std::map<Arch::Machine, std::string_view> opcode_map = {
-            {Arch::Machine::T86, "BKPT"},
+            { Arch::Machine::T86, "BKPT" },
         };
         return opcode_map.at(Arch::GetMachine());
     }
@@ -244,9 +247,9 @@ protected:
         auto opcode = GetSoftwareBreakpointOpcode();
         auto backup = process->ReadText(address, 1).at(0);
 
-        std::vector<std::string> data = {std::string(opcode)};
+        std::vector<std::string> data = { std::string(opcode) };
         process->WriteText(address, data);
-   
+
         auto new_opcode = process->ReadText(address, 1).at(0);
         if (new_opcode != opcode) {
             throw DebuggerError(fmt::format(
@@ -254,7 +257,7 @@ protected:
                 opcode, new_opcode));
         }
 
-        return SoftwareBreakpoint{backup, true};
+        return SoftwareBreakpoint { backup, true };
     }
 
     /// Removes breakpoint at current ip,
@@ -267,7 +270,7 @@ protected:
         // it does not matter because we turn off the breakpoint
         // on the line above.
         auto event = PerformSingleStep();
-        EnableSoftwareBreakpoint(ip); 
+        EnableSoftwareBreakpoint(ip);
         return event;
     }
 

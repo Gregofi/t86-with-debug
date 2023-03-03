@@ -1,6 +1,6 @@
+#include <argparse/argparse.hpp>
 #include <fstream>
 #include <iostream>
-#include <argparse/argparse.hpp>
 
 #include "TCP.h"
 #include "t86-parser/parser.h"
@@ -20,8 +20,7 @@ commands:
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser args("t86-cli");
 
-    args.add_argument("file")
-        .help("input file containing t86 assembly");
+    args.add_argument("file").help("input file containing t86 assembly");
 
     args.add_argument("--debug")
         .help("open debugging port")
@@ -48,7 +47,7 @@ int main(int argc, char* argv[]) {
     try {
         program = parser.Parse();
         // program.dump();
-    } catch (ParserError &err) {
+    } catch (ParserError& err) {
         std::cerr << err.what() << std::endl;
         return 2;
     }

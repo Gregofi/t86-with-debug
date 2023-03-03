@@ -1,19 +1,19 @@
 #pragma once
 
+#include <cassert>
+#include <cstdlib>
 #include <iostream>
 #include <string_view>
-#include <cstdlib>
-#include <cassert>
 
+#include "Native.h"
 #include "common/TCP.h"
 #include "common/helpers.h"
 #include "common/logger.h"
 #include "utility/linenoise.h"
-#include "Native.h"
 
 class CLI {
-    static constexpr const char* BP_USAGE = 
-R"(breakpoint <subcommads> [parameter [parameter...]]
+    static constexpr const char* BP_USAGE =
+        R"(breakpoint <subcommads> [parameter [parameter...]]
 If you want to set breakpoint at a specific address, the commands are 
 equivalent but with the -addr postfix, for example to set a breakpoint at
 address 1 you would use `breakpoint set-addr 1`.
@@ -26,14 +26,14 @@ address 1 you would use `breakpoint set-addr 1`.
 - help = Print this.
 )";
     static constexpr const char* STEPI_USAGE =
-R"(stepi <subcommands> [parameter [parameter...]]
+        R"(stepi <subcommands> [parameter [parameter...]]
 Used for instruction level single stepping
 
 Without any subcommands (just stepi) = Performs instruction level single step.
 - help = Print this.
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
-R"(disassemble <subcommands> [parameter [parameter...]]
+        R"(disassemble <subcommands> [parameter [parameter...]]
 Used for disassembling the underlying T86 code.
 
 Without any subcommands disassembles the current instruction and two below
@@ -44,7 +44,7 @@ and above it.
                    of the executable starting from <b>.
 )";
     static constexpr const char* USAGE =
-R"(<command> <subcommand> [parameter [parameter...]]
+        R"(<command> <subcommand> [parameter [parameter...]]
 Example: `breakpoint set-addr 1` sets breakpoint at address 1.
 
 For help, use the `<command> help` syntax, for example
@@ -61,7 +61,7 @@ commands:
 - register = Read and write to registers
 )";
     static constexpr const char* REGISTER_USAGE =
-R"(register <subcommands> [parameter [parameter...]]
+        R"(register <subcommands> [parameter [parameter...]]
 Used for reading and writing to debuggee registers. If
 used without subcommand it'll dump all registers.
 
@@ -71,14 +71,11 @@ commands:
 )";
 
 public:
-    CLI(Native process): process(std::move(process)) {
-
-    }
+    CLI(Native process)
+        : process(std::move(process)) { }
 
     /// Initializes connection to the process
-    void OpenConnection(int port) {
-        process.Initialize(port);
-    }
+    void OpenConnection(int port) { process.Initialize(port); }
 
     /// Dumps text around current IP
     /// @param range - How many instructions to dump above
@@ -94,7 +91,8 @@ public:
         for (size_t i = 0; i < inst.size(); ++i) {
             uint64_t curr_addr = i + begin;
             if (curr_addr == address) {
-                fmt::print(fg(fmt::color::dark_blue), "-> {}\t{}\n", curr_addr, inst[i]);
+                fmt::print(fg(fmt::color::dark_blue), "-> {}\t{}\n", curr_addr,
+                    inst[i]);
             } else {
                 fmt::print("   {}\t{}\n", curr_addr, inst[i]);
             }
@@ -120,11 +118,16 @@ public:
 
     std::string_view DebugEventToString(DebugEvent e) {
         switch (e) {
-        case DebugEvent::SoftwareBreakpointHit: return "Software breakpoint hit";
-        case DebugEvent::HardwareBreakpointHit: return "Hardware breakpoint hit";
-        case DebugEvent::Singlestep: return "Singlestep done";
-        case DebugEvent::ExecutionBegin: return "Execution started";
-        case DebugEvent::ExecutionEnd: return "The program finished executing";
+        case DebugEvent::SoftwareBreakpointHit:
+            return "Software breakpoint hit";
+        case DebugEvent::HardwareBreakpointHit:
+            return "Hardware breakpoint hit";
+        case DebugEvent::Singlestep:
+            return "Singlestep done";
+        case DebugEvent::ExecutionBegin:
+            return "Execution started";
+        case DebugEvent::ExecutionEnd:
+            return "The program finished executing";
         }
         UNREACHABLE;
     }
@@ -137,7 +140,7 @@ public:
             auto line = process.ReadText(address, 1);
             process.SetBreakpoint(address);
             fmt::print("Breakpoint set on line {}: '{}'\n", address, line[0]);
-        // Breakpoint on line
+            // Breakpoint on line
         } else if (check_command(subcommands, "set", 1)) {
             throw DebuggerError("Source breakpoints are not yet supported");
         } else if (check_command(subcommands, "disable-addr", 2)) {
@@ -150,9 +153,9 @@ public:
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
         } else if (check_command(subcommands, "help", 1)) {
-            fmt::print("{}", BP_USAGE); 
+            fmt::print("{}", BP_USAGE);
         } else {
-            fmt::print("{}", BP_USAGE); 
+            fmt::print("{}", BP_USAGE);
         }
     }
 
@@ -160,8 +163,8 @@ public:
         if (command == "") {
             auto e = process.PerformSingleStep();
             if (e != DebugEvent::Singlestep) {
-                fmt::print("Process stopped, reason: {}\n",
-                           DebugEventToString(e));
+                fmt::print(
+                    "Process stopped, reason: {}\n", DebugEventToString(e));
             }
             auto ip = process.GetIP();
             PrettyPrintText(ip);
@@ -200,7 +203,7 @@ public:
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
             auto regs = process.GetRegisters();
-            for (const auto& [name, value]: regs) {
+            for (const auto& [name, value] : regs) {
                 fmt::print("{}:{}\n", name, value);
             }
         } else if (check_command(subcommands, "set", 3)) {
@@ -209,7 +212,7 @@ public:
             if (!value) {
                 throw DebuggerError(
                     fmt::format("Expected register value, instead got '{}'",
-                                subcommands.at(2)));
+                        subcommands.at(2)));
             }
             process.SetRegister(std::string(reg), *value);
         } else if (check_command(subcommands, "get", 2)) {
@@ -223,10 +226,10 @@ public:
 
     void HandleCommand(std::string_view command) {
         auto main_command = command.substr(0, command.find(' ') - 1);
-        command = command.substr(main_command.size() +
-                                 (command.size() != main_command.size()));
+        command = command.substr(
+            main_command.size() + (command.size() != main_command.size()));
         if (utils::is_prefix_of(main_command, "breakpoint")) {
-            HandleBreakpoint(command); 
+            HandleBreakpoint(command);
         } else if (utils::is_prefix_of(main_command, "stepi")) {
             HandleStepi(command);
         } else if (utils::is_prefix_of(main_command, "disassemble")) {
@@ -251,7 +254,7 @@ public:
             assert(reason == DebugEvent::ExecutionBegin);
         }
         char* line_raw;
-        while((line_raw = linenoise("> ")) != NULL) {
+        while ((line_raw = linenoise("> ")) != NULL) {
             std::string line = utils::squash_strip_whitespace(line_raw);
             if (line == "") {
                 continue;
@@ -266,19 +269,19 @@ public:
         }
         return 0;
     }
+
 private:
     /// Checks if subcommands is atleast of subcommand_size and then
     /// if the first subcommand is prefix of 'of'.
     bool check_command(const std::vector<std::string_view>& subcommands,
-                       std::string_view of,
-                       size_t subcommand_size) {
+        std::string_view of, size_t subcommand_size) {
         if (subcommands.size() < subcommand_size) {
             return false;
         }
         return utils::is_prefix_of(subcommands[0], of);
     }
 
-  Native process;
+    Native process;
 
-  static const int DEFAULT_DBG_PORT = 9110;
+    static const int DEFAULT_DBG_PORT = 9110;
 };

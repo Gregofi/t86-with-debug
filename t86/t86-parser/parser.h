@@ -1,23 +1,23 @@
 #pragma once
-#include <optional>
-#include <variant>
-#include <iostream>
-#include <cstring>
-#include <string>
-#include <string_view>
-#include "t86/program/programbuilder.h"
+#include "common/helpers.h"
+#include "common/logger.h"
+#include "fmt/core.h"
 #include "t86/cpu.h"
 #include "t86/program/helpers.h"
-#include "common/helpers.h"
-#include "fmt/core.h"
-#include "common/logger.h"
+#include "t86/program/programbuilder.h"
+#include <cstring>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <variant>
 
 class ParserError : public std::exception {
 public:
-    ParserError(std::string message) : message(std::move(message)) { }
-    const char* what() const noexcept override {
-        return message.c_str();
-    }
+    ParserError(std::string message)
+        : message(std::move(message)) { }
+    const char* what() const noexcept override { return message.c_str(); }
+
 private:
     std::string message;
 };
@@ -44,12 +44,12 @@ struct Token {
     friend bool operator==(const Token& t1, const Token& t2) = default;
 };
 
-
-
 /// Parses text representation of T86 into in-memory representation
 class Lexer {
 public:
-    explicit Lexer(std::istream& input) noexcept : input(input), lookahead(input.get()) { }
+    explicit Lexer(std::istream& input) noexcept
+        : input(input)
+        , lookahead(input.get()) { }
 
     void ParseString() {
         str.clear();
@@ -67,7 +67,8 @@ public:
                 } else if (lookahead == '\"') {
                     str += '\"';
                 } else {
-                    throw ParserError(fmt::format("Unknown escape sequence: '\\{}'", lookahead));
+                    throw ParserError(fmt::format(
+                        "Unknown escape sequence: '\\{}'", lookahead));
                 }
             } else {
                 str += lookahead;
@@ -82,7 +83,7 @@ public:
             lookahead = GetChar();
         }
         bool is_float = false;
-        std::string num{lookahead};
+        std::string num { lookahead };
         while (true) {
             lookahead = GetChar();
             if (lookahead == '.') {
@@ -103,7 +104,7 @@ public:
     }
 
     void ParseIdentifier() {
-        std::string str{lookahead};
+        std::string str { lookahead };
         while (true) {
             GetChar();
             if (!isalnum(lookahead) && lookahead != '_') {
@@ -115,7 +116,7 @@ public:
     }
 
     Token MakeToken(TokenKind kind) {
-        Token tok{kind, tok_begin_row, tok_begin_col};
+        Token tok { kind, tok_begin_row, tok_begin_col };
         return tok;
     }
 
@@ -150,7 +151,7 @@ public:
             return MakeToken(TokenKind::RBRACKET);
         } else if (lookahead == '+') {
             GetChar();
-           return MakeToken(TokenKind::PLUS);
+            return MakeToken(TokenKind::PLUS);
         } else if (lookahead == '*') {
             GetChar();
             return MakeToken(TokenKind::TIMES);
@@ -167,8 +168,8 @@ public:
             ParseIdentifier();
             return MakeToken(TokenKind::ID);
         } else {
-            throw ParserError(fmt::format("{}:{}:No token beginning with '{}'",
-                                          row, col, lookahead));
+            throw ParserError(fmt::format(
+                "{}:{}:No token beginning with '{}'", row, col, lookahead));
         }
     }
 
@@ -176,6 +177,7 @@ public:
     int getNumber() const noexcept { return number; }
     double getFloat() const noexcept { return float_number; }
     std::string getStr() const noexcept { return str; }
+
 private:
     char GetChar() {
         if (lookahead == '\n') {
@@ -193,14 +195,14 @@ private:
         tok_begin_col = col;
     }
 
-    size_t row{0};
-    size_t col{0};
+    size_t row { 0 };
+    size_t col { 0 };
 
-    size_t tok_begin_row{0};
-    size_t tok_begin_col{0};
+    size_t tok_begin_row { 0 };
+    size_t tok_begin_col { 0 };
 
-    int number{-1};
-    double float_number{-1};
+    int number { -1 };
+    double float_number { -1 };
     std::string id;
     std::string str;
 
@@ -210,7 +212,10 @@ private:
 
 class Parser {
 public:
-    Parser(std::istream& is) : lex(is) { curtok = lex.getNext(); }
+    Parser(std::istream& is)
+        : lex(is) {
+        curtok = lex.getNext();
+    }
 
     void Section();
 
@@ -268,12 +273,13 @@ public:
 
     tiny::t86::Program Parse();
 
-    template<typename ...Args>
-    ParserError CreateError(fmt::format_string<Args...> format, Args&& ...args) {
+    template <typename... Args>
+    ParserError CreateError(
+        fmt::format_string<Args...> format, Args&&... args) {
         return ParserError(fmt::format("Error:{}:{}:{}", curtok.row,
-                    curtok.col, fmt::format(format,
-                        std::forward<Args>(args)...)));
+            curtok.col, fmt::format(format, std::forward<Args>(args)...)));
     }
+
 private:
     TokenKind GetNext();
 
@@ -282,4 +288,3 @@ private:
     std::vector<std::unique_ptr<tiny::t86::Instruction>> program;
     std::vector<int64_t> data;
 };
-

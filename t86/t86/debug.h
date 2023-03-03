@@ -1,22 +1,24 @@
 #pragma once
-#include <stdexcept>
-#include <string>
-#include <memory>
-#include <span>
 #include "common/TCP.h"
-#include "common/logger.h"
 #include "common/helpers.h"
-#include "t86/cpu/register.h"
-#include "t86/cpu.h"
+#include "common/logger.h"
 #include "common/messenger.h"
 #include "t86-parser/parser.h"
+#include "t86/cpu.h"
+#include "t86/cpu/register.h"
+#include <memory>
+#include <span>
+#include <stdexcept>
+#include <string>
 
 namespace tiny::t86 {
 
 /// A debugging interface provided by the VM.
 class Debug {
 public:
-    Debug(Cpu& cpu, std::unique_ptr<Messenger> mess): cpu(cpu), messenger(std::move(mess)) {}
+    Debug(Cpu& cpu, std::unique_ptr<Messenger> mess)
+        : cpu(cpu)
+        , messenger(std::move(mess)) { }
 
     enum class BreakReason {
         Begin,
@@ -28,11 +30,16 @@ public:
 
     std::string ReasonToString(BreakReason reason) {
         switch (reason) {
-            case BreakReason::Begin: return "START";
-            case BreakReason::SoftwareBreakpoint: return "SW_BKPT";
-            case BreakReason::HardwareBreakpoint: return "HW_BKPT";
-            case BreakReason::SingleStep: return "SINGLESTEP";
-            case BreakReason::Halt: return "HALT";
+        case BreakReason::Begin:
+            return "START";
+        case BreakReason::SoftwareBreakpoint:
+            return "SW_BKPT";
+        case BreakReason::HardwareBreakpoint:
+            return "HW_BKPT";
+        case BreakReason::SingleStep:
+            return "SINGLESTEP";
+        case BreakReason::Halt:
+            return "HALT";
         }
         UNREACHABLE;
     }
@@ -40,7 +47,8 @@ public:
     size_t svtoidx(std::string_view s) {
         auto v = utils::svtoi64(s);
         if (!v || *v < 0) {
-            throw std::runtime_error(fmt::format("Expected index, got '{}' {}", s, !v));
+            throw std::runtime_error(
+                fmt::format("Expected index, got '{}' {}", s, !v));
         }
         return static_cast<size_t>(*v);
     }
@@ -57,12 +65,12 @@ public:
         } else {
             auto idx = svtoidx(s.substr(1));
             log_debug("Register index: {}", idx);
-            return Register{static_cast<size_t>(idx)};
+            return Register { static_cast<size_t>(idx) };
         }
     }
 
     std::unique_ptr<Instruction> ParseInstruction(std::string_view s) {
-        std::istringstream is{std::string(s)};
+        std::istringstream is { std::string(s) };
         Parser parser(is);
         auto ins = parser.Instruction();
         return ins;
@@ -70,12 +78,15 @@ public:
 
     std::string RegistersToString() const {
         std::string acc;
-        acc += fmt::format("IP:{}\n", cpu.getRegister(Register::ProgramCounter()));
-        acc += fmt::format("BP:{}\n", cpu.getRegister(Register::StackBasePointer()));
-        acc += fmt::format("SP:{}\n", cpu.getRegister(Register::StackPointer()));
+        acc += fmt::format(
+            "IP:{}\n", cpu.getRegister(Register::ProgramCounter()));
+        acc += fmt::format(
+            "BP:{}\n", cpu.getRegister(Register::StackBasePointer()));
+        acc += fmt::format(
+            "SP:{}\n", cpu.getRegister(Register::StackPointer()));
         size_t reg_cnt = cpu.registersCount();
         for (size_t i = 0; i < reg_cnt; ++i) {
-            acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register{i}));
+            acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register { i }));
         }
         return acc;
     }
@@ -87,10 +98,10 @@ public:
         if (reason == BreakReason::SingleStep) {
             log_info("Debug handler: After singlestep");
             cpu.unsetTrapFlag();
-        } 
+        }
         log_info("Sending stop message to the debugger");
         messenger->Send("STOPPED");
-        
+
         while (true) {
             log_info("Waiting for message from the debugger");
             auto message = messenger->Receive();
@@ -126,7 +137,8 @@ public:
                 auto operands = utils::join(insBegin, commands.end(), " ");
 
                 auto ins_s = std::string(commands.at(2)) + " " + operands;
-                log_info("Setting instruction '{}' at address {}", ins_s, index);
+                log_info(
+                    "Setting instruction '{}' at address {}", ins_s, index);
                 auto ins = ParseInstruction(ins_s);
                 cpu.setText(index, std::move(ins));
                 messenger->Send("OK");
@@ -135,7 +147,7 @@ public:
                 auto count = svtoidx(commands.at(2));
                 std::string result;
                 for (size_t i = index; i < index + count; ++i) {
-                    result += fmt::format("{}\n", cpu.getMemory(i)); 
+                    result += fmt::format("{}\n", cpu.getMemory(i));
                 }
                 messenger->Send(result);
             } else if (command.starts_with("POKEDATA")) {
@@ -165,8 +177,8 @@ public:
             } else if (command == "TEXTSIZE") {
                 messenger->Send(fmt::format("TEXTSIZE:{}", cpu.textSize()));
             } else if (command == "DATASIZE") {
-                messenger->Send(fmt::format("DATASIZE:{}",
-                                            Cpu::Config::instance().ramSize()));
+                messenger->Send(fmt::format(
+                    "DATASIZE:{}", Cpu::Config::instance().ramSize()));
             } else {
                 messenger->Send("UNKNOWN COMMAND");
                 continue;
@@ -175,8 +187,9 @@ public:
 
         return true;
     }
+
 private:
     Cpu& cpu;
     std::unique_ptr<Messenger> messenger;
 };
-}
+} // namespace tiny::t86

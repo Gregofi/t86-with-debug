@@ -7,4 +7,3 @@ enum class DebugEvent {
     ExecutionBegin,
     ExecutionEnd,
 };
-

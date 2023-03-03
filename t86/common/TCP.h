@@ -2,31 +2,29 @@
 
 #include "messenger.h"
 
-#include <iostream>
-#include <vector>
+#include <arpa/inet.h>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <iostream>
+#include <netinet/in.h>
+#include <optional>
+#include <span>
+#include <string>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <exception>
-#include <cstdint>
-#include <cstring>
-#include <span>
-#include <optional>
-#include <string>
+#include <vector>
 
 namespace TCP {
 
-class TCPError: public std::exception {
+class TCPError : public std::exception {
 public:
-    TCPError(std::string message): message(std::move(message)) {
+    TCPError(std::string message)
+        : message(std::move(message)) { }
 
-    }
+    const char* what() const noexcept override { return message.c_str(); }
 
-    const char* what() const noexcept override {
-        return message.c_str();
-    }
 private:
     std::string message;
 };
@@ -41,9 +39,8 @@ public:
     /// Moves the contents of the class out of
     /// this batch. The class shouldn't be used
     /// after this call.
-    std::vector<std::string> YieldBatch() {
-        return std::move(data);
-    }
+    std::vector<std::string> YieldBatch() { return std::move(data); }
+
 private:
     std::vector<std::string> data;
 };
@@ -72,7 +69,8 @@ inline std::optional<std::string> Receive(int socket) {
     int err = read(socket, &size, sizeof(size_t));
     if (err < 0) {
         throw TCPError("Reading failed");
-    } if (err == 0) {
+    }
+    if (err == 0) {
         return std::nullopt;
     }
 
@@ -93,10 +91,10 @@ inline std::optional<std::string> Receive(int socket) {
     return result;
 }
 
-template<typename T>
-class TCP: public Messenger {
+template <typename T> class TCP : public Messenger {
 public:
-    TCP(int port): port(port) {}
+    TCP(int port)
+        : port(port) { }
     void Initialize() {
         if (initialized) {
             throw TCPError("Already initialized");
@@ -118,6 +116,7 @@ public:
         }
         return ::TCP::Receive(sock);
     }
+
 protected:
     bool initialized = false;
     int port;
@@ -126,8 +125,8 @@ protected:
 
 class TCPClient : public TCP<TCPClient> {
 public:
-    TCPClient(int port): TCP(port) {
-    }
+    TCPClient(int port)
+        : TCP(port) { }
 
     void Initialize_() {
         if (initialized) {
@@ -149,15 +148,13 @@ public:
         }
     }
 
-    ~TCPClient() {
-        close(sock);
-    }
+    ~TCPClient() { close(sock); }
 };
 
-class TCPServer: public TCP<TCPServer> {
+class TCPServer : public TCP<TCPServer> {
 public:
-    TCPServer(int port): TCP(port) {
-    }
+    TCPServer(int port)
+        : TCP(port) { }
 
     /**
      * Listens for incoming connections, blocking call
@@ -169,19 +166,19 @@ public:
             throw TCPError("Couldn't open socket - socket");
         }
 
-        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt,
-                       sizeof(opt))) {
+        if (setsockopt(
+                server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) {
             throw TCPError(std::string("Couldn't open socket - setsockopt:")
-                    + strerror(errno));
+                + strerror(errno));
         }
 
-        sockaddr_in address{
+        sockaddr_in address {
             .sin_family = AF_INET,
             .sin_port = htons(port),
         };
         address.sin_addr.s_addr = INADDR_ANY;
 
-        if (bind(server_fd, (sockaddr *)&address, sizeof(address)) < 0) {
+        if (bind(server_fd, (sockaddr*)&address, sizeof(address)) < 0) {
             throw TCPError("Couldn't bind socket to the port");
         }
 
@@ -202,6 +199,7 @@ public:
             shutdown(server_fd, SHUT_RDWR);
         }
     }
+
 protected:
     int server_fd;
 };

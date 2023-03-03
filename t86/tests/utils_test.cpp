@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include "common/helpers.h"
 #include "common/threads_messenger.h"
+#include <gtest/gtest.h>
 
 TEST(Utils, Split) {
     std::string_view s1 = "X Y Z";
@@ -52,11 +52,11 @@ TEST(Utils, svtoi64) {
 }
 
 TEST(Utils, join) {
-    std::vector<std::string> s = {"Hello", "World"};
+    std::vector<std::string> s = { "Hello", "World" };
     auto res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "Hello World");
 
-    s = {"Hello"};
+    s = { "Hello" };
     res = utils::join(s.begin(), s.end());
     ASSERT_EQ(res, "Hello");
 
@@ -90,19 +90,20 @@ TEST(Utils, squash_strip_whitespace) {
     ASSERT_EQ(utils::squash_strip_whitespace(" "), "");
 }
 
-using MessagesT = std::vector<std::pair<std::vector<std::string>, std::vector<std::string>>>;
+using MessagesT = std::vector<
+    std::pair<std::vector<std::string>, std::vector<std::string>>>;
 
-/// Contains vector of vector of messages. 
+/// Contains vector of vector of messages.
 /// For each vector, sends all messages and then calls receive
 /// For example, for { {"A", "B"}, {"C"} }, calls twice
 /// Send with "A" and "B", then one Receive, then
 /// Send with "C", and then final Receive.
 void RunThread(ThreadMessenger m, MessagesT messages) {
-    for (const auto& [msgs, responses]: messages) {
-        for (const auto& message: msgs) {
-             m.Send(message);
+    for (const auto& [msgs, responses] : messages) {
+        for (const auto& message : msgs) {
+            m.Send(message);
         }
-        for (const auto& response: responses) {
+        for (const auto& response : responses) {
             ASSERT_EQ(*m.Receive(), response);
         }
     }
@@ -114,7 +115,7 @@ TEST(ThreadMessenger, OneThreadNoWaiting) {
 
     ThreadMessenger m1(q1, q2);
     ThreadMessenger m2(q2, q1);
-    
+
     m1.Send("Hello");
     m1.Send(" ,");
     m1.Send("World!");
@@ -130,8 +131,8 @@ TEST(ThreadMessenger, SimpleWaiting) {
     ThreadMessenger s1(q1, q2);
     ThreadMessenger s2(q2, q1);
 
-    MessagesT m1({{{"Hello", "World"}, {"Thanks!"}}});
-    MessagesT m2({{{"Thanks!"}, {"Hello", "World"}}});
+    MessagesT m1({ { { "Hello", "World" }, { "Thanks!" } } });
+    MessagesT m2({ { { "Thanks!" }, { "Hello", "World" } } });
     std::thread t1(RunThread, s1, m1);
     std::thread t2(RunThread, s2, m2);
     t1.join();
@@ -145,14 +146,8 @@ TEST(ThreadMessenger, MultipleMessages) {
     ThreadMessenger s1(q1, q2);
     ThreadMessenger s2(q2, q1);
 
-    MessagesT m1({
-            {{"A"}, {"B"}},
-            {{}, {"C"}}
-        });
-    MessagesT m2({
-            {{"B"}, {"A"}},
-            {{"C"}, {}}
-        });
+    MessagesT m1({ { { "A" }, { "B" } }, { {}, { "C" } } });
+    MessagesT m2({ { { "B" }, { "A" } }, { { "C" }, {} } });
     std::thread t1(RunThread, s1, m1);
     std::thread t2(RunThread, s2, m2);
     t1.join();

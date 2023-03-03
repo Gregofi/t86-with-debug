@@ -1,6 +1,5 @@
 #include "parser.h"
 
-
 TokenKind Parser::GetNext() {
     curtok = lex.getNext();
     return curtok.kind;
@@ -20,7 +19,8 @@ void Parser::Section() {
         Data();
     } else {
         log_info("Skipping '{}' section", section_name);
-        while (curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {
+        while (
+            curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {
             GetNext();
         };
     }
@@ -34,10 +34,13 @@ tiny::t86::Register Parser::getRegister(std::string_view regname) {
     } else if (regname == "IP") {
         return tiny::t86::Register::ProgramCounter();
     } else if (regname[0] != 'R') {
-        throw CreateError("Registers must begin with an R, unless IP, BP or SP, got {}", regname);
+        throw CreateError(
+            "Registers must begin with an R, unless IP, BP or SP, got {}",
+            regname);
     }
     regname.remove_prefix(1);
-    return tiny::t86::Register{static_cast<size_t>(std::atoi(regname.data()))};
+    return tiny::t86::Register { static_cast<size_t>(
+        std::atoi(regname.data())) };
 }
 
 tiny::t86::FloatRegister Parser::getFloatRegister(std::string_view regname) {
@@ -45,7 +48,8 @@ tiny::t86::FloatRegister Parser::getFloatRegister(std::string_view regname) {
         throw CreateError("Float registers must begin with an F");
     }
     regname.remove_prefix(1);
-    return tiny::t86::FloatRegister{static_cast<size_t>(std::atoi(regname.data()))};
+    return tiny::t86::FloatRegister { static_cast<size_t>(
+        std::atoi(regname.data())) };
 }
 
 /// Allows only register as operand
@@ -133,7 +137,7 @@ tiny::t86::Operand Parser::ImmOrRegisterOrRegisterPlusImm() {
 /// Allows [i], [R], [R + i]
 tiny::t86::Operand Parser::SimpleMemory() {
     if (curtok.kind == TokenKind::LBRACKET) {
-        GetNext(); 
+        GetNext();
         if (curtok.kind == TokenKind::ID) {
             tiny::t86::Register inner = Register();
             if (curtok.kind == TokenKind::PLUS) {
@@ -150,7 +154,7 @@ tiny::t86::Operand Parser::SimpleMemory() {
             }
             GetNext();
             return tiny::t86::Mem(inner);
-        } else  {
+        } else {
             auto inner = Imm();
             if (curtok.kind != TokenKind::RBRACKET) {
                 throw CreateError("Expected end of ']'");
@@ -184,7 +188,6 @@ tiny::t86::Operand Parser::ImmOrRegisterOrSimpleMemory() {
         throw CreateError("Expected either i, R, [i], [R] or [R + i]");
     }
 }
-
 
 /// Allows R, i, R + i, [i], [R], [R + i]
 tiny::t86::Operand Parser::ImmOrRegisterPlusImmOrSimpleMemory() {
@@ -232,14 +235,14 @@ tiny::t86::Operand Parser::Memory() {
                                 auto imm2 = lex.getNumber();
                                 GetNext();
                                 result = Mem(reg1 + imm1 + reg2 * imm2);
-                            // Must be [R + i + R]
+                                // Must be [R + i + R]
                             } else {
                                 result = Mem(reg1 + imm1 + reg2);
                             }
                         } else {
                             throw CreateError("Expected R");
                         }
-                    // Must be [R + i]
+                        // Must be [R + i]
                     } else {
                         result = Mem(reg1 + imm1);
                     }
@@ -255,14 +258,14 @@ tiny::t86::Operand Parser::Memory() {
                             GetNext();
                             result = Mem(reg1 + reg2 * imm);
                         }
-                    // Must be [R + R]
+                        // Must be [R + R]
                     } else {
                         result = Mem(reg1 + reg2);
                     }
                 } else {
                     throw CreateError("Expected either i or R");
                 }
-            // Must be [R * i]
+                // Must be [R * i]
             } else if (curtok.kind == TokenKind::TIMES) {
                 GetNext();
                 if (curtok.kind == TokenKind::NUM) {
@@ -272,7 +275,7 @@ tiny::t86::Operand Parser::Memory() {
                 } else {
                     throw CreateError("Expected 'i'");
                 }
-            // Must be [R]
+                // Must be [R]
             } else {
                 result = Mem(reg1);
             }
@@ -310,27 +313,28 @@ tiny::t86::Operand Parser::Operand() {
     }
 }
 
-#define PARSE_BINARY(TYPE, DEST_PARSE, FROM_PARSE) \
-if (ins_name == #TYPE) { \
-    auto dest = DEST_PARSE(); \
-    if (curtok.kind != TokenKind::COMMA) { \
-        throw CreateError("Expected ','"); \
-    } \
-    GetNext(); \
-    auto from = FROM_PARSE(); \
-    return std::make_unique<tiny::t86::TYPE>(std::move(dest), std::move(from)); \
-}
+#define PARSE_BINARY(TYPE, DEST_PARSE, FROM_PARSE)                            \
+    if (ins_name == #TYPE) {                                                  \
+        auto dest = DEST_PARSE();                                             \
+        if (curtok.kind != TokenKind::COMMA) {                                \
+            throw CreateError("Expected ','");                                \
+        }                                                                     \
+        GetNext();                                                            \
+        auto from = FROM_PARSE();                                             \
+        return std::make_unique<tiny::t86::TYPE>(                             \
+            std::move(dest), std::move(from));                                \
+    }
 
-#define PARSE_UNARY(TYPE, OPERAND_PARSE) \
-if (ins_name == #TYPE) { \
-    auto op = OPERAND_PARSE(); \
-    return std::make_unique<tiny::t86::TYPE>(std::move(op)); \
-}
+#define PARSE_UNARY(TYPE, OPERAND_PARSE)                                      \
+    if (ins_name == #TYPE) {                                                  \
+        auto op = OPERAND_PARSE();                                            \
+        return std::make_unique<tiny::t86::TYPE>(std::move(op));              \
+    }
 
-#define PARSE_NULLARY(TYPE) \
-if (ins_name == #TYPE) { \
-    return std::make_unique<tiny::t86::TYPE>(); \
-}
+#define PARSE_NULLARY(TYPE)                                                   \
+    if (ins_name == #TYPE) {                                                  \
+        return std::make_unique<tiny::t86::TYPE>();                           \
+    }
 
 /// Parses the operands of MOV
 std::unique_ptr<tiny::t86::MOV> Parser::ParseMOV() {
@@ -350,21 +354,22 @@ std::unique_ptr<tiny::t86::MOV> Parser::ParseMOV() {
             throw CreateError("MOV can't have R + i as from when dest is R");
         }
         if (from.isFloatValue()) {
-            throw CreateError("Can't have MOV with R and f, use float register instead");
+            throw CreateError(
+                "Can't have MOV with R and f, use float register instead");
         }
     } else if (dest.isFloatRegister()) {
-        if (!from.isFloatValue()
-                && !from.isFloatRegister()
-                && !from.isRegister()
-                && !from.isMemoryImmediate()
-                && !from.isMemoryRegister()) {
-            throw CreateError("MOV to F can only have f, F, R, [i] or [R] as second operand, got '{}'", from.toString());
+        if (!from.isFloatValue() && !from.isFloatRegister()
+            && !from.isRegister() && !from.isMemoryImmediate()
+            && !from.isMemoryRegister()) {
+            throw CreateError("MOV to F can only have f, F, R, [i] or [R] as "
+                              "second operand, got '{}'",
+                from.toString());
         }
     } else {
-        if (!from.isRegister()
-                && !from.isFloatRegister()
-                && !from.isValue()) {
-            throw CreateError("MOV can't have from of type '{}' when dest is '{}', allowed froms are R, F or i", dest.toString(), from.toString());
+        if (!from.isRegister() && !from.isFloatRegister() && !from.isValue()) {
+            throw CreateError("MOV can't have from of type '{}' when dest is "
+                              "'{}', allowed froms are R, F or i",
+                dest.toString(), from.toString());
         }
     }
     return std::make_unique<tiny::t86::MOV>(std::move(dest), std::move(from));
@@ -486,8 +491,7 @@ void Parser::Data() {
         if (curtok.kind == TokenKind::STRING) {
             auto string = lex.getStr();
             std::transform(string.begin(), string.end(),
-                           std::back_inserter(data),
-                           [](auto &&c) { return c; });
+                std::back_inserter(data), [](auto&& c) { return c; });
         } else if (curtok.kind == TokenKind::NUM) {
             data.emplace_back(lex.getNumber());
         }
@@ -504,7 +508,12 @@ tiny::t86::Program Parser::Parse() {
         Section();
     }
     if (curtok.kind != TokenKind::END) {
-        throw CreateError("Some part of file has not been parsed (from {}:{}) due to wrong input. This can also be caused by wrong operands, ie. '.text MOV R0, R1 + 1', the 'R1 + 1' is not supported for MOV, and so it hangs in the input.", curtok.row, curtok.col);
+        throw CreateError(
+            "Some part of file has not been parsed (from {}:{}) due to wrong "
+            "input. This can also be caused by wrong operands, ie. '.text MOV "
+            "R0, R1 + 1', the 'R1 + 1' is not supported for MOV, and so it "
+            "hangs in the input.",
+            curtok.row, curtok.col);
     }
-    return {std::move(program), std::move(data)};
+    return { std::move(program), std::move(data) };
 }

@@ -1,9 +1,9 @@
+#include "t86-parser/parser.h"
 #include <gtest/gtest.h>
 #include <sstream>
-#include "t86-parser/parser.h"
 
 Token _T(TokenKind kind, size_t row, size_t col) {
-    return Token{kind, row, col};
+    return Token { kind, row, col };
 }
 
 TEST(TokenizerTest, OnlyIds) {
@@ -21,8 +21,7 @@ TEST(TokenizerTest, OnlyIds) {
 }
 
 TEST(TokenizerTest, MixedTokens) {
-    std::istringstream iss(
-".text 12 MOV[1]; 23 MOV R0 [R0 + 1 + R2 * 2]");
+    std::istringstream iss(".text 12 MOV[1]; 23 MOV R0 [R0 + 1 + R2 * 2]");
     Lexer l(iss);
     ASSERT_EQ(l.getNext(), _T(TokenKind::DOT, 0, 0));
     ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 1));
@@ -92,14 +91,14 @@ TEST(TokenizerTest, UnknownToken) {
     std::istringstream iss(" 1 // A comment");
     Lexer l(iss);
     ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 1));
-    ASSERT_THROW({l.getNext();}, ParserError);
+    ASSERT_THROW({ l.getNext(); }, ParserError);
 }
 
 TEST(TokenizerTest, UnterminatedString) {
     std::istringstream iss("1 \"Hello 2");
     Lexer l(iss);
     ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 0));
-    ASSERT_THROW({l.getNext();}, ParserError);
+    ASSERT_THROW({ l.getNext(); }, ParserError);
 }
 
 TEST(TokenizerTest, Floats) {
@@ -132,12 +131,12 @@ TEST(TokenizerTest, Floats2) {
 }
 
 TEST(ParserTest, Minuses) {
-auto program = R"(
+    auto program = R"(
 .text
 
 0 MOV R0, [BP + -1]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -149,7 +148,7 @@ TEST(ParserTest, SkipSection1) {
 0 MOV R0, [BP + -1]
 .unknown_nonsensical_section_name
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -164,7 +163,7 @@ blablabla
 Very interesting
 section
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -179,7 +178,7 @@ TEST(ParserTest, SkipSection3) {
 ABCD
 .unknown_nonsensical_section_name2
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -191,7 +190,7 @@ TEST(ParserTest, EmptyData) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -208,7 +207,7 @@ TEST(ParserTest, DataWithNumbers) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -230,7 +229,7 @@ TEST(ParserTest, DataWithNegativeNumbers) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -252,7 +251,7 @@ TEST(ParserTest, String) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -260,7 +259,7 @@ TEST(ParserTest, String) {
     ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello, World!");
 }
 
@@ -274,7 +273,7 @@ TEST(ParserTest, MultipleStrings) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -282,7 +281,7 @@ TEST(ParserTest, MultipleStrings) {
     ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello, World!");
 }
 
@@ -297,7 +296,7 @@ TEST(ParserTest, MixStringsAndNumbers) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -305,7 +304,7 @@ TEST(ParserTest, MixStringsAndNumbers) {
     ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello, World!");
 }
 
@@ -317,7 +316,7 @@ World!"
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -325,7 +324,7 @@ World!"
     ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello\nWorld!");
 }
 
@@ -337,7 +336,7 @@ TEST(ParserTest, MultipleStringsOnSameLine) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -345,7 +344,7 @@ TEST(ParserTest, MultipleStringsOnSameLine) {
     ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello, World!");
 }
 
@@ -356,7 +355,7 @@ TEST(ParserTest, EscapeSequence) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
@@ -364,7 +363,7 @@ TEST(ParserTest, EscapeSequence) {
     ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!"));
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
-                   [](auto &&c) { return static_cast<char>(c); });
+        [](auto&& c) { return static_cast<char>(c); });
     ASSERT_EQ(content, "Hello\nWorld!");
 }
 
@@ -375,15 +374,13 @@ TEST(ParserTest, WrongEscapeSequence) {
 .text
 0 MOV R0, [0]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
-    ASSERT_THROW({
-        auto p = parser.Parse();
-        }, ParserError);
+    ASSERT_THROW({ auto p = parser.Parse(); }, ParserError);
 }
 
 void Parse(std::string_view program) {
-    std::istringstream iss{std::string(program)};
+    std::istringstream iss { std::string(program) };
     Parser parser(iss);
     parser.Parse();
 }
@@ -406,33 +403,33 @@ TEST(ParserTest, BadBinaryInstructions) {
 .text
 0 MOV ADD 1, 2
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV ADD 1
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
 
     program = R"(
 .text
 0 MOV ADD 1, [1 + 1]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV ADD 1, [R0 * 2]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV ADD [2], 3
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV ADD R0, 3.0
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
 }
 
 TEST(ParserTest, BadUnaryInstructions) {
@@ -440,39 +437,39 @@ TEST(ParserTest, BadUnaryInstructions) {
 .text
 0 JMP [0]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 JMP [R1]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 POP 0
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 PUSH [0]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
 }
 
 TEST(ParserTest, FloatInstructions) {
-auto program = R"(
+    auto program = R"(
 .text
 
 0 FADD F0, 3.14
 1 FSUB F0, F1
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 2);
 }
 
 TEST(ParserTest, LeaMemory) {
-auto program = R"(
+    auto program = R"(
 .text
 
 0 LEA R0, [R1 + 1]
@@ -482,7 +479,7 @@ auto program = R"(
 0 LEA R0, [R1 + R2 * 2]
 0 LEA R0, [R1 + 1 + R2 * 2]
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 6);
@@ -491,41 +488,41 @@ auto program = R"(
 .text
 0 LEA R0, [R1]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, [1]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, R1
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, [R1 + ]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, [R1 * ]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, [R1 + 1 + ]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 LEA R0, [R1 + 1 + R2 * ]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
 }
 
 TEST(ParserTest, Mov) {
-auto program = R"(
+    auto program = R"(
 .text
 
 MOV R0, R1
@@ -578,7 +575,7 @@ MOV [R0 + 1 + R2 * 4], R1
 MOV [R0 + 1 + R2 * 4], F1
 MOV [R0 + 1 + R2 * 4], 2
 )";
-    std::istringstream iss{program};
+    std::istringstream iss { program };
     Parser parser(iss);
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 40);
@@ -587,20 +584,20 @@ MOV [R0 + 1 + R2 * 4], 2
 .text
 0 MOV R0, R1 + 1
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV [1], [1]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV [R0], 3.14
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
     program = R"(
 .text
 0 MOV [R1 + R2 * 3], [R4]
 )";
-    ASSERT_THROW({Parse(program);}, ParserError);
+    ASSERT_THROW({ Parse(program); }, ParserError);
 }

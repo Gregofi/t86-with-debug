@@ -2,9 +2,9 @@
 #include <exception>
 #include <fmt/core.h>
 
-#include "os.h"
-#include "debug.h"
 #include "common/logger.h"
+#include "debug.h"
+#include "os.h"
 
 namespace tiny::t86 {
 void OS::DispatchInterrupt(int n) {
@@ -17,7 +17,8 @@ void OS::DispatchInterrupt(int n) {
         break;
     default:
         // TODO: Add logging!
-        throw std::runtime_error(fmt::format("No interrupt handler for interrupt no. {}!", n));
+        throw std::runtime_error(
+            fmt::format("No interrupt handler for interrupt no. {}!", n));
         break;
     }
 }
@@ -40,4 +41,4 @@ void OS::Run(Program program) {
         }
     }
 }
-}
+} // namespace tiny::t86
