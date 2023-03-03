@@ -34,6 +34,7 @@ enum class TokenKind {
     TIMES,
     COMMA,
     STRING,
+    FLOAT,
 };
 
 struct Token {
@@ -75,20 +76,30 @@ public:
         GetChar();
     }
 
-    void ParseNumber() {
+    TokenKind ParseNumber() {
         int neg = lookahead == '-' ? -1 : 1;
         if (neg == -1) {
             lookahead = GetChar();
         }
+        bool is_float = false;
         std::string num{lookahead};
         while (true) {
             lookahead = GetChar();
-            if (!isdigit(lookahead)) {
+            if (lookahead == '.') {
+                is_float = true;
+
+            } else if (!isdigit(lookahead)) {
                 break;
             }
             num += lookahead;
         }
-        number = neg * std::stoi(num);
+        if (is_float) {
+            float_number = neg * std::stod(num);
+            return TokenKind::FLOAT;
+        } else {
+            number = neg * std::stoi(num);
+            return TokenKind::NUM;
+        }
     }
 
     void ParseIdentifier() {
@@ -110,7 +121,7 @@ public:
 
     Token getNext() {
         if (lookahead == '#') {
-            while(lookahead != EOF && lookahead != '\n') {
+            while (lookahead != EOF && lookahead != '\n') {
                 GetChar();
             }
             if (lookahead == '\n') {
@@ -150,8 +161,8 @@ public:
             ParseString();
             return MakeToken(TokenKind::STRING);
         } else if (isdigit(lookahead) || lookahead == '-') {
-            ParseNumber();
-            return MakeToken(TokenKind::NUM);
+            // Can be either int or float
+            return MakeToken(ParseNumber());
         } else if (isalpha(lookahead) || lookahead == '_') { // identifier
             ParseIdentifier();
             return MakeToken(TokenKind::ID);
@@ -163,6 +174,7 @@ public:
 
     std::string getId() const { return id; }
     int getNumber() const noexcept { return number; }
+    double getFloat() const noexcept { return float_number; }
     std::string getStr() const noexcept { return str; }
 private:
     char GetChar() {
@@ -188,6 +200,7 @@ private:
     size_t tok_begin_col{0};
 
     int number{-1};
+    double float_number{-1};
     std::string id;
     std::string str;
 

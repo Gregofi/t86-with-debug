@@ -102,6 +102,25 @@ TEST(TokenizerTest, UnterminatedString) {
     ASSERT_THROW({l.getNext();}, ParserError);
 }
 
+TEST(TokenizerTest, Floats) {
+    std::istringstream iss(".data 1 2.0 3.14 5.8 2. 3");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::DOT, 0, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 1));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 6));
+    ASSERT_EQ(l.getNumber(), 1);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::FLOAT, 0, 8));
+    ASSERT_EQ(l.getFloat(), 2.0);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::FLOAT, 0, 12));
+    ASSERT_EQ(l.getFloat(), 3.14);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::FLOAT, 0, 17));
+    ASSERT_EQ(l.getFloat(), 5.8);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::FLOAT, 0, 21));
+    ASSERT_EQ(l.getFloat(), 2.);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 24));
+    ASSERT_EQ(l.getNumber(), 3);
+}
+
 TEST(ParserTest, Minuses) {
 auto program = R"(
 .text
