@@ -12,8 +12,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
 
 add_subdirectory(common)
 add_subdirectory(t86)
-add_subdirectory(t86-cli)
 add_subdirectory(debugger)
+add_subdirectory(t86-cli)
+add_subdirectory(t86-parser)
 
 # # Testing
 enable_testing()
@@ -66,6 +67,7 @@ target_link_libraries(
   fmt::fmt
   t86
   common
+  t86-parser
 )
 include(GoogleTest)
 gtest_discover_tests(unittests)

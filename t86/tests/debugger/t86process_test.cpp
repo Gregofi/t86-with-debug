@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "debugger/T86Process.h"
-#include "common/parser.h"
+#include "t86-parser/parser.h"
 #include "t86/os.h"
 #include "common/threads_messenger.h"
 #include "utils.h"

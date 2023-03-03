@@ -4,7 +4,7 @@
 
 #include "CLI.h"
 #include "Native.h"
-#include "parser.h"
+#include "t86-parser/parser.h"
 #include "t86/os.h"
 #include "threads_messenger.h"
 

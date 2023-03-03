@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <sstream>
-#include "common/parser.h"
+#include "t86-parser/parser.h"
 
 Token _T(TokenKind kind, size_t row, size_t col) {
     return Token{kind, row, col};

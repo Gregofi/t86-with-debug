@@ -3,7 +3,7 @@
 #include <argparse/argparse.hpp>
 
 #include "TCP.h"
-#include "common/parser.h"
+#include "t86-parser/parser.h"
 #include "t86/os.h"
 
 using namespace tiny::t86;
