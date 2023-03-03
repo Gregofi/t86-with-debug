@@ -242,12 +242,114 @@ public:
         } else if (regname == "IP") {
             return tiny::t86::Register::ProgramCounter();
         } else if (regname[0] != 'R') {
-            throw ParserError(fmt::format("Registers must begin with an R, unless IP, BP or SP, got {}", regname));
+            throw CreateError("Registers must begin with an R, unless IP, BP or SP, got {}", regname);
         }
         regname.remove_prefix(1);
         return tiny::t86::Register{static_cast<size_t>(std::atoi(regname.data()))};
     }
 
+    /// Allows only register as operand
+    tiny::t86::Register Register() {
+        if (curtok.kind == TokenKind::ID) {
+            std::string regname = lex.getId();
+            auto reg = getRegister(regname);
+            GetNext();
+            return reg;
+        } else {
+            throw CreateError("Expected R");
+        }
+    }
+
+    /// Allows only immediate as operand
+    int64_t Imm() {
+        if (curtok.kind == TokenKind::NUM) {
+            auto val = lex.getNumber();
+            GetNext();
+            return val;
+        } else {
+            throw CreateError("Expected i");
+        }
+    }
+
+    /// Allows R or i
+    tiny::t86::Operand ImmOrRegister() {
+        if (curtok.kind == TokenKind::ID) {
+            return Register();
+        } else if (curtok.kind == TokenKind::NUM) {
+            return Imm();
+        } else {
+            throw CreateError("Expected either i or R");
+        }
+    }
+
+    /// Allows R or R + i
+    tiny::t86::Operand RegisterOrRegisterPlusImm() {
+        if (curtok.kind == TokenKind::ID) {
+            auto reg = Register();
+            if (curtok.kind == TokenKind::PLUS) {
+                GetNext();
+                auto imm = Imm();
+                return reg + imm;
+            }
+            return reg;
+        }
+    }
+
+    /// Allows [i], [R], [R + i]
+    tiny::t86::Operand SimpleMemory() {
+        if (curtok.kind == TokenKind::LBRACKET) {
+            GetNext(); 
+            if (curtok.kind == TokenKind::ID) {
+                tiny::t86::Register inner = Register();
+                if (curtok.kind == TokenKind::PLUS) {
+                    GetNext();
+                    auto imm = Imm();
+                    if (curtok.kind != TokenKind::RBRACKET) {
+                        throw CreateError("Expected end of ']'");
+                    }
+                    return tiny::t86::Mem(inner + imm);
+                }
+                if (curtok.kind != TokenKind::RBRACKET) {
+                    throw CreateError("Expected end of ']'");
+                }
+                GetNext();
+                return tiny::t86::Mem(inner);
+            } else  {
+                auto inner = Imm();
+                if (curtok.kind != TokenKind::RBRACKET) {
+                    throw CreateError("Expected end of ']'");
+                }
+                GetNext();
+                return tiny::t86::Mem(inner);
+            }
+        } else {
+            throw CreateError("Expected either [i], [R] or [R + i]");
+        }
+    }
+
+    /// Allows R, [i], [R], [R + i]
+    tiny::t86::Operand RegisterOrSimpleMemory() {
+        if (curtok.kind == TokenKind::ID) {
+            return Register();
+        } else if (curtok.kind == TokenKind::LBRACKET) {
+            return SimpleMemory();
+        } else {
+            throw CreateError("Expected either R, [i], [R] or [R + i]");
+        }
+    }
+
+    /// Allows R, i, [i], [R], [R + i]
+    tiny::t86::Operand ImmOrRegisterOrSimpleMemory() {
+        if (curtok.kind == TokenKind::ID || curtok.kind == TokenKind::NUM) {
+            return ImmOrRegister();
+        } else if (curtok.kind == TokenKind::LBRACKET) {
+            return SimpleMemory();
+        } else {
+            throw CreateError("Expected either i, R, [i], [R] or [R + i]");
+        }
+    }
+
+    /// Parses every kind of operand, specially for MOV
     tiny::t86::Operand Operand() {
         using namespace tiny::t86;
         if (curtok.kind == TokenKind::ID) {
@@ -256,7 +358,7 @@ public:
             // Reg + Imm
             if (curtok.kind == TokenKind::PLUS) {
                 if (GetNext() != TokenKind::NUM) {
-                    throw ParserError("After Reg + _ there can be only number");
+                    throw CreateError("After Reg + _ there can be only number");
                 }
                 int imm = lex.getNumber();
                 GetNext();
@@ -341,7 +443,27 @@ public:
         UNREACHABLE;
     }
 
-#define CHECK_COMMA() do { ExpectTok(TokenKind::COMMA, GetNextPrev(), []{ return "Expected comma to separate arguments"; });} while (false)
+#define PARSE_BINARY(TYPE, DEST_PARSE, FROM_PARSE) \
+    if (ins_name == #TYPE) { \
+        auto dest = DEST_PARSE(); \
+        if (curtok.kind != TokenKind::COMMA) { \
+            throw CreateError("Expected ','"); \
+        } \
+        GetNext(); \
+        auto from = FROM_PARSE(); \
+        return std::make_unique<tiny::t86::TYPE>(std::move(dest), std::move(from)); \
+    }
+
+#define PARSE_UNARY(TYPE, OPERAND_PARSE) \
+    if (ins_name == #TYPE) { \
+        auto op = OPERAND_PARSE(); \
+        return std::make_unique<tiny::t86::TYPE>(std::move(op)); \
+    }
+
+#define PARSE_NULLARY(TYPE) \
+    if (ins_name == #TYPE) { \
+        return std::make_unique<tiny::t86::TYPE>(); \
+    }
 
     std::unique_ptr<tiny::t86::Instruction> Instruction() {
         // Address at the beginning is optional
@@ -353,228 +475,95 @@ public:
         std::string ins_name = lex.getId();
         GetNextPrev();
 
+        // MOV is a special snowflake in a sense that it allows
+        // very big range of operands, but they have very restrictive
+        // relationships. So we just allow everything and hope
+        // it won't explode.
         if (ins_name == "MOV") {
             auto dest = Operand();
-            CHECK_COMMA();
+            if (curtok.kind != TokenKind::COMMA) {
+                throw CreateError("Expected ','");
+            }
+            GetNext();
             auto from = Operand();
             return std::make_unique<tiny::t86::MOV>(dest, from);
-        } else if (ins_name == "ADD") {
+        }
+
+        // LEA is not documented.
+        if (ins_name == "LEA") {
             auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::ADD>(dest.getRegister(), from);
-        } else if (ins_name == "LEA") {
-            auto dest = Operand();
-            CHECK_COMMA();
+            if (curtok.kind != TokenKind::COMMA) {
+                throw CreateError("Expected ','");
+            }
+            GetNext();
             auto from = Operand();
             return std::make_unique<tiny::t86::LEA>(dest.getRegister(), from);
-        } else if (ins_name == "HALT") {
-            return std::make_unique<tiny::t86::HALT>();
-        } else if (ins_name == "DBG") {
-            // TODO: This probably won't be used anymore. It would be very difficult (impossible) to
-            //       to pass lambda in text file
-            throw ParserError("DBG instruction is not supported");
-        } else if (ins_name == "BKPT") {
-            return std::make_unique<tiny::t86::BKPT>();
-        } else if (ins_name == "BREAK") {
-            return std::make_unique<tiny::t86::BREAK>();
-        } else if (ins_name == "SUB") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::SUB>(dest.getRegister(), from);
-        } else if (ins_name == "INC") {
-            auto op = Operand();
-            return std::make_unique<tiny::t86::INC>(op.getRegister());
-        } else if (ins_name == "DEC") {
-            auto op = Operand();
-            return std::make_unique<tiny::t86::DEC>(op.getRegister());
-        } else if (ins_name == "NEG") {
-            auto op = Operand();
-            return std::make_unique<tiny::t86::DEC>(op.getRegister());
-        } else if (ins_name == "MUL") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::MUL>(dest.getRegister(), from);
-        } else if (ins_name == "DIV") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::DIV>(dest.getRegister(), from);
-        } else if (ins_name == "MOD") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::MOD>(dest.getRegister(), from);
-        } else if (ins_name == "IMUL") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::IMUL>(dest.getRegister(), from);
-        } else if (ins_name == "IDIV") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::IDIV>(dest.getRegister(), from);
-        } else if (ins_name == "AND") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::AND>(dest.getRegister(), from);
-        } else if (ins_name == "OR") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::OR>(dest.getRegister(), from);
-        } else if (ins_name == "XOR") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::XOR>(dest.getRegister(), from);
-        } else if (ins_name == "NOT") {
-            auto op = Operand();
-            return std::make_unique<tiny::t86::NOT>(op.getRegister());
-        } else if (ins_name == "LSH") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::LSH>(dest.getRegister(), from);
-        } else if (ins_name == "RSH") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::RSH>(dest.getRegister(), from);
-        } else if (ins_name == "CLF") {
-            throw ParserError("CLF instruction is not implemented");
-        } else if (ins_name == "CMP") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::CMP>(dest.getRegister(), from);
-        } else if (ins_name == "FCMP") {
-            auto dest = Operand();
-            CHECK_COMMA();
-            auto from = Operand();
-            if (from.isFloatValue()) {
-                NOT_IMPLEMENTED;
-                // return std::make_unique<tiny::t86::FCMP>(, from.getFloatValue());
-            } else if (from.isFloatRegister()) {
-                return std::make_unique<tiny::t86::FCMP>(dest.getFloatRegister(), from.getFloatRegister());
-            } else {
-                throw ParserError("FCMP must have either float value or float register as dest");
-            }
-        } else if (ins_name == "JMP") {
-            auto dest = Operand();
-            if (dest.isRegister()) {
-                return std::make_unique<tiny::t86::JMP>(dest.getRegister());
-            } else if (dest.isValue()) {
-                return std::make_unique<tiny::t86::JMP>(static_cast<uint64_t>(dest.getValue()));
-            } else {
-                throw ParserError("JMP must have either register or value as dest");
-            }
-        } else if (ins_name == "LOOP") {
-            auto reg = Operand();
-            CHECK_COMMA();
-            auto address = Operand();
-            if (address.isRegister()) {
-                return std::make_unique<tiny::t86::LOOP>(reg.getRegister(), address.getRegister());
-            } else if (address.isValue()) {
-                return std::make_unique<tiny::t86::LOOP>(reg.getRegister(), static_cast<uint64_t>(address.getValue()));
-            } else {
-                throw ParserError("LOOP must have either register or value as dest");
-            }
-        } else if (ins_name == "JZ") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JZ>(dest);
-        } else if (ins_name == "JNZ") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JNZ>(dest);
-        } else if (ins_name == "JE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JE>(dest);
-        } else if (ins_name == "JNE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JNE>(dest);
-        } else if (ins_name == "JG") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JG>(dest);
-        } else if (ins_name == "JGE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JGE>(dest);
-        } else if (ins_name == "JL") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JL>(dest);
-        } else if (ins_name == "JLE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JLE>(dest);
-        } else if (ins_name == "JA") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JA>(dest);
-        } else if (ins_name == "JAE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JAE>(dest);
-        } else if (ins_name == "JB") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JB>(dest);
-        } else if (ins_name == "JBE") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JBE>(dest);
-        } else if (ins_name == "JO") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JO>(dest);
-        } else if (ins_name == "JNO") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JNO>(dest);
-        } else if (ins_name == "JS") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JS>(dest);
-        } else if (ins_name == "JNS") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::JNS>(dest);
-        } else if (ins_name == "CALL") {
-            auto dest = Operand();
-            return std::make_unique<tiny::t86::CALL>(dest);
-        } else if (ins_name == "RET") {
-            return std::make_unique<tiny::t86::RET>();
-        } else if (ins_name == "PUSH") {
-            auto val = Operand();
-            return std::make_unique<tiny::t86::PUSH>(val);
-        } else if (ins_name == "FPUSH") {
-            auto val = Operand();
-            return std::make_unique<tiny::t86::FPUSH>(val);
-        } else if (ins_name == "POP") {
-            auto reg = Operand();
-            return std::make_unique<tiny::t86::POP>(reg.getRegister());
-        } else if (ins_name == "FPOP") {
-            auto reg = Operand();
-            return std::make_unique<tiny::t86::FPOP>(reg.getFloatRegister());
-        } else if (ins_name == "PUTCHAR") {
-            auto reg = Operand();
-            return std::make_unique<tiny::t86::PUTCHAR>(reg.getRegister(), std::cout);
-        } else if (ins_name == "PUTNUM") {
-            auto reg = Operand();
-            return std::make_unique<tiny::t86::PUTNUM>(reg.getRegister(), std::cout);
-        } else if (ins_name == "FADD") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "FSUB") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "FMUL") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "FDIV") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "EXT") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "NRW") {
-            NOT_IMPLEMENTED;
-        } else if (ins_name == "NOP") {
-            return std::make_unique<tiny::t86::NOP>();
-        } else {
-            throw ParserError(fmt::format("Unknown instruction {}", ins_name));
         }
+
+        PARSE_BINARY(ADD, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(SUB, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(MUL, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(DIV, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(IMUL, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(IDIV, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(AND, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(OR, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(XOR, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(LSH, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(RSH, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(CMP, Register, ImmOrRegisterOrSimpleMemory);
+        PARSE_BINARY(LOOP, Register, ImmOrRegister);
+        // FIXME: The second 'Operand' is wrong, as it only allows
+        // everything operand does but only memory accesses, ie.
+        // [R1 + 1 + R2 * 3] is fine but R1 + 1 is not.
+        PARSE_BINARY(LEA, Register, Operand);
+
+        PARSE_UNARY(INC, Register);
+        PARSE_UNARY(DEC, Register);
+        PARSE_UNARY(NEG, Register);
+        PARSE_UNARY(NOT, Register);
+        PARSE_UNARY(JMP, ImmOrRegister);
+        PARSE_UNARY(JZ, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JNZ, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JNE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JG, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JGE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JL, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JLE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JA, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JAE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JB, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JBE, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JO, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JNO, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JS, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(JNS, ImmOrRegisterOrSimpleMemory);
+        PARSE_UNARY(CALL, ImmOrRegister);
+        PARSE_UNARY(PUSH, ImmOrRegister);
+        PARSE_UNARY(POP, Register);
+        PARSE_UNARY(PUTCHAR, Register);
+        PARSE_UNARY(PUTNUM, Register);
+        PARSE_UNARY(GETCHAR, Register);
+
+        PARSE_NULLARY(HALT);
+        PARSE_NULLARY(NOP);
+        PARSE_NULLARY(BKPT);
+        PARSE_NULLARY(BREAK);
+        PARSE_NULLARY(RET);
+
+        if (ins_name == "DBG") {
+            // TODO: This probably won't be used anymore. It would be very
+            // difficult (impossible) to to pass lambda in text file
+            throw ParserError("DBG instruction is not supported");
+        }
+
+        throw ParserError(fmt::format("Unknown instruction {}", ins_name));
     }
 
-#undef CHECK_COMMA
+#undef PARSE_BINARY
+#undef PARSE_UNARY
+#undef PARSE_NULLARY
 
     void Text() {
         while (curtok.kind == TokenKind::NUM || curtok.kind == TokenKind::ID) {
@@ -602,7 +591,7 @@ public:
 
     tiny::t86::Program Parse() {
         if (curtok.kind != TokenKind::DOT) {
-            throw ParserError("File does not contain any section");
+            throw ParserError("File does not contain any sections");
         }
         while (GetNextPrev() == TokenKind::DOT) {
             Section();

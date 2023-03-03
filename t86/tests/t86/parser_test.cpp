@@ -352,3 +352,61 @@ TEST(ParserTest, WrongEscapeSequence) {
         auto p = parser.Parse();
         }, ParserError);
 }
+
+void Parse(std::string_view program) {
+    std::istringstream iss{std::string(program)};
+    Parser parser(iss);
+    parser.Parse();
+}
+
+TEST(ParserTest, BadBinaryInstructions) {
+    auto program = R"(
+.text
+0 MOV ADD 1, 2
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD 1
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+
+    program = R"(
+.text
+0 MOV ADD 1, [1 + 1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD 1, [R0 * 2]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 MOV ADD [2], 3
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+}
+
+TEST(ParserTest, BadUnaryInstructions) {
+    auto program = R"(
+.text
+0 JMP [0]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 JMP [R1]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 POP 0
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+    program = R"(
+.text
+0 PUSH [0]
+)";
+    ASSERT_THROW({Parse(program);}, ParserError);
+}
