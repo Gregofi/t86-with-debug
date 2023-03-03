@@ -10,4 +10,4 @@ include_directories(${CMAKE_CURRENT_LIST_DIR})
 
 file(GLOB_RECURSE SRC "*.cpp")
 add_library(common ${SRC})
-target_link_libraries(common fmt)
+target_link_libraries(common fmt t86)
