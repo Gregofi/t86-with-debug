@@ -247,7 +247,8 @@ namespace tiny::t86 {
 
 #define FLOAT_BINARY_ARITH_INS_IMPL(INS_NAME, OP)                                                        \
     INS_NAME::INS_NAME(FloatRegister fReg, double val) : FloatBinaryArithmeticInstruction(OP, fReg, val) {}        \
-    INS_NAME::INS_NAME(FloatRegister fReg, FloatRegister val) : FloatBinaryArithmeticInstruction(OP, fReg, val) {}
+    INS_NAME::INS_NAME(FloatRegister fReg, FloatRegister val) : FloatBinaryArithmeticInstruction(OP, fReg, val) {} \
+    INS_NAME::INS_NAME(FloatRegister fReg, Operand val) : FloatBinaryArithmeticInstruction(OP, fReg, val) {}
 
     FLOAT_BINARY_ARITH_INS_IMPL(FADD, &Alu::fadd)
     FLOAT_BINARY_ARITH_INS_IMPL(FSUB, &Alu::fsubtract)

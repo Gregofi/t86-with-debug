@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "t86/os.h"
-#include "common/parser.h"
+#include "t86-parser/parser.h"
 #include "messenger.h"
 #include "../MockMessenger.h"
 

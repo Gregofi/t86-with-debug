@@ -9,7 +9,7 @@
 #include "t86/cpu/register.h"
 #include "t86/cpu.h"
 #include "common/messenger.h"
-#include "common/parser.h"
+#include "t86-parser/parser.h"
 
 namespace tiny::t86 {
 
