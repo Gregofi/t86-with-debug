@@ -30,7 +30,7 @@ namespace tiny::t86 {
             MemRegScaled, // [R0 * 2]
             MemRegImmReg, // [R0 + 1 + R1]
             MemRegRegScaled, // [R0 + R1 * 2]
-            MemRegImmRegScaled, // [R0 1 + R1 * 2]
+            MemRegImmRegScaled, // [R0 + 1 + R1 * 2]
             FImm, // 4.2
             FReg, // FR0
         };

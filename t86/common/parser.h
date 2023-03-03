@@ -303,11 +303,11 @@ public:
         }
     }
 
-    double FloatImm() {
+    tiny::t86::Operand FloatImm() {
         if (curtok.kind == TokenKind::FLOAT) {
-            auto val = lex.getFloat();
+            double val = lex.getFloat();
             GetNext();
-            return val;
+            return tiny::t86::Operand(val);
         } else {
             throw CreateError("Expected f");
         }
@@ -363,6 +363,7 @@ public:
                     if (curtok.kind != TokenKind::RBRACKET) {
                         throw CreateError("Expected end of ']'");
                     }
+                    GetNext();
                     return tiny::t86::Mem(inner + imm);
                 }
                 if (curtok.kind != TokenKind::RBRACKET) {
@@ -494,7 +495,6 @@ public:
                     }
                 // Must be [R]
                 } else {
-                    GetNext();
                     result = Mem(reg1);
                 }
             } else {
@@ -511,98 +511,24 @@ public:
         return *result;
     }
 
-    /// Parses every kind of operand, specially for MOV
+    /// Parses every kind of operand excluding R + i (even floats!)
     tiny::t86::Operand Operand() {
-        using namespace tiny::t86;
-        if (curtok.kind == TokenKind::ID) {
-            std::string regname = lex.getId();
-            GetNext();
-            // Reg + Imm
-            if (curtok.kind == TokenKind::PLUS) {
-                if (GetNext() != TokenKind::NUM) {
-                    throw CreateError("After Reg + _ there can be only number");
-                }
-                int imm = lex.getNumber();
-                GetNext();
-                return getRegister(regname) + imm;
+        if (curtok.kind == TokenKind::LBRACKET) {
+            return Memory();
+        } else if (curtok.kind == TokenKind::ID) {
+            auto id = lex.getId();
+            if (id.at(0) == 'F') {
+                return FloatRegister();
+            } else {
+                return Register();
             }
-            auto reg = getRegister(regname);
-            return reg;
         } else if (curtok.kind == TokenKind::NUM) {
-            int imm = lex.getNumber();
-            GetNext();
-            return imm;
-        } else if (curtok.kind == TokenKind::LBRACKET) {
-            // First is imm
-            if (GetNext() == TokenKind::NUM) {
-                auto val = lex.getNumber();
-                GetNext(); // 'num'
-                GetNext(); // ']'
-                // [i]
-                return Mem(static_cast<uint64_t>(val));
-            // First is register
-            } else if (curtok.kind == TokenKind::ID) {
-                auto regname = lex.getId();
-                auto reg = getRegister(regname);
-                // Only register
-                if (GetNext() == TokenKind::RBRACKET) {
-                    GetNext();
-                    // [Rx]
-                    return Mem(reg);
-                }
-                // Has second with +
-                if (curtok.kind == TokenKind::PLUS) {
-                    GetNext();
-                    // Can either be imm or register
-                    if (curtok.kind == TokenKind::ID) {
-                        auto reg2 = getRegister(lex.getId());
-                        if (GetNext() == TokenKind::RBRACKET) {
-                            GetNext();
-                            return Mem(reg + reg2);
-                        } else if (curtok.kind == TokenKind::TIMES && GetNext() == TokenKind::NUM) {
-                            auto val = lex.getNumber();
-                            ExpectTok(TokenKind::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference\n"; });
-                            return Mem(reg + reg2 * val);
-                        }
-                    } else if (curtok.kind == TokenKind::NUM) {
-                        auto val = lex.getNumber();
-                        if (GetNext() == TokenKind::RBRACKET) {
-                            GetNext();
-                            return Mem(reg + val);
-                        }
-                        if (curtok.kind != TokenKind::PLUS || GetNext() != TokenKind::ID) {
-                            throw ParserError("Dereference of form [R1 + i ...] must always contain `+ R` after i");
-                        }
-
-                        auto reg2 = getRegister(lex.getId());
-                        if (GetNext() == TokenKind::RBRACKET) {
-                            GetNext();
-                            return Mem(reg + val + reg2);
-                        }
-                        ExpectTok(TokenKind::TIMES, curtok.kind, []{ return "After `[R1 + i + R2` there must always be a `*` or `]`"; });
-                        ExpectTok(TokenKind::NUM, GetNext(), []{ return "After `[R1 + i + R2 *` there must always be an imm"; });
-                        auto val2 = lex.getNumber();
-                        
-                        ExpectTok(TokenKind::RBRACKET, GetNext(), []{ return "Expected ']' to close dereference "; });
-                        GetNext(); // Eat ']'
-                        return Mem(reg + val + reg2 * val2);
-                    }
-                // Has second with *
-                } else if (curtok.kind == TokenKind::TIMES) {
-                    // There must be imm now
-                    ExpectTok(TokenKind::NUM, GetNext(), []{ return "After [R1 * ...] there must always be an imm"; });
-                    int val = lex.getNumber();
-                    if (GetNext() != TokenKind::RBRACKET) {
-                        throw ParserError("Expected ']' to close dereference");
-                    }
-                    GetNext(); // ']'
-                    return Mem(reg * val);
-                }
-                UNREACHABLE;
-            }
-            NOT_IMPLEMENTED;
+            return Imm();
+        } else if (curtok.kind == TokenKind::FLOAT) {
+            return FloatImm();
+        } else {
+            throw CreateError("Expected operand (excluding R + i)");
         }
-        UNREACHABLE;
     }
 
 #define PARSE_BINARY(TYPE, DEST_PARSE, FROM_PARSE) \
@@ -627,6 +553,44 @@ public:
         return std::make_unique<tiny::t86::TYPE>(); \
     }
 
+    /// Parses the operands of MOV
+    std::unique_ptr<tiny::t86::MOV> ParseMOV() {
+        // For the details of why are sometimes some
+        // operands allowed see README of t86.
+        auto dest = Operand();
+        if (curtok.kind != TokenKind::COMMA) {
+            throw CreateError("Expected ','");
+        }
+        GetNext();
+        auto from = Operand();
+        if (dest.isValue() || dest.isRegisterOffset()) {
+            throw CreateError("MOV can't have i or R + i as dest");
+        } else if (dest.isRegister()) {
+            // Allows almost everyting
+            if (from.isRegisterOffset()) {
+                throw CreateError("MOV can't have R + i as from when dest is R");
+            }
+            if (from.isFloatValue()) {
+                throw CreateError("Can't have MOV with R and f, use float register instead");
+            }
+        } else if (dest.isFloatRegister()) {
+            if (!from.isFloatValue()
+                    && !from.isFloatRegister()
+                    && !from.isRegister()
+                    && !from.isMemoryImmediate()
+                    && !from.isMemoryRegister()) {
+                throw CreateError("MOV to F can only have f, F, R, [i] or [R] as second operand, got '{}'", from.toString());
+            }
+        } else {
+            if (!from.isRegister()
+                    && !from.isFloatRegister()
+                    && !from.isValue()) {
+                throw CreateError("MOV can't have from of type '{}' when dest is '{}', allowed froms are R, F or i", dest.toString(), from.toString());
+            }
+        }
+        return std::make_unique<tiny::t86::MOV>(std::move(dest), std::move(from));
+    }
+
     std::unique_ptr<tiny::t86::Instruction> Instruction() {
         // Address at the beginning is optional
         if (curtok.kind == TokenKind::NUM) {
@@ -642,13 +606,7 @@ public:
         // relationships. So we just allow everything and hope
         // it won't explode.
         if (ins_name == "MOV") {
-            auto dest = Operand();
-            if (curtok.kind != TokenKind::COMMA) {
-                throw CreateError("Expected ','");
-            }
-            GetNext();
-            auto from = Operand();
-            return std::make_unique<tiny::t86::MOV>(dest, from);
+            return ParseMOV();
         }
 
         if (ins_name == "LEA") {
@@ -683,10 +641,6 @@ public:
         PARSE_BINARY(FMUL, FloatRegister, FloatImmOrRegister);
         PARSE_BINARY(FDIV, FloatRegister, FloatImmOrRegister);
         PARSE_BINARY(FCMP, FloatRegister, FloatImmOrRegister);
-        // FIXME: The second 'Operand' is wrong, as it only allows
-        // everything operand does but only memory accesses, ie.
-        // [R1 + 1 + R2 * 3] is fine but R1 + 1 is not.
-        PARSE_BINARY(LEA, Register, Operand);
         PARSE_BINARY(EXT, FloatRegister, Register);
         PARSE_BINARY(NRW, Register, FloatRegister);
 
@@ -767,8 +721,12 @@ public:
         if (curtok.kind != TokenKind::DOT) {
             throw ParserError("File does not contain any sections");
         }
-        while (GetNextPrev() == TokenKind::DOT) {
+        while (curtok.kind == TokenKind::DOT) {
+            GetNext();
             Section();
+        }
+        if (curtok.kind != TokenKind::END) {
+            throw CreateError("Some part of file has not been parsed (from {}:{}) due to wrong input. This can also be caused by wrong operands, ie. '.text MOV R0, R1 + 1', the 'R1 + 1' is not supported for MOV, and so it hangs in the input.", curtok.row, curtok.col);
         }
         return {std::move(program), std::move(data)};
     }
