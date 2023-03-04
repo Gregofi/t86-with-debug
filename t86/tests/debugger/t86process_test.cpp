@@ -497,6 +497,24 @@ TEST(T86ProcessCpuTest, Memory) {
     ASSERT_EQ(mem[0], 0);
     ASSERT_EQ(mem[1], 3);
     ASSERT_EQ(mem[2], 4);
+    for (size_t i = 3; i < 1024; ++ i) {
+        ASSERT_NO_THROW({ t86.WriteMemory(i, {i}); });
+    }
+    t86.WriteMemory(1023, {3});
+    t86.WriteMemory(1022, {3, 1});
+    
+    ASSERT_THROW({
+        t86.WriteMemory(1024, {1});
+    }, DebuggerError);
+    ASSERT_THROW({
+        t86.WriteMemory(1023, {1, 2});
+    }, DebuggerError);
+    ASSERT_THROW({
+        t86.ReadMemory(1024, 1);
+    }, DebuggerError);
+    ASSERT_THROW({
+        t86.ReadMemory(1023, 2);
+    }, DebuggerError);
 
     t86.ResumeExecution();
     t86.Wait();
