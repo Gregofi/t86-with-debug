@@ -166,7 +166,7 @@ TEST(T86ProcessCpuTest, StopReason) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     ASSERT_EQ(DebugEvent::ExecutionBegin, t86.GetReason());
     t86.ResumeExecution();
@@ -194,7 +194,7 @@ TEST(T86ProcessCpuTest, PeekRegisters) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     ASSERT_EQ(DebugEvent::ExecutionBegin, t86.GetReason());
     auto regs = t86.FetchRegisters();
@@ -236,7 +236,7 @@ TEST(T86ProcessCpuTest, SingleSteps) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     auto regs = t86.FetchRegisters();
     ASSERT_EQ(regs.at("IP"), 0);
@@ -301,7 +301,7 @@ TEST(T86ProcessCpuTest, SetRegisters) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     auto regs1 = t86.FetchRegisters();
     t86.SetRegisters(regs1);
@@ -363,7 +363,7 @@ TEST(T86ProcessCpuTest, PeekText) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     auto v = t86.ReadText(0, 1);
     ASSERT_EQ(v.size(), 1);
@@ -400,7 +400,7 @@ TEST(T86ProcessCpuTest, PokeText) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteText(0, {"MOV R1, 1"});
     auto text = t86.ReadText(0, 1);
@@ -447,7 +447,7 @@ TEST(T86ProcessCpuTest, Breakpoint) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteText(2, {"BKPT"});
     auto text = t86.ReadText(2, 1);
@@ -489,7 +489,7 @@ TEST(T86ProcessCpuTest, Memory) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
     
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteMemory(1, {3, 4});
     auto mem = t86.ReadMemory(0, 3);
@@ -525,7 +525,7 @@ TEST(T86ProcessCpuTest, Terminate) {
 )";
     std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
     
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.Singlestep();
     t86.Wait();

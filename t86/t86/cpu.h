@@ -92,6 +92,8 @@ namespace tiny::t86 {
 
         Cpu(size_t registerCount);
 
+        Cpu(size_t registerCount, size_t floatRegisterCount);
+
         Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt);
 
         Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt, std::size_t reservationStationEntriesCount, std::size_t ramSize, std::size_t ramGatesCnt);
@@ -99,6 +101,10 @@ namespace tiny::t86 {
         // These do not include special registers
         std::size_t registersCount() const {
             return registerCnt_;
+        }
+
+        std::size_t floatRegistersCount() const {
+            return floatRegisterCnt_;
         }
 
         std::size_t physicalRegistersCount() const {
@@ -180,7 +186,11 @@ namespace tiny::t86 {
         ///       for debugging purposes - getRegisterDebug.
         int64_t getRegister(Register reg) const;
 
-        void setRegisterDebug(Register reg, int64_t value);
+        void setRegisterDebug(Register reg,
+                              int64_t value);
+
+        void setFloatRegisterDebug(FloatRegister reg,
+                                   double value);
 
         double getFloatRegister(FloatRegister reg) const;
 

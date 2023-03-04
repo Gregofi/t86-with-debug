@@ -11,7 +11,7 @@
 using namespace tiny::t86;
 
 TEST(DebugTest, SimpleCommands) {
-    OS os(2);
+    OS os(2, 0);
     std::queue<std::string> in({
             "REASON",
             "PEEKREGS",
@@ -53,7 +53,7 @@ HALT
 }
 
 TEST(DebugTest, SingleStep) {
-    OS os(2);
+    OS os(2, 0);
     std::queue<std::string> in({
         "REASON",
         "PEEKREGS",
@@ -108,7 +108,7 @@ HALT
 }
 
 TEST(DebugTest, IPManipulation) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
         "REASON",
         // Step to address 2
@@ -178,7 +178,7 @@ R"(
 }
 
 TEST(DebugTest, Breakpoint) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
             "POKETEXT 2 BKPT",
             "PEEKTEXT 2 1",
@@ -234,7 +234,7 @@ R"(
 }
 
 TEST(DebugTest, PeekDataText) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
             "CONTINUE",
             "PEEKTEXT 2 3",

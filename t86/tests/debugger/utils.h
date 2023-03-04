@@ -9,7 +9,7 @@ inline void RunCPU(std::unique_ptr<ThreadMessenger> messenger,
     Parser parser(iss);
     auto p = parser.Parse();
     
-    tiny::t86::OS os(register_cnt);
+    tiny::t86::OS os(register_cnt, 0);
     os.SetDebuggerComms(std::move(messenger));
     os.Run(std::move(p));
 }

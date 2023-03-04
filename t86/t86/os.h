@@ -9,8 +9,8 @@ namespace tiny::t86 {
 class OS {
 public:
     OS() = default;
-    OS(size_t register_count): cpu(register_count) {}
-    OS(size_t register_count, std::unique_ptr<Messenger> messenger): cpu(register_count), debug_interface(std::in_place, cpu, std::move(messenger)) {
+    OS(size_t register_count, size_t float_register_count): cpu(register_count, float_register_count) {}
+    OS(size_t register_count, size_t float_register_count, std::unique_ptr<Messenger> messenger): cpu(register_count, float_register_count), debug_interface(std::in_place, cpu, std::move(messenger)) {
     }
 
     void Run(Program program);
