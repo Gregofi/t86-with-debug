@@ -15,10 +15,11 @@
 class T86Process: public Process {
 public:
     T86Process(std::unique_ptr<Messenger> process, size_t gp_reg_cnt = 10,
-               size_t data_size = 1024)
+               size_t float_reg_cnt = 4, size_t data_size = 1024)
                     : process(std::move(process)),
                       data_size(data_size),
-                      gen_purpose_regs_count(gp_reg_cnt) {
+                      gen_purpose_regs_count(gp_reg_cnt),
+                      float_regs_count(float_reg_cnt) {
     }
 
   /*
@@ -129,6 +130,17 @@ public:
         return FetchRegistersOfType<double>();
     }
 
+    void SetFloatRegisters(const std::map<std::string, double>& regs) override {
+        for (const auto& [name, val]: regs) {
+            if (!IsValidFloatRegisterName(name)) {
+                throw DebuggerError(fmt::format("Register name '{}' is not valid!", name));
+            }
+            log_info("Setting register {} to value {}", name, val);
+            process->Send(fmt::format("POKEFLOATREGS {} {}", name, val));
+            CheckResponse("POKEFLOATREGS error");
+        }
+    }
+
     size_t TextSize() override {
         process->Send("TEXTSIZE");
         auto response = process->Receive();
@@ -161,7 +173,6 @@ private:
         auto regs = process->Receive();
         auto lines = utils::split_v(*regs, '\n');
         std::map<std::string, T> result;
-        log_info("GOT HERE {}", lines.size());
         for (const auto& line: lines) {
             log_info("Got register '{}'", line);
             auto reg = utils::split(line, ':');
@@ -199,6 +210,15 @@ private:
                || isGPRegister(name);
     }
 
+    bool IsValidFloatRegisterName(std::string_view name) {
+        if (name.size() >= 2 
+                && name[0] == 'F') {
+            auto idx = utils::svtonum<double>(name.substr(1));
+            return 0 <= idx && idx < float_regs_count;
+        }
+        return false;
+    }
+
     void CheckResponse(std::string_view error_message) {
         auto message = process->Receive();
         if (!message || message != "OK") {
@@ -210,4 +230,5 @@ private:
     std::unique_ptr<Messenger> process;
     const size_t data_size{1024};
     const size_t gen_purpose_regs_count{8};
+    const size_t float_regs_count{4};
   };

@@ -146,6 +146,32 @@ public:
         return process->TextSize();
     }
 
+    std::map<std::string, double> GetFloatRegisters() {
+        return process->FetchFloatRegisters();
+    }
+
+    void SetFloatRegisters(const std::map<std::string, double>& fregs) {
+        process->SetFloatRegisters(fregs);
+    }
+
+    void SetFloatRegister(const std::string& name, double value) {
+        auto fregs = GetFloatRegisters();
+        if (!fregs.contains(name)) {
+            throw DebuggerError(fmt::format("'{}' is not float register", name));
+        }
+        fregs.at(name) = value;
+        SetFloatRegisters(fregs);
+    }
+
+    double GetFloatRegister(const std::string& name) {
+        auto fregs = GetFloatRegisters();
+        auto freg = fregs.find(name);
+        if (freg == fregs.end()) {
+            throw DebuggerError(fmt::format("'{}' is not float register", name));
+        }
+        return freg->second;
+    }
+
     std::map<std::string, int64_t> GetRegisters() {
         return process->FetchRegisters();
     }
@@ -172,7 +198,7 @@ public:
     /// which will be faster.
     void SetRegister(const std::string& name, int64_t value) {
         auto regs = GetRegisters();
-        if (regs.count(name) == 0) {
+        if (!regs.contains(name)) {
             // TODO: Make the error message more heplful (list the name of available
             // registers).
             throw DebuggerError(fmt::format("Unknown '{}' register name!", name)); 

@@ -68,6 +68,8 @@ used without subcommand it'll dump all registers.
 commands:
 - set <reg> <val> - Sets the value of <reg> to <val>.
 - get <reg> - Returns the value of <reg>.
+- fset <freg> <double> - Sets the value of float register <freg> to <double>.
+- fget <freg> - Returns the value of float register <reg>.
 )";
 
 public:
@@ -218,6 +220,19 @@ public:
             auto reg = subcommands.at(1);
             auto value = process.GetRegister(std::string(reg));
             fmt::print("{}\n", value);
+        } else if (check_command(subcommands, "fget", 2)) {
+            auto reg = subcommands.at(1);
+            auto value = process.GetFloatRegister(std::string(reg));
+            fmt::print("{}\n", value);
+        } else if (check_command(subcommands, "fset", 3)) {
+            auto reg = subcommands.at(1);
+            auto value = utils::svtonum<double>(subcommands.at(2));
+            if (!value) {
+                throw DebuggerError(
+                    fmt::format("Expected register value, instead got '{}'",
+                                subcommands.at(2)));
+            }
+            process.SetFloatRegister(std::string(reg), *value);
         } else {
             fmt::print("{}", REGISTER_USAGE);
         }

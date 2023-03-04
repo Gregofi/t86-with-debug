@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
         return cli.Run();
     } else if (args.is_subcommand_used("run-t86")) {
         auto reg_count = run_command.get<int>("register-count");
-        auto float_reg_count = run_command.get<double>("float-register-count");
+        auto float_reg_count = run_command.get<int>("float-register-count");
 
         ThreadQueue<std::string> q1;
         ThreadQueue<std::string> q2;
