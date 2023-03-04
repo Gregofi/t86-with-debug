@@ -495,6 +495,12 @@ void Parser::Data() {
     }
 }
 
+void Parser::CheckEnd() const {
+    if (curtok.kind != TokenKind::END) {
+        throw CreateError("Some part of file has not been parsed (from {}:{}) due to wrong input. This can also be caused by wrong operands, ie. '.text MOV R0, R1 + 1', the 'R1 + 1' is not supported for MOV, and so it hangs in the input.", curtok.row, curtok.col);
+    }
+}
+
 tiny::t86::Program Parser::Parse() {
     if (curtok.kind != TokenKind::DOT) {
         throw CreateError("File does not contain any sections");
@@ -503,8 +509,6 @@ tiny::t86::Program Parser::Parse() {
         GetNext();
         Section();
     }
-    if (curtok.kind != TokenKind::END) {
-        throw CreateError("Some part of file has not been parsed (from {}:{}) due to wrong input. This can also be caused by wrong operands, ie. '.text MOV R0, R1 + 1', the 'R1 + 1' is not supported for MOV, and so it hangs in the input.", curtok.row, curtok.col);
-    }
+    CheckEnd();
     return {std::move(program), std::move(data)};
 }

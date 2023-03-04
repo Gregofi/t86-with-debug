@@ -113,9 +113,12 @@ TEST(NativeWT86Test, Writing) {
     ASSERT_THROW({
         native.WriteText(4, {"HALT", "HALT"});
     }, DebuggerError);
-    ASSERT_NO_THROW({
-        native.WriteText(4, {"HALT"});
-    });
+    ASSERT_THROW({
+        native.WriteText(2, {"HALT 1"});
+    }, DebuggerError);
+    ASSERT_THROW({
+        native.WriteText(1, {"MOV 1, R0 +"});
+    }, DebuggerError);
     
     native.SetRegister("R0", 1);
     ASSERT_THROW({

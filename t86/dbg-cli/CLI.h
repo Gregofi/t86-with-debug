@@ -12,6 +12,24 @@
 #include "debugger/Native.h"
 
 class CLI {
+    static constexpr const char* USAGE =
+R"(<command> <subcommand> [parameter [parameter...]]
+Example: `breakpoint set-addr 1` sets breakpoint at address 1.
+
+For help, use the `<command> help` syntax, for example
+`breakpoint help`, or `disassemble help`.
+
+Every command has its subcommands, except continue,
+which should be used alone.
+
+commands:
+- continue = Continues execution, has no subcommands.
+- stepi = Assembly level stepping.
+- disassemble = Disassemble the underlying native code.
+- assemble = Rewrite the underlying native code.
+- breakpoint = Add and remove breakpoints.
+- register = Read and write to registers
+)";
     static constexpr const char* BP_USAGE = 
 R"(breakpoint <subcommads> [parameter [parameter...]]
 If you want to set breakpoint at a specific address, the commands are 
@@ -43,23 +61,6 @@ and above it.
                    If <n> is not specified then disassembles the rest
                    of the executable starting from <b>.
 )";
-    static constexpr const char* USAGE =
-R"(<command> <subcommand> [parameter [parameter...]]
-Example: `breakpoint set-addr 1` sets breakpoint at address 1.
-
-For help, use the `<command> help` syntax, for example
-`breakpoint help`, or `disassemble help`.
-
-Every command has its subcommands, except continue,
-which should be used alone.
-
-commands:
-- continue = Continues execution, has no subcommands.
-- stepi = Assembly level stepping.
-- disassemble = Disassemble the underlying T86 code.
-- breakpoint = Add and remove breakpoints.
-- register = Read and write to registers
-)";
     static constexpr const char* REGISTER_USAGE =
 R"(register <subcommands> [parameter [parameter...]]
 Used for reading and writing to debuggee registers. If
@@ -70,6 +71,15 @@ commands:
 - get <reg> - Returns the value of <reg>.
 - fset <freg> <double> - Sets the value of float register <freg> to <double>.
 - fget <freg> - Returns the value of float register <reg>.
+)";
+    static constexpr const char* ASSEMBLE_USAGE =
+R"(assemble <subcommands> [parameter [parameter...]]
+Rewrite the underlying assembly.
+Warning: Does not support writing outside the text size (you can't add new instructions).
+
+commands:
+- interactive <from> - Start rewriting from address <from>. Enter instruction and newline.
+                       Empty line means end of rewriting.
 )";
 
 public:
@@ -206,6 +216,45 @@ public:
         }
     }
 
+    void InteractiveAssemble(size_t address) {
+        char* line_raw;
+        // TODO: Save and rollback linenoise history
+        std::vector<std::string> result;
+        for (size_t i = 0; ;++i) {
+            line_raw = linenoise(fmt::format("{}: > ", address + i).c_str());
+            if (line_raw == NULL) {
+                throw DebuggerError("Unexpected end of input in interactive assembling, "
+                                    "use blank line to indicate the end.");
+            }
+            std::string line{line_raw};
+            if (line == "") {
+                break;
+            }
+            try {
+                result.push_back(line);
+            } catch (const DebuggerError& err) {
+                fmt::print(stderr, "Error: {}\n", err.what());
+            }
+            linenoiseHistoryAdd(line_raw);
+            free(line_raw);
+        }
+        process.WriteText(address, result);
+    }
+
+    void HandleAssemble(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+        if (check_command(subcommands, "interactive", 2)) {
+            auto addr = utils::svtonum<size_t>(subcommands.at(1));
+            if (!addr) {
+                throw DebuggerError(fmt::format("Expected address, got '{}'",
+                            subcommands.at(2)));
+            }
+            InteractiveAssemble(*addr);
+        } else {
+            fmt::print("{}", ASSEMBLE_USAGE);
+        }
+    }
+
     void HandleRegister(std::string_view command) {
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
@@ -268,6 +317,8 @@ public:
             HandleStepi(command);
         } else if (utils::is_prefix_of(main_command, "disassemble")) {
             HandleDisassemble(command);
+        } else if (utils::is_prefix_of(main_command, "assemble")) {
+            HandleAssemble(command);
         } else if (utils::is_prefix_of(main_command, "continue")) {
             HandleContinue(command);
         } else if (utils::is_prefix_of(main_command, "register")) {
