@@ -313,7 +313,7 @@ TEST(DebugTest, Floats) {
     OS os(0, 2);
     std::queue<std::string> in({
         "CONTINUE",
-        "PEEKREGS",
+        "PEEKFLOATREGS",
     });
 
     std::vector<std::string> out;
@@ -340,16 +340,16 @@ R"(
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
-    EXPECT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
-                     "F0:8.1\nF1:4.5\n");
+    EXPECT_EQ(*it++, "F0:8.1\nF1:4.5\n");
 }
 
 TEST(DebugTest, FloatsAndNormalRegisters) {
     OS os(1, 2);
     std::queue<std::string> in({
-        "POKEREGS F1 4.5",
+        "POKEFLOATREGS F1 4.5",
         "CONTINUE",
         "PEEKREGS",
+        "PEEKFLOATREGS",
     });
 
     std::vector<std::string> out;
@@ -380,6 +380,6 @@ R"(
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     EXPECT_EQ(*it++, "IP:6\nBP:1024\nSP:1024\n"
-                     "F0:8.5\nF1:4.5\n"
                      "R0:8\n");
+    EXPECT_EQ(*it++, "F0:8.5\nF1:4.5\n");
 }
