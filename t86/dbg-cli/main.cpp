@@ -3,7 +3,7 @@
 #include <fmt/core.h>
 
 #include "CLI.h"
-#include "Native.h"
+#include "debugger/Native.h"
 #include "t86-parser/parser.h"
 #include "t86/os.h"
 #include "threads_messenger.h"
