@@ -269,11 +269,13 @@ public:
     tiny::t86::Program Parse();
 
     template<typename ...Args>
-    ParserError CreateError(fmt::format_string<Args...> format, Args&& ...args) {
+    ParserError CreateError(fmt::format_string<Args...> format, Args&& ...args) const {
         return ParserError(fmt::format("Error:{}:{}:{}", curtok.row,
                     curtok.col, fmt::format(format,
                         std::forward<Args>(args)...)));
     }
+
+    void CheckEnd() const;
 private:
     TokenKind GetNext();
 

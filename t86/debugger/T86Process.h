@@ -7,6 +7,7 @@
 #include "common/messenger.h"
 #include "common/logger.h"
 #include "common/helpers.h"
+#include "t86-parser/parser.h"
 #include "fmt/core.h"
 #include "DebuggerError.h"
 #include "DebugEvent.h"
@@ -43,6 +44,14 @@ public:
     void WriteText(uint64_t address,
                    const std::vector<std::string> &data) override {
         for (size_t i = 0; i < data.size(); ++i) {
+            std::istringstream iss(data[i]);
+            Parser p(iss);
+            try {
+                p.Instruction();
+                p.CheckEnd();
+            } catch (const ParserError& err) {
+                throw DebuggerError(fmt::format("Error in parsing instruction: {}", err.what()));
+            }
             process->Send(fmt::format("POKETEXT {} {}", address + i, data[i]));
             CheckResponse("POKETEXT error");
         }
