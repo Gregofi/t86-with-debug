@@ -159,11 +159,17 @@ public:
     }
 
     void HandleStepi(std::string_view command) {
+        if (!is_running) {
+            throw DebuggerError("No process is running");
+        }
         if (command == "") {
             auto e = process.PerformSingleStep();
             if (e != DebugEvent::Singlestep) {
                 fmt::print("Process stopped, reason: {}\n",
                            DebugEventToString(e));
+                if (e == DebugEvent::ExecutionEnd) {
+                    is_running = false;
+                }
             }
             auto ip = process.GetIP();
             PrettyPrintText(ip);
