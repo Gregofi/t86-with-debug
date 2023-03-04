@@ -110,15 +110,7 @@ public:
 
     std::map<std::string, int64_t> FetchRegisters() override {
         process->Send("PEEKREGS");
-        auto regs = process->Receive();
-        auto lines = utils::split_v(*regs, '\n');
-        std::map<std::string, int64_t> result;
-        for (const auto& line: lines) {
-            log_info("Got register '{}'", line);
-            auto reg = utils::split(line, ':');
-            result[reg.at(0)] = std::stoll(reg.at(1));
-        }
-        return result;
+        return FetchRegistersOfType<int64_t>();
     }
 
     void SetRegisters(const std::map<std::string, int64_t>& regs) override {
@@ -130,6 +122,11 @@ public:
             process->Send(fmt::format("POKEREGS {} {}", name, val));
             CheckResponse("POKEREGS error");
         }
+    }
+
+    std::map<std::string, double> FetchFloatRegisters() override {
+        process->Send("PEEKFLOATREGS");
+        return FetchRegistersOfType<double>();
     }
 
     size_t TextSize() override {
@@ -159,6 +156,20 @@ public:
         CheckResponse("TERMINATE fail");
     }
 private:
+    template<typename T>
+    std::map<std::string, T> FetchRegistersOfType() {
+        auto regs = process->Receive();
+        auto lines = utils::split_v(*regs, '\n');
+        std::map<std::string, T> result;
+        log_info("GOT HERE {}", lines.size());
+        for (const auto& line: lines) {
+            log_info("Got register '{}'", line);
+            auto reg = utils::split(line, ':');
+            result[reg.at(0)] = *utils::svtonum<T>(reg.at(1));
+        }
+        return result;
+    }
+
     int64_t GetRegister(std::string_view name) {
         process->Send(fmt::format("PEEKREGS {}", name));
         auto response = process->Receive();

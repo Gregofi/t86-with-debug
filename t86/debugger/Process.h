@@ -26,6 +26,7 @@ public:
     virtual void Singlestep() = 0;
 
     virtual std::map<std::string, int64_t> FetchRegisters() = 0;
+    virtual std::map<std::string, double> FetchFloatRegisters() = 0;
     virtual void SetRegisters(const std::map<std::string, int64_t>& regs) = 0;
     virtual void ResumeExecution() = 0;
     virtual size_t TextSize() = 0;

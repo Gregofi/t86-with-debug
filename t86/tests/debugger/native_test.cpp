@@ -19,8 +19,8 @@ TEST(NativeWT86Test, Basics) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
 
     ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionBegin); 
@@ -45,8 +45,8 @@ TEST(NativeWT86Test, Reading) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
 
@@ -100,8 +100,8 @@ TEST(NativeWT86Test, Writing) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     
@@ -145,8 +145,8 @@ TEST(NativeWT86Test, SimpleBreakpoint) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(2);
@@ -181,8 +181,8 @@ TEST(NativeWT86Test, StepOverBreakpoint) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(2);
@@ -220,8 +220,8 @@ TEST(NativeWT86Test, BreakpointAtHaltSinglestep) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(4);
@@ -248,8 +248,8 @@ TEST(NativeWT86Test, BreakpointAtHaltContinue) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(4);
@@ -298,8 +298,8 @@ TEST(NativeWT86Test, MultipleBreakpointHits) {
 
 17 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(10);
@@ -365,8 +365,8 @@ TEST(NativeWT86Test, EnableDisableBreakpoints) {
 
 17 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(10);
@@ -423,8 +423,8 @@ TEST(NativeWT86Test, PeekTextWithBreakpoints) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(1);
@@ -455,8 +455,8 @@ TEST(NativeWT86Test, PokeTextWithBreakpoints) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
     native.SetBreakpoint(1);
@@ -495,8 +495,8 @@ TEST(NativeWT86Test, BreakpointsInvalid) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
     Native native(std::move(t86));
     native.WaitForDebugEvent();
 
