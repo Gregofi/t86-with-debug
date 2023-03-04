@@ -68,6 +68,8 @@ used without subcommand it'll dump all registers.
 commands:
 - set <reg> <val> - Sets the value of <reg> to <val>.
 - get <reg> - Returns the value of <reg>.
+- fset <freg> <double> - Sets the value of float register <freg> to <double>.
+- fget <freg> - Returns the value of float register <reg>.
 )";
 
 public:
@@ -88,7 +90,7 @@ public:
         if (address >= text_size) {
             return;
         }
-        size_t begin = range > address ? 0 : address - range;
+        size_t begin = static_cast<unsigned>(range) > address ? 0 : address - range;
         size_t end = std::min(text_size, address + range + 1);
         auto inst = process.ReadText(begin, end - begin);
         for (size_t i = 0; i < inst.size(); ++i) {
@@ -157,11 +159,17 @@ public:
     }
 
     void HandleStepi(std::string_view command) {
+        if (!is_running) {
+            throw DebuggerError("No process is running");
+        }
         if (command == "") {
             auto e = process.PerformSingleStep();
             if (e != DebugEvent::Singlestep) {
                 fmt::print("Process stopped, reason: {}\n",
                            DebugEventToString(e));
+                if (e == DebugEvent::ExecutionEnd) {
+                    is_running = false;
+                }
             }
             auto ip = process.GetIP();
             PrettyPrintText(ip);
@@ -218,6 +226,19 @@ public:
             auto reg = subcommands.at(1);
             auto value = process.GetRegister(std::string(reg));
             fmt::print("{}\n", value);
+        } else if (check_command(subcommands, "fget", 2)) {
+            auto reg = subcommands.at(1);
+            auto value = process.GetFloatRegister(std::string(reg));
+            fmt::print("{}\n", value);
+        } else if (check_command(subcommands, "fset", 3)) {
+            auto reg = subcommands.at(1);
+            auto value = utils::svtonum<double>(subcommands.at(2));
+            if (!value) {
+                throw DebuggerError(
+                    fmt::format("Expected register value, instead got '{}'",
+                                subcommands.at(2)));
+            }
+            process.SetFloatRegister(std::string(reg), *value);
         } else {
             fmt::print("{}", REGISTER_USAGE);
         }

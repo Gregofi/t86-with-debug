@@ -11,7 +11,7 @@
 using namespace tiny::t86;
 
 TEST(DebugTest, SimpleCommands) {
-    OS os(2);
+    OS os(2, 0);
     std::queue<std::string> in({
             "REASON",
             "PEEKREGS",
@@ -53,7 +53,7 @@ HALT
 }
 
 TEST(DebugTest, SingleStep) {
-    OS os(2);
+    OS os(2, 0);
     std::queue<std::string> in({
         "REASON",
         "PEEKREGS",
@@ -108,7 +108,7 @@ HALT
 }
 
 TEST(DebugTest, IPManipulation) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
         "REASON",
         // Step to address 2
@@ -178,7 +178,7 @@ R"(
 }
 
 TEST(DebugTest, Breakpoint) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
             "POKETEXT 2 BKPT",
             "PEEKTEXT 2 1",
@@ -234,7 +234,7 @@ R"(
 }
 
 TEST(DebugTest, PeekDataText) {
-    OS os(3);
+    OS os(3, 0);
     std::queue<std::string> in({
             "CONTINUE",
             "PEEKTEXT 2 3",
@@ -307,4 +307,79 @@ R"(
     ASSERT_EQ(*it++, "REGCOUNT:10");
     ASSERT_EQ(*it++, "TEXTSIZE:5");
     ASSERT_EQ(*it++, "DATASIZE:1024");
+}
+
+TEST(DebugTest, Floats) {
+    OS os(0, 2);
+    std::queue<std::string> in({
+        "CONTINUE",
+        "PEEKFLOATREGS",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV F0, 3.6
+1 MOV F1, 4.5
+2 FADD F0, F1
+3 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+    
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    EXPECT_EQ(*it++, "F0:8.1\nF1:4.5\n");
+}
+
+TEST(DebugTest, FloatsAndNormalRegisters) {
+    OS os(1, 2);
+    std::queue<std::string> in({
+        "POKEFLOATREGS F1 4.5",
+        "CONTINUE",
+        "PEEKREGS",
+        "PEEKFLOATREGS",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV F0, 3.6
+1 FADD F0, F1
+2 NRW R0, F0
+3 EXT F0, R0
+4 FADD F0, 0.5
+5 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+    
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    EXPECT_EQ(*it++, "IP:6\nBP:1024\nSP:1024\n"
+                     "R0:8\n");
+    EXPECT_EQ(*it++, "F0:8.5\nF1:4.5\n");
 }

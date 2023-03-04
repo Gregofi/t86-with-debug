@@ -54,11 +54,26 @@ public:
             return Register::StackPointer();
         } else if (s == "FLAGS") {
             return Register::Flags();
-        } else {
-            auto idx = svtoidx(s.substr(1));
-            log_debug("Register index: {}", idx);
-            return Register{static_cast<size_t>(idx)};
+        } 
+        auto idx = utils::svtonum<size_t>(s.substr(1));
+        if (!idx) {
+            throw std::runtime_error(
+                    fmt::format("TranslateToRegister failed, got '{}' as index",
+                        s.substr(1)));
         }
+        log_debug("Register index: {}",* idx);
+        return Register(*idx);
+    }
+
+    FloatRegister TranslateToFloatRegister(std::string_view s) {
+        auto idx = utils::svtonum<size_t>(s.substr(1));
+        if (!idx) {
+            throw std::runtime_error(
+                    fmt::format("TranslateToRegister failed, got '{}' as index",
+                        s.substr(1)));
+        }
+        log_debug("Float register index: {}",* idx);
+        return FloatRegister(*idx);
     }
 
     std::unique_ptr<Instruction> ParseInstruction(std::string_view s) {
@@ -68,11 +83,22 @@ public:
         return ins;
     }
 
+    std::string FloatRegistersToString() const {
+        std::string acc;
+        // Float registers
+        size_t float_reg_cnt = cpu.floatRegistersCount();
+        for (size_t i = 0; i < float_reg_cnt; ++i) {
+            acc += fmt::format("F{}:{}\n", i, cpu.getFloatRegister(FloatRegister{i}));
+        }
+        return acc; 
+    }
+
     std::string RegistersToString() const {
         std::string acc;
         acc += fmt::format("IP:{}\n", cpu.getRegister(Register::ProgramCounter()));
         acc += fmt::format("BP:{}\n", cpu.getRegister(Register::StackBasePointer()));
         acc += fmt::format("SP:{}\n", cpu.getRegister(Register::StackPointer()));
+        // Normal registers
         size_t reg_cnt = cpu.registersCount();
         for (size_t i = 0; i < reg_cnt; ++i) {
             acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register{i}));
@@ -149,10 +175,17 @@ public:
             } else if (command == "PEEKREGS") {
                 auto regs = RegistersToString();
                 messenger->Send(regs);
+            } else if (command == "PEEKFLOATREGS") {
+                auto regs = FloatRegistersToString();
+                messenger->Send(regs);
+            } else if (command.starts_with("POKEFLOATREGS")) {
+                auto reg = TranslateToFloatRegister(commands.at(1));
+                auto val = *utils::svtonum<double>(commands.at(2));
+                cpu.setFloatRegisterDebug(reg, val);
+                messenger->Send("OK");
             } else if (command.starts_with("POKEREGS")) {
                 auto reg = TranslateToRegister(commands.at(1));
-                auto val = svtoidx(commands.at(2));
-                // TODO: Handle bad registers
+                auto val = *utils::svtonum<int64_t>(commands.at(2));
                 cpu.setRegisterDebug(reg, val);
                 messenger->Send("OK");
             } else if (command == "SINGLESTEP") {

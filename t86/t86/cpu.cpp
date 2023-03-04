@@ -101,6 +101,10 @@ namespace tiny::t86 {
         : Cpu(registerCount, Cpu::Config::instance().floatRegisterCnt(),
               Cpu::Config::instance().aluCnt()) {}
 
+    Cpu::Cpu(size_t registerCount, size_t floatRegisterCount)
+        : Cpu(registerCount, floatRegisterCount,
+              Cpu::Config::instance().aluCnt()) {}
+
     Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt)
             : Cpu(registerCount, floatRegisterCount, aluCnt, aluCnt * 2, Config::instance().ramSize(), Config::instance().ramGatesCount()) {}
 
@@ -135,6 +139,10 @@ namespace tiny::t86 {
             log_info("Setting PC!");
             speculativeProgramCounter_ = value;
         }
+    }
+
+    void Cpu::setFloatRegisterDebug(FloatRegister fReg, double value) {
+        setFloatRegister(fReg, value);
     }
 
     void Cpu::setFloatRegister(FloatRegister fReg, double value) {

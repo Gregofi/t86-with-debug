@@ -140,7 +140,7 @@ TEST(CommunicationTest, Communication) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, 3);
+    std::thread t_os(RunCPU, std::move(tm1), program, 3, 0);
     ASSERT_EQ(*tm2.Receive(), "STOPPED");
     tm2.Send("CONTINUE");
     ASSERT_EQ(*tm2.Receive(), "OK");
@@ -164,9 +164,9 @@ TEST(T86ProcessCpuTest, StopReason) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     ASSERT_EQ(DebugEvent::ExecutionBegin, t86.GetReason());
     t86.ResumeExecution();
@@ -192,9 +192,9 @@ TEST(T86ProcessCpuTest, PeekRegisters) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     ASSERT_EQ(DebugEvent::ExecutionBegin, t86.GetReason());
     auto regs = t86.FetchRegisters();
@@ -234,9 +234,9 @@ TEST(T86ProcessCpuTest, SingleSteps) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     auto regs = t86.FetchRegisters();
     ASSERT_EQ(regs.at("IP"), 0);
@@ -299,9 +299,9 @@ TEST(T86ProcessCpuTest, SetRegisters) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait(); 
     auto regs1 = t86.FetchRegisters();
     t86.SetRegisters(regs1);
@@ -361,9 +361,9 @@ TEST(T86ProcessCpuTest, PeekText) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     auto v = t86.ReadText(0, 1);
     ASSERT_EQ(v.size(), 1);
@@ -398,9 +398,9 @@ TEST(T86ProcessCpuTest, PokeText) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteText(0, {"MOV R1, 1"});
     auto text = t86.ReadText(0, 1);
@@ -445,9 +445,9 @@ TEST(T86ProcessCpuTest, Breakpoint) {
 3 MOV R2, R0
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
 
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteText(2, {"BKPT"});
     auto text = t86.ReadText(2, 1);
@@ -487,9 +487,9 @@ TEST(T86ProcessCpuTest, Memory) {
 3 MOV R2, [2]
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
     
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.WriteMemory(1, {3, 4});
     auto mem = t86.ReadMemory(0, 3);
@@ -523,13 +523,44 @@ TEST(T86ProcessCpuTest, Terminate) {
 3 MOV R2, [2]
 4 HALT
 )";
-    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, 0);
     
-    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
     t86.Singlestep();
     t86.Wait();
     t86.Terminate();
     // Should not hang
+    t_os.join();
+}
+
+TEST(T86ProcessCpuTest, FloatRegisters) {
+    const size_t REG_COUNT = 3;
+    const size_t FLOAT_COUNT = 2;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV F0, 3.5
+1 MOV F1, 6.9
+2 NRW R0, F1
+3 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, FLOAT_COUNT);
+    
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, FLOAT_COUNT);
+    t86.Wait();
+    t86.ResumeExecution();
+    t86.Wait();
+    auto regs = t86.FetchRegisters();
+    EXPECT_EQ(regs.at("R0"), 6);
+    auto float_regs = t86.FetchFloatRegisters();
+    EXPECT_EQ(float_regs.at("F0"), 3.5);
+    EXPECT_EQ(float_regs.at("F1"), 6.9);
+
+    t86.ResumeExecution();
     t_os.join();
 }
