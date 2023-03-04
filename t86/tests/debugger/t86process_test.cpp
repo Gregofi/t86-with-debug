@@ -507,3 +507,29 @@ TEST(T86ProcessCpuTest, Memory) {
     t86.ResumeExecution();
     t_os.join();
 }
+
+TEST(T86ProcessCpuTest, Terminate) {
+    const size_t REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, [1]
+1 NOP
+2 ADD R0, [2]
+3 MOV R2, [2]
+4 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT);
+    
+    auto t86 = T86Process(std::move(tm2), REG_COUNT);
+    t86.Wait();
+    t86.Singlestep();
+    t86.Wait();
+    t86.Terminate();
+    // Should not hang
+    t_os.join();
+}

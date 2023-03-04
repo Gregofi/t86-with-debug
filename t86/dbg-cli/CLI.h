@@ -184,6 +184,8 @@ public:
             PrintText(begin, text);
         } else if (check_command(subcommands, "from", 3)) {
             auto begin = ParseAddress(subcommands.at(1));
+            // If to is not specified then disassemble the rest
+            // of the file.
             auto amount = subcommands.size() > 2
                 ? ParseAddress(subcommands.at(2))
                 : process.TextSize() - begin;
@@ -221,6 +223,20 @@ public:
         }
     }
 
+    void HandleContinue(std::string_view command) {
+        if (!is_running) {
+            throw DebuggerError("No process is running");
+        }
+        process.ContinueExecution();
+        auto e = process.WaitForDebugEvent();
+        if (e == DebugEvent::ExecutionEnd) {
+            is_running = false;
+        }
+        fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));
+        auto ip = process.GetIP();
+        PrettyPrintText(ip);
+    }
+
     void HandleCommand(std::string_view command) {
         auto main_command = command.substr(0, command.find(' ') - 1);
         command = command.substr(main_command.size() +
@@ -232,11 +248,7 @@ public:
         } else if (utils::is_prefix_of(main_command, "disassemble")) {
             HandleDisassemble(command);
         } else if (utils::is_prefix_of(main_command, "continue")) {
-            process.ContinueExecution();
-            auto e = process.WaitForDebugEvent();
-            fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));
-            auto ip = process.GetIP();
-            PrettyPrintText(ip);
+            HandleContinue(command);
         } else if (utils::is_prefix_of(main_command, "register")) {
             HandleRegister(command);
         } else {
@@ -264,6 +276,7 @@ public:
             }
             free(line_raw);
         }
+        process.Terminate();
         return 0;
     }
 private:
@@ -279,6 +292,7 @@ private:
     }
 
   Native process;
+  bool is_running{true};
 
   static const int DEFAULT_DBG_PORT = 9110;
 };

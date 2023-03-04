@@ -167,6 +167,9 @@ public:
             } else if (command == "DATASIZE") {
                 messenger->Send(fmt::format("DATASIZE:{}",
                                             Cpu::Config::instance().ramSize()));
+            } else if (command == "TERMINATE") {
+                messenger->Send("OK");
+                return false;
             } else {
                 messenger->Send("UNKNOWN COMMAND");
                 continue;

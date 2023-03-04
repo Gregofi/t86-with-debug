@@ -224,6 +224,10 @@ public:
             ContinueExecution();
         }
     }
+
+    void Terminate() {
+        process->Terminate();
+    }
 protected:
     /// Returns SW BP opcode for current architecture.
     std::string_view GetSoftwareBreakpointOpcode() {

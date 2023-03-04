@@ -16,8 +16,8 @@ void OS::DispatchInterrupt(int n) {
         DebuggerMessage(Debug::BreakReason::SingleStep);
         break;
     default:
-        // TODO: Add logging!
-        throw std::runtime_error(fmt::format("No interrupt handler for interrupt no. {}!", n));
+        throw std::runtime_error(
+              fmt::format("No interrupt handler for interrupt no. {}!", n));
         break;
     }
 }
@@ -38,6 +38,20 @@ void OS::Run(Program program) {
             log_info("Interrupt {} occurred", n);
             DispatchInterrupt(n);
         }
+
+        if (stop) {
+            log_info("OS: stop is set, ending");
+            return;
+        }
+    }
+}
+
+void OS::DebuggerMessage(Debug::BreakReason reason) {
+    if (debug_interface) {
+        stop = !debug_interface->Work(reason);
+    } else {
+        log_warning("Call to debugger interface was initiated but no "
+                    "debugger is connected!");
     }
 }
 }
