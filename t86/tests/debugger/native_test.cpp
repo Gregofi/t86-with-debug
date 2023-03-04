@@ -621,3 +621,51 @@ TEST(NativeWT86Test, SetFloatRegisters) {
     t_os.join();
 }
 
+TEST(NativeWT86Test, InvalidFloatRegisters) {
+    const size_t REG_COUNT = 3;
+    const size_t FLOAT_REG_COUNT = 3;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 3
+1 MOV R1, 2
+2 MOV F0, 3.14
+3 MOV F1, 5.9
+4 MOV F2, F0
+5 FADD F2, F1
+6 NRW R2, F2
+7 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, FLOAT_REG_COUNT);
+    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, FLOAT_REG_COUNT);
+    Native native(std::move(t86));
+    native.WaitForDebugEvent();
+    
+    EXPECT_THROW({
+        native.GetFloatRegister("R0");
+    }, DebuggerError);
+    EXPECT_THROW({
+        native.GetFloatRegister("F3");
+    }, DebuggerError);
+    EXPECT_THROW({
+        native.GetFloatRegister("0");
+    }, DebuggerError);
+    EXPECT_THROW({
+        native.SetFloatRegisters({{"R0", 1.0}});
+    }, DebuggerError);
+    EXPECT_THROW({
+        native.SetFloatRegisters({{"F3", 1.0}});
+    }, DebuggerError);
+    EXPECT_THROW({
+        native.SetFloatRegisters({{"F0", 1.0}, {"F3", 2.0}});
+    }, DebuggerError);
+
+    native.ContinueExecution();
+    native.WaitForDebugEvent();
+    native.ContinueExecution();
+    t_os.join();
+}
