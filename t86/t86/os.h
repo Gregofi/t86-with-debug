@@ -19,16 +19,14 @@ public:
         debug_interface.emplace(cpu, std::move(m));
     }
 private:
+    void DebuggerMessage(Debug::BreakReason reason);
     void DispatchInterrupt(int n);
     /// If debug interface is present then sends message to it,
     /// otherwise noop.
-    void DebuggerMessage(Debug::BreakReason reason) {
-        if (debug_interface) {
-            debug_interface->Work(reason);
-        }
-    }
-
+    /// If returns false then the execution should be aborted.
     Cpu cpu;
     std::optional<Debug> debug_interface;
+    /// Indicates whether the execution should stop.
+    bool stop{false};
 };
 }

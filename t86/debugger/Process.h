@@ -30,6 +30,9 @@ public:
     virtual void ResumeExecution() = 0;
     virtual size_t TextSize() = 0;
     virtual void Wait() = 0;
+    /// Cause the process to end, the class should not be used
+    /// after this function is called.
+    virtual void Terminate() = 0;
 protected:
 };
 

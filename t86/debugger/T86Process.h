@@ -153,6 +153,11 @@ public:
             throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
         }
     }
+
+    void Terminate() override {
+        process->Send("TERMINATE");
+        CheckResponse("TERMINATE fail");
+    }
 private:
     int64_t GetRegister(std::string_view name) {
         process->Send(fmt::format("PEEKREGS {}", name));
