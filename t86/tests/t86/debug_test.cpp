@@ -308,3 +308,78 @@ R"(
     ASSERT_EQ(*it++, "TEXTSIZE:5");
     ASSERT_EQ(*it++, "DATASIZE:1024");
 }
+
+TEST(DebugTest, Floats) {
+    OS os(0, 2);
+    std::queue<std::string> in({
+        "CONTINUE",
+        "PEEKREGS",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV F0, 3.6
+1 MOV F1, 4.5
+2 FADD F0, F1
+3 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+    
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    EXPECT_EQ(*it++, "IP:4\nBP:1024\nSP:1024\n"
+                     "F0:8.1\nF1:4.5\n");
+}
+
+TEST(DebugTest, FloatsAndNormalRegisters) {
+    OS os(1, 2);
+    std::queue<std::string> in({
+        "POKEREGS F1 4.5",
+        "CONTINUE",
+        "PEEKREGS",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV F0, 3.6
+1 FADD F0, F1
+2 NRW R0, F0
+3 EXT F0, R0
+4 FADD F0, 0.5
+5 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+    
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    EXPECT_EQ(*it++, "IP:6\nBP:1024\nSP:1024\n"
+                     "F0:8.5\nF1:4.5\n"
+                     "R0:8\n");
+}
