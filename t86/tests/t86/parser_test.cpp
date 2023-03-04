@@ -257,11 +257,11 @@ TEST(ParserTest, String) {
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello, World!") + 1);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello, World!");
+    ASSERT_STREQ(content.c_str(), "Hello, World!");
 }
 
 TEST(ParserTest, MultipleStrings) {
@@ -279,11 +279,13 @@ TEST(ParserTest, MultipleStrings) {
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello, World!") + 3);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello, World!");
+    ASSERT_STREQ(content.c_str(), "Hello");
+    ASSERT_STREQ(content.c_str() + strlen("Hello") + 1, ", ");
+    ASSERT_STREQ(content.c_str() + strlen("Hello, ") + 2, "World!");
 }
 
 TEST(ParserTest, MixStringsAndNumbers) {
@@ -293,7 +295,7 @@ TEST(ParserTest, MixStringsAndNumbers) {
 111
 ", "
 87 111
-"rl" 100 33
+"rl" 100 33 0
 .text
 0 MOV R0, [0]
 )";
@@ -302,11 +304,18 @@ TEST(ParserTest, MixStringsAndNumbers) {
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello, World!") + 4);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello, World!");
+    auto *ptr = content.c_str();
+    ASSERT_STREQ(ptr, "Hell");
+    ptr += strlen("Hell") + 1;
+    ASSERT_STREQ(ptr, "o, ");
+    ptr += strlen("o, ") + 1;
+    ASSERT_STREQ(ptr, "Worl");
+    ptr += strlen("Worl") + 1;
+    ASSERT_STREQ(ptr, "d!");
 }
 
 TEST(ParserTest, MultilineString) {
@@ -322,11 +331,12 @@ World!"
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!") + 1);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello\nWorld!");
+    ASSERT_STREQ(content.c_str(), "Hello\nWorld!");
+    ASSERT_EQ(content.back(), 0);
 }
 
 TEST(ParserTest, MultipleStringsOnSameLine) {
@@ -342,11 +352,20 @@ TEST(ParserTest, MultipleStringsOnSameLine) {
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello, World!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello, World!") + 5);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello, World!");
+    auto ptr = content.c_str();
+    ASSERT_STREQ(ptr, "Hello");
+    ptr += strlen("Hello") + 1;
+    ASSERT_STREQ(ptr, ", ");
+    ptr += strlen(", ") + 1;
+    ASSERT_STREQ(ptr, "Wor");
+    ptr += strlen("Wor") + 1;
+    ASSERT_STREQ(ptr, "ld");
+    ptr += strlen("ld") + 1;
+    ASSERT_STREQ(ptr, "!");
 }
 
 TEST(ParserTest, EscapeSequence) {
@@ -361,11 +380,11 @@ TEST(ParserTest, EscapeSequence) {
     auto p = parser.Parse();
     ASSERT_EQ(p.instructions().size(), 1);
     std::string content;
-    ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!"));
+    ASSERT_EQ(p.data().size(), strlen("Hello\nWorld!") + 1);
     auto&& d = p.data();
     std::transform(d.begin(), d.end(), std::back_inserter(content),
                    [](auto &&c) { return static_cast<char>(c); });
-    ASSERT_EQ(content, "Hello\nWorld!");
+    ASSERT_STREQ(content.c_str(), "Hello\nWorld!");
 }
 
 TEST(ParserTest, WrongEscapeSequence) {
