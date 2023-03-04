@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <thread>
 #include "common/helpers.h"
 #include "common/threads_messenger.h"
 

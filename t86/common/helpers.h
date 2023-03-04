@@ -78,12 +78,25 @@ namespace utils {
     /// from_chars wrapper that converts 's' to T.
     template<typename T>
     inline std::optional<T> svtonum(std::string_view s) {
-        T result;
-        auto [ptr, ec] { std::from_chars(s.data(), s.data() + s.size(), result) };
-        if (ec == std::errc()) {
-            return result;
+#ifdef __clang__
+        if constexpr (std::is_floating_point_v<T>) {
+            try {
+                auto res = std::stod(std::string{s});
+                return res;
+            } catch (...) {
+                return std::nullopt;
+            }
+        } else {
+#endif
+            T result;
+            auto [ptr, ec] { std::from_chars(s.data(), s.data() + s.size(), result) };
+            if (ec == std::errc()) {
+                return result;
+            }
+            return std::nullopt;
+#ifdef __clang__
         }
-        return std::nullopt;
+#endif
     }
 
     inline bool is_prefix_of(std::string_view prefix, std::string_view of) {

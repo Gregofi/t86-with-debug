@@ -7,6 +7,7 @@
 
 #include <string>
 #include <queue>
+#include <thread>
 
 using namespace tiny::t86;
 

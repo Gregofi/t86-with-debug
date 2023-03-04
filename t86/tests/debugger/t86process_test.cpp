@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <thread>
 #include "debugger/T86Process.h"
 #include "t86-parser/parser.h"
 #include "t86/os.h"
