@@ -88,7 +88,7 @@ public:
         if (address >= text_size) {
             return;
         }
-        size_t begin = range > address ? 0 : address - range;
+        size_t begin = static_cast<unsigned>(range) > address ? 0 : address - range;
         size_t end = std::min(text_size, address + range + 1);
         auto inst = process.ReadText(begin, end - begin);
         for (size_t i = 0; i < inst.size(); ++i) {

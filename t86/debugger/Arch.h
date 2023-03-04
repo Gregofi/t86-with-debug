@@ -1,4 +1,5 @@
 #pragma once
+#include "helpers.h"
 #include <string>
 #include <map>
 
@@ -22,6 +23,7 @@ public:
         switch (ins.current_machine) {
         case Machine::T86: return true;
         }
+        UNREACHABLE;
     }
 
     static std::string GetSoftwareBreakpointOpcode() {
