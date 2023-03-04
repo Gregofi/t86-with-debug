@@ -1,5 +1,6 @@
 #include <argparse/argparse.hpp>
 #include <fstream>
+#include <thread>
 #include <fmt/core.h>
 
 #include "CLI.h"

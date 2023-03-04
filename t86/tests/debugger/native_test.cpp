@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <thread>
+#include <string>
 #include "debugger/Native.h"
 #include "common/threads_messenger.h"
 #include "t86/cpu.h"
