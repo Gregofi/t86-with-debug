@@ -73,7 +73,7 @@ public:
     void WriteMemory(uint64_t address, const std::vector<int64_t>& data) override {
         if (address + data.size() > data_size) {
             throw DebuggerError(fmt::format("Writing memory at {}-{}, but size is {}",
-                        address, address + data.size(), data_size));
+                        address, address + data.size() - 1, data_size));
         }
         for (size_t i = 0; i < data.size(); ++i) {
             process->Send(fmt::format("POKEDATA {} {}", address + i, data[i]));
@@ -83,8 +83,8 @@ public:
 
     std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) override {
         if (address + amount > data_size) {
-            throw DebuggerError(fmt::format("Writing memory at {}-{}, but size is {}",
-                        address, address + amount, data_size));
+            throw DebuggerError(fmt::format("Reading memory at {}-{}, but size is {}",
+                        address, address + amount - 1, data_size));
         }
         process->Send(fmt::format("PEEKDATA {} {}", address, amount));
         auto data = process->Receive();
