@@ -75,6 +75,17 @@ namespace utils {
         return std::nullopt;
     }
 
+    /// from_chars wrapper that converts 's' to T.
+    template<typename T>
+    inline std::optional<T> svtonum(std::string_view s) {
+        T result;
+        auto [ptr, ec] { std::from_chars(s.data(), s.data() + s.size(), result) };
+        if (ec == std::errc()) {
+            return result;
+        }
+        return std::nullopt;
+    }
+
     inline bool is_prefix_of(std::string_view prefix, std::string_view of) {
         if (prefix.size() > of.size()) {
             return false;
@@ -107,4 +118,7 @@ namespace utils {
         }
         return result;
     }
+    /// Variant utils
+    template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+    template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
