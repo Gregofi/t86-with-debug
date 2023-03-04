@@ -488,6 +488,7 @@ void Parser::Data() {
             std::transform(string.begin(), string.end(),
                            std::back_inserter(data),
                            [](auto &&c) { return c; });
+            data.push_back(0);
         } else if (curtok.kind == TokenKind::NUM) {
             data.emplace_back(lex.getNumber());
         }

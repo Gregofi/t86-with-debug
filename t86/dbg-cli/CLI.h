@@ -81,6 +81,23 @@ commands:
 - interactive <from> - Start rewriting from address <from>. Enter instruction and newline.
                        Empty line means end of rewriting.
 )";
+    static constexpr const char* MEMORY_USAGE =
+R"(memory <subcommands> [parameter [parameter...]]
+Write and read into the .data section (the RAM memory) of the program.
+
+commands:
+- get <begin-addr> <end-addr> - Read from memory range <begin-addr>:<end-addr>.
+- gets <begin-addr> <end-addr> - Read from memory range <begin-addr>:<end-addr>,
+                                 interpret the result as a c-string. If the string
+                                 is missing newline at the end it is appended and
+                                 together with a '\%' sequence.
+- set <addr> <value> [<value>...] - Write values, beginning at address <addr>.
+- sets <addr> <string> - Write string encoded in ASCII on address <addr>. The
+                         terminating zero is appended automatically. The string
+                         is in form "Hello, World!\n", it must begin and end with
+                         quotation marks, they however needn't be escaped inside
+                         the string itself.
+)";
 
 public:
     CLI(Native process): process(std::move(process)) {
@@ -90,6 +107,37 @@ public:
     /// Initializes connection to the process
     void OpenConnection(int port) {
         process.Initialize(port);
+    }
+
+    /// Parses string from given stringview, converts most
+    /// of the escape characters ('\' + 'n' -> '\n') into
+    /// one and checks if it begins and ends with '"'.
+    std::string ParseString(std::string_view s) {
+        if (s.size() < 2 || !s.starts_with('"') || !s.ends_with('"')) {
+            throw DebuggerError("Expected string to begin and end with '\"'");
+        }
+        s.remove_prefix(1);
+        std::string result;
+        char prev = s.at(0);
+        for (size_t i = 1; i < s.size(); ++i) {
+            if (prev == '\\') {
+                if (s[i] == 'n') {
+                    result += '\n';
+                } else if (s[i] == 't') {
+                    result += '\t';
+                } else if (s[i] == '0') {
+                    result += '\0';
+                } else {
+                    throw DebuggerError(fmt::format("Unknown escape sequence '{}{}'",
+                                                    prev, s[i]));
+                }
+                prev = s[++i];
+            } else {
+                result += prev;
+                prev = s[i];
+            }
+        }
+        return result;
     }
 
     /// Dumps text around current IP
@@ -293,6 +341,61 @@ public:
         }
     }
 
+    void HandleMemory(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+        if (check_command(subcommands, "set", 3)) {
+            auto cell = utils::svtonum<size_t>(subcommands.at(1));
+            std::vector<int64_t> values;
+            std::transform(std::next(subcommands.begin(), 2), subcommands.end(), 
+                    std::back_inserter(values), [&](auto&& s) { 
+                auto v = utils::svtonum<int64_t>(s);
+                if (!v) {
+                    throw DebuggerError(fmt::format("Expected number, got '{}'", s));
+                }
+                return *v;
+            });
+            process.SetMemory(*cell, values);
+        } else if (check_command(subcommands, "setstr", 3)) {
+            auto cell = utils::svtonum<size_t>(subcommands.at(1));
+            if (!cell) {
+                throw DebuggerError(fmt::format("Expected memory cell and string"));
+            }
+            auto str = utils::join(std::next(subcommands.begin(), 2), subcommands.end());
+            auto unescaped_str = ParseString(str);
+            log_info("setstr: string = '{}'", unescaped_str);
+            std::vector<int64_t> data;
+            std::transform(unescaped_str.begin(), unescaped_str.end(),
+                    std::back_inserter(data), [](auto&& c){ return c; });
+            // The terminating zero
+            data.push_back(0);
+            process.SetMemory(*cell, data);
+        } else if (check_command(subcommands, "get", 3)
+                || check_command(subcommands, "getstr", 3)) {
+            auto begin = utils::svtonum<size_t>(subcommands.at(1));
+            auto end = utils::svtonum<size_t>(subcommands.at(2));
+            if (!begin || !end || begin > end) {
+                throw DebuggerError(fmt::format("Expected range of memory cells, "
+                            "instead got '{}', '{}'", subcommands.at(1),
+                            subcommands.at(2)));
+            }
+            auto vals = process.ReadMemory(*begin, *end - *begin + 1);
+            if (subcommands.at(0) == "get") {
+                for (auto&& val: vals) {
+                    fmt::print("{}:{}\n", (*begin)++, val);
+                }
+            } else {
+                for (size_t i = 0; i < vals.size(); ++i) {
+                    fmt::print("{}", static_cast<char>(vals[i]));
+                    if (i + 1 == vals.size() && vals[i] != '\n') {
+                        fmt::print("\\%\n");
+                    }
+                }
+            }
+        } else {
+            fmt::print("{}", MEMORY_USAGE);
+        }
+    }
+
     void HandleContinue(std::string_view command) {
         if (!is_running) {
             throw DebuggerError("No process is running");
@@ -323,6 +426,8 @@ public:
             HandleContinue(command);
         } else if (utils::is_prefix_of(main_command, "register")) {
             HandleRegister(command);
+        } else if (utils::is_prefix_of(main_command, "memory")) {
+            HandleMemory(command);
         } else {
             fmt::print("{}", USAGE);
         }

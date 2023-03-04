@@ -70,14 +70,22 @@ public:
         return utils::split(*text, '\n');
     }
 
-    void WriteMemory(uint64_t address, std::vector<uint64_t> data) override {
+    void WriteMemory(uint64_t address, const std::vector<int64_t>& data) override {
+        if (address + data.size() > data_size) {
+            throw DebuggerError(fmt::format("Writing memory at {}-{}, but size is {}",
+                        address, address + data.size() - 1, data_size));
+        }
         for (size_t i = 0; i < data.size(); ++i) {
             process->Send(fmt::format("POKEDATA {} {}", address + i, data[i]));
             CheckResponse("POKEDATA error");
         }
     }
 
-    std::vector<uint64_t> ReadMemory(uint64_t address, size_t amount) override {
+    std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) override {
+        if (address + amount > data_size) {
+            throw DebuggerError(fmt::format("Reading memory at {}-{}, but size is {}",
+                        address, address + amount - 1, data_size));
+        }
         process->Send(fmt::format("PEEKDATA {} {}", address, amount));
         auto data = process->Receive();
         if (!data) {
@@ -85,9 +93,9 @@ public:
         }
 
         auto splitted = utils::split(*data, '\n');
-        std::vector<uint64_t> result;
+        std::vector<int64_t> result;
         std::transform(splitted.begin(), splitted.end(), std::back_inserter(result),
-                [](auto&& s) { return std::stoull(s); });
+                [](auto&& s) { return std::stoll(s); });
         return result;
     }
 

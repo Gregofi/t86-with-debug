@@ -212,6 +212,14 @@ public:
         return GetRegister("IP"); 
     }
 
+    void SetMemory(uint64_t address, const std::vector<int64_t>& values) {
+        process->WriteMemory(address, values);
+    }
+
+    std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) {
+        return process->ReadMemory(address, amount);
+    }
+
     DebugEvent WaitForDebugEvent() {
         DebugEvent reason;
         // If, for some reason, we got the event in some other
