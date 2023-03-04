@@ -14,6 +14,7 @@ add_subdirectory(common)
 add_subdirectory(t86)
 add_subdirectory(debugger)
 add_subdirectory(t86-cli)
+add_subdirectory(dbg-cli)
 add_subdirectory(t86-parser)
 
 # # Testing
@@ -69,5 +70,6 @@ target_link_libraries(
   common
   t86-parser
 )
+
 include(GoogleTest)
 gtest_discover_tests(unittests)

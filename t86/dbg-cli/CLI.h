@@ -9,7 +9,7 @@
 #include "common/helpers.h"
 #include "common/logger.h"
 #include "utility/linenoise.h"
-#include "Native.h"
+#include "debugger/Native.h"
 
 class CLI {
     static constexpr const char* BP_USAGE = 
