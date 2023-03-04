@@ -491,13 +491,13 @@ TEST(T86ProcessCpuTest, Memory) {
     
     auto t86 = T86Process(std::move(tm2), REG_COUNT, 0);
     t86.Wait();
-    t86.WriteMemory(1, {3, 4});
+    t86.WriteMemory(1, {3, -4});
     auto mem = t86.ReadMemory(0, 3);
     ASSERT_EQ(mem.size(), 3);
     ASSERT_EQ(mem[0], 0);
     ASSERT_EQ(mem[1], 3);
-    ASSERT_EQ(mem[2], 4);
-    for (size_t i = 3; i < 1024; ++ i) {
+    ASSERT_EQ(mem[2], -4);
+    for (int i = 3; i < 1024; ++ i) {
         ASSERT_NO_THROW({ t86.WriteMemory(i, {i}); });
     }
     t86.WriteMemory(1023, {3});
@@ -519,8 +519,8 @@ TEST(T86ProcessCpuTest, Memory) {
     t86.ResumeExecution();
     t86.Wait();
     auto regs = t86.FetchRegisters();
-    ASSERT_EQ(regs.at("R0"), 7);
-    ASSERT_EQ(regs.at("R2"), 4);
+    EXPECT_EQ(regs.at("R0"), -1);
+    EXPECT_EQ(regs.at("R2"), -4);
 
     t86.ResumeExecution();
     t_os.join();

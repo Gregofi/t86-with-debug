@@ -15,8 +15,8 @@ public:
     virtual std::vector<std::string> ReadText(uint64_t address,
                                             size_t amount) = 0;
 
-    virtual void WriteMemory(uint64_t address, std::vector<uint64_t> data) = 0;
-    virtual std::vector<uint64_t> ReadMemory(uint64_t address, size_t amount) = 0;
+    virtual void WriteMemory(uint64_t address, const std::vector<int64_t>& data) = 0;
+    virtual std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) = 0;
 
     virtual DebugEvent GetReason() = 0;
 
