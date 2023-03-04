@@ -295,7 +295,7 @@ namespace tiny::t86 {
         }
 
         std::string toString() const {
-            return "FReg" + std::to_string(index_);
+            return "F" + std::to_string(index_);
         }
 
     private:
