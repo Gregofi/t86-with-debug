@@ -208,7 +208,12 @@ public:
         UNREACHABLE;
     }
 
-    void ReportBreak() {
+    void ReportBreak(DebugEvent e) {
+        // The IP does not correspond to the HALT instruction,
+        // it is one past it, rather not print anything.
+        if (e == DebugEvent::ExecutionEnd) {
+            return;
+        }
         auto ip = process.GetIP();
         auto line = source.AddrToLine(ip);
         // If we stopped on a line then print that, otherwise print assembly.
@@ -456,7 +461,7 @@ public:
             is_running = false;
         }
         fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));
-        ReportBreak();
+        ReportBreak(e);
     }
 
     void HandleCommand(std::string_view command) {
