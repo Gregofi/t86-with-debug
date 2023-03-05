@@ -1,0 +1,30 @@
+.debug_line
+0: 7
+1: 7
+2: 9
+3: 11
+4: 14
+5: 18
+
+.text
+0 CALL 2
+1 HALT
+2 PUSH BP
+3 MOV BP,SP
+4 NOP
+5 SUB SP,1
+6 SUB SP,1
+7 MOV R0,5
+8 MOV [BP + -2],R0
+9 LEA R1,[BP + -2]
+10 MOV [BP + -1],R1
+11 MOV R2,4
+12 MOV R3,[BP + -1]
+13 MOV [R3],R2
+14 MOV R4,[BP + -2]
+15 MOV R5,R4
+16 JMP 17
+17 NOP
+18 ADD SP,2
+19 POP BP
+20 RET
