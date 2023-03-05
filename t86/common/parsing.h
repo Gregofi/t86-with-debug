@@ -72,6 +72,12 @@ public:
         GetChar();
     }
 
+    /// If set then characters which do not match any tokens are
+    /// simply discarded.
+    void SetIgnoreMode(bool on) {
+        ignore = on;
+    }
+
     TokenKind ParseNumber() {
         int neg = lookahead == '-' ? -1 : 1;
         if (neg == -1) {
@@ -166,8 +172,13 @@ public:
             ParseIdentifier();
             return MakeToken(TokenKind::ID);
         } else {
-            throw ParserError(fmt::format("{}:{}:No token beginning with '{}'",
-                                          row, col, lookahead));
+            if (ignore) {
+                GetChar();
+                return getNext();
+            } else {
+                throw ParserError(fmt::format("{}:{}:No token beginning with '{}'",
+                                              row, col, lookahead));
+            }
         }
     }
 
@@ -205,5 +216,7 @@ private:
 
     std::istream& input;
     char lookahead;
+
+    bool ignore{false};
 };
 

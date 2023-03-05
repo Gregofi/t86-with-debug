@@ -131,6 +131,17 @@ TEST(TokenizerTest, Floats2) {
     ASSERT_EQ(l.getFloat(), 3.14);
 }
 
+TEST(TokenizerTest, Ignore) {
+    std::istringstream iss("A B ( % @ A %");
+    Lexer l(iss);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 2));
+    l.SetIgnoreMode(true);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 10));
+    l.SetIgnoreMode(false);
+    ASSERT_THROW({l.getNext();}, ParserError);
+}
+
 TEST(ParserTest, Minuses) {
 auto program = R"(
 .text
