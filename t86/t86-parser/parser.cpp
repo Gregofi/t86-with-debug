@@ -20,9 +20,11 @@ void Parser::Section() {
         Data();
     } else {
         log_info("Skipping '{}' section", section_name);
+        lex.SetIgnoreMode(true);
         while (curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {
             GetNext();
         };
+        lex.SetIgnoreMode(false);
     }
 }
 

@@ -46,10 +46,12 @@ DebuggingInfo Parser::Parse() {
         if (section_name == "debug_line") {
             info.line_mapping = DebugLine();
         } else {
+            lex.SetIgnoreMode(true);
             log_info("Skipping section '{}'", section_name);
             while (curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {
                 GetNext();
             }
+            lex.SetIgnoreMode(false);
         }
     }
     return info;
