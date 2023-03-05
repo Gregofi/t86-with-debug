@@ -8,6 +8,7 @@
 #include "common/TCP.h"
 #include "common/helpers.h"
 #include "common/logger.h"
+#include "debugger/Source/Source.h"
 #include "utility/linenoise.h"
 #include "debugger/Native.h"
 
@@ -24,7 +25,7 @@ which should be used alone.
 
 commands:
 - continue = Continues execution, has no subcommands.
-- stepi = Assembly level stepping.
+- istep = Assembly level stepping.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.
@@ -33,8 +34,8 @@ commands:
     static constexpr const char* BP_USAGE = 
 R"(breakpoint <subcommads> [parameter [parameter...]]
 If you want to set breakpoint at a specific address, the commands are 
-equivalent but with the -addr postfix, for example to set a breakpoint at
-address 1 you would use `breakpoint set-addr 1`.
+equivalent but with the 'i' prefix, for example to set a breakpoint at
+address 1 you would use `breakpoint iset 1` or just `br is 1`.
 
 - set <line> = Creates breakpoint at <line> and enables it.
 - unset <line> = Removes breakpoint at <line>.
@@ -100,7 +101,8 @@ commands:
 )";
 
 public:
-    CLI(Native process): process(std::move(process)) {
+    CLI(Native process, Source source): process(std::move(process)),
+                                        source(std::move(source)) {
 
     }
 
@@ -161,6 +163,23 @@ public:
         }
     }
 
+    /// Prints source code around given line, if no line exists then
+    /// nothing is printed.
+    void PrettyPrintCode(ssize_t line, int range = 2) {
+        auto begin = std::max(line - range, 0l);
+        auto end = line + range + 1;
+        for (ssize_t i = begin; i < end; ++i) {
+            auto code = source.GetLine(i);
+            if (code) {
+                if (i == line) {
+                    fmt::print(fg(fmt::color::dark_blue), "-> {}:{}\n", i, *code);
+                } else {
+                    fmt::print("   {}:{}\n", i, *code);
+                }
+            }
+        }
+    }
+
     void PrintText(uint64_t address, const std::vector<std::string>& ins) {
         for (size_t i = 0; i < ins.size(); ++i) {
             uint64_t curr_addr = i + address;
@@ -189,24 +208,59 @@ public:
         UNREACHABLE;
     }
 
+    void ReportBreak() {
+        auto ip = process.GetIP();
+        auto line = source.AddrToLine(ip);
+        // If we stopped on a line then print that, otherwise print assembly.
+        if (line) {
+            PrettyPrintCode(*line);
+        } else {
+            PrettyPrintText(ip);
+        }
+    }
+
     void HandleBreakpoint(std::string_view command) {
         // Breakpoint on raw address
         auto subcommands = utils::split_v(command);
-        if (check_command(subcommands, "set-address", 2)) {
+        if (check_command(subcommands, "iset", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             auto line = process.ReadText(address, 1);
             process.SetBreakpoint(address);
             fmt::print("Breakpoint set on line {}: '{}'\n", address, line[0]);
         // Breakpoint on line
-        } else if (check_command(subcommands, "set", 1)) {
-            throw DebuggerError("Source breakpoints are not yet supported");
-        } else if (check_command(subcommands, "disable-addr", 2)) {
+        } else if (check_command(subcommands, "set", 2)) {
+            auto line = utils::svtonum<size_t>(subcommands.at(1));
+            if (!line) {
+                Error("Expected line, got '{}'", subcommands.at(1));
+            }
+            auto addr = source.SetSourceSoftwareBreakpoint(process, *line);
+            auto source_line = source.GetLines(*line, 1);
+            fmt::print("Breakpoint set on line {} (addr {})", *line, addr);
+            if (source_line.size() > 0) {
+                fmt::print(": {}\n", source_line[0]);
+            } else {
+                fmt::print("\n");
+            }
+        } else if (check_command(subcommands, "remove", 2)) {
+            auto line = utils::svtonum<size_t>(subcommands.at(1));
+            if (!line) {
+                Error("Expected line, got '{}'", subcommands.at(1));
+            }
+            auto addr = source.SetSourceSoftwareBreakpoint(process, *line);
+            auto source_line = source.GetLines(*line, 1);
+            fmt::print("Breakpoint removed from line {} (addr {})", *line, addr);
+            if (source_line.size() > 0) {
+                fmt::print(": {}\n", source_line[0]);
+            } else {
+                fmt::print("\n");
+            }
+        } else if (check_command(subcommands, "idisable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.DisableSoftwareBreakpoint(address);
-        } else if (check_command(subcommands, "enable-addr", 2)) {
+        } else if (check_command(subcommands, "ienable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.EnableSoftwareBreakpoint(address);
-        } else if (check_command(subcommands, "remove-addr", 2)) {
+        } else if (check_command(subcommands, "iremove", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
         } else if (check_command(subcommands, "help", 1)) {
@@ -229,6 +283,9 @@ public:
                     is_running = false;
                 }
             }
+            // Instruction level stepping should always
+            // display the instructions even if they
+            // have source line mapping.
             auto ip = process.GetIP();
             PrettyPrintText(ip);
         } else if (utils::is_prefix_of(command, "help")) {
@@ -278,11 +335,7 @@ public:
             if (line == "") {
                 break;
             }
-            try {
-                result.push_back(line);
-            } catch (const DebuggerError& err) {
-                fmt::print(stderr, "Error: {}\n", err.what());
-            }
+            result.push_back(line);
             linenoiseHistoryAdd(line_raw);
             free(line_raw);
         }
@@ -294,8 +347,7 @@ public:
         if (check_command(subcommands, "interactive", 2)) {
             auto addr = utils::svtonum<size_t>(subcommands.at(1));
             if (!addr) {
-                throw DebuggerError(fmt::format("Expected address, got '{}'",
-                            subcommands.at(2)));
+                Error("Expected address, got '{}'", subcommands.at(2));
             }
             InteractiveAssemble(*addr);
         } else {
@@ -314,9 +366,7 @@ public:
             auto reg = subcommands.at(1);
             auto value = utils::svtoi64(subcommands.at(2));
             if (!value) {
-                throw DebuggerError(
-                    fmt::format("Expected register value, instead got '{}'",
-                                subcommands.at(2)));
+                Error("Expected register value, instead got '{}'", subcommands.at(2));
             }
             process.SetRegister(std::string(reg), *value);
         } else if (check_command(subcommands, "get", 2)) {
@@ -406,8 +456,7 @@ public:
             is_running = false;
         }
         fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));
-        auto ip = process.GetIP();
-        PrettyPrintText(ip);
+        ReportBreak();
     }
 
     void HandleCommand(std::string_view command) {
@@ -468,7 +517,13 @@ private:
         return utils::is_prefix_of(subcommands[0], of);
     }
 
+    template<typename ...Args>
+    void Error(fmt::format_string<Args...> format_str, Args&& ...args) {
+        throw DebuggerError(fmt::format(format_str, std::forward<Args>(args)...));
+    }
+
   Native process;
+  Source source;
   bool is_running{true};
 
   static const int DEFAULT_DBG_PORT = 9110;
