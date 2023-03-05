@@ -1,0 +1,28 @@
+.text
+0 CALL 2
+1 HALT
+2 PUSH BP
+3 MOV BP, SP
+4 SUB SP, 2
+5 MOV [BP + -1], 5
+6 MOV [BP + -2], 6
+7 MOV R0, [BP + -1]
+8 MOV R1, [BP + -2]
+9 ADD R0, R1
+10 ADD SP, 2
+11 POP BP
+12 RET
+
+.debug_line
+0: 2
+1: 5
+2: 6
+3: 7
+4: 11
+
+.source
+int main() {
+    int a = 5;
+    int b = 6;
+    return a + b;
+}

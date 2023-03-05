@@ -4,9 +4,9 @@
 #include <vector>
 #include <optional>
 
-class LocationManager {
+class LineMapping {
 public:
-    LocationManager(std::map<size_t, uint64_t> mapping) : location_mapping(std::move(mapping)) {}
+    LineMapping(std::map<size_t, uint64_t> mapping) : location_mapping(std::move(mapping)) {}
 
     /// Returns an address that maps to given line
     std::optional<uint64_t> GetAddress(size_t source_line) const;

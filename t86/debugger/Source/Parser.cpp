@@ -44,7 +44,7 @@ DebuggingInfo Parser::Parse() {
         GetNext();
 
         if (section_name == "debug_line") {
-            info.location_mapping = DebugLine();
+            info.line_mapping = DebugLine();
         } else {
             log_info("Skipping section '{}'", section_name);
             while (curtok.kind != TokenKind::DOT && curtok.kind != TokenKind::END) {

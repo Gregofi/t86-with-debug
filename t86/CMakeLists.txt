@@ -65,6 +65,7 @@ add_executable(
 target_link_libraries(
   unittests
   gtest
+  gmock
   GTest::gtest_main
   fmt::fmt
   t86

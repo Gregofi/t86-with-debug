@@ -6,7 +6,7 @@
 
 namespace dbg {
 struct DebuggingInfo {
-    std::map<size_t, uint64_t> location_mapping;
+    std::optional<std::map<size_t, uint64_t>> line_mapping;
 };
 
 class Parser {
