@@ -45,10 +45,10 @@ address 1 you would use `breakpoint iset 1` or just `br is 1`.
 - help = Print this.
 )";
     static constexpr const char* STEPI_USAGE =
-R"(stepi <subcommands> [parameter [parameter...]]
+R"(istep <subcommands> [parameter [parameter...]]
 Used for instruction level single stepping
 
-Without any subcommands (just stepi) = Performs instruction level single step.
+Without any subcommands (just istep) = Performs instruction level single step.
 - help = Print this.
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
@@ -434,16 +434,16 @@ public:
                             subcommands.at(2)));
             }
             auto vals = process.ReadMemory(*begin, *end - *begin + 1);
-            if (subcommands.at(0) == "get") {
-                for (auto&& val: vals) {
-                    fmt::print("{}:{}\n", (*begin)++, val);
-                }
-            } else {
+            if (subcommands.at(0).starts_with("gets")) {
                 for (size_t i = 0; i < vals.size(); ++i) {
                     fmt::print("{}", static_cast<char>(vals[i]));
                     if (i + 1 == vals.size() && vals[i] != '\n') {
                         fmt::print("\\%\n");
                     }
+                }
+            } else {
+                for (auto&& val: vals) {
+                    fmt::print("{}:{}\n", (*begin)++, val);
                 }
             }
         } else {
@@ -470,7 +470,7 @@ public:
                                  (command.size() != main_command.size()));
         if (utils::is_prefix_of(main_command, "breakpoint")) {
             HandleBreakpoint(command); 
-        } else if (utils::is_prefix_of(main_command, "stepi")) {
+        } else if (utils::is_prefix_of(main_command, "istep")) {
             HandleStepi(command);
         } else if (utils::is_prefix_of(main_command, "disassemble")) {
             HandleDisassemble(command);
