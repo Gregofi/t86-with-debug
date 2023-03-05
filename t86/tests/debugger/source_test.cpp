@@ -190,11 +190,13 @@ TEST(SourceNative, SourceBreakpoints) {
     EXPECT_EQ(source.LineToAddr(4), 11);
 
     ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionBegin);
-    source.SetSourceSoftwareBreakpoint(native, 0);
-    source.SetSourceSoftwareBreakpoint(native, 1);
-    source.SetSourceSoftwareBreakpoint(native, 2);
-    source.SetSourceSoftwareBreakpoint(native, 3);
-    source.SetSourceSoftwareBreakpoint(native, 4);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 0), 2);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 1), 5);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 2), 6);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 3), 7);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 4), 11);
+    ASSERT_THROW({source.SetSourceSoftwareBreakpoint(native, 5);}, DebuggerError);
+
     native.ContinueExecution();
     ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
     EXPECT_EQ(native.GetIP(), 2);
