@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <sstream>
+#include <thread>
 #include "debugger/Source/Parser.h"
 #include "debugger/Source/LineMapping.h"
 #include "debugger/Source/Source.h"
