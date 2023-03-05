@@ -5,9 +5,21 @@
 
 #include "CLI.h"
 #include "debugger/Native.h"
+#include "debugger/Source/Parser.h"
 #include "t86-parser/parser.h"
 #include "t86/os.h"
 #include "threads_messenger.h"
+
+dbg::DebuggingInfo ParseDebugInfo(std::ifstream& elf) {
+    dbg::Parser p(elf);
+    return p.Parse();
+}
+
+SourceFile ParseSourceFile(std::ifstream& ifs) {
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
 
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser args("debugger");
@@ -16,6 +28,8 @@ int main(int argc, char* argv[]) {
     run_command.add_description("Run the debugger with T86 file to debug");
     run_command.add_argument("file")
         .help("Input file with T86 assembly to be debugged.");
+    run_command.add_argument("--source")
+        .help("File containing the original source code for debugging information");
     run_command.add_argument("--register-count")
         .help("How many general purpose registers will the T86 vm have available")
         .default_value(8);
@@ -48,7 +62,8 @@ int main(int argc, char* argv[]) {
         // Set up the native manager
         Native native(std::move(debuggee_process));
         // Run CLI
-        CLI cli(std::move(native));
+        Source source;
+        CLI cli(std::move(native), std::move(source));
         return cli.Run();
     } else if (args.is_subcommand_used("run-t86")) {
         auto reg_count = run_command.get<int>("register-count");
@@ -63,11 +78,32 @@ int main(int argc, char* argv[]) {
         std::ifstream file(fname);
         if (!file) {
             fmt::print(stderr, "Unable to open file '{}'\n", fname);
+            exit(1);
         }
 
-        // TODO: Regcount should be customizable
         Parser parser(file);
         auto program = parser.Parse();
+
+        // Parse debug info
+        Source source;
+        file.clear();
+        file.seekg(0);
+        if (file) {
+            auto debug_info = ParseDebugInfo(file);
+            if (debug_info.line_mapping) {
+                log_info("Found line mapping in debug info");
+                source.RegisterLineMapping(std::move(*debug_info.line_mapping));
+            }
+        }
+        // Parse source code
+        if (auto path = run_command.present("--source")) {
+            std::ifstream f(*path);
+            if (!f) {
+                fmt::print(stderr, "Unable to open source file");
+            }
+            log_info("Found source code");
+            source.RegisterSourceFile(ParseSourceFile(f));
+        }
     
         std::thread t86vm([](std::unique_ptr<ThreadMessenger> messenger,
                            tiny::t86::Program program, size_t reg_cnt,
@@ -80,7 +116,7 @@ int main(int argc, char* argv[]) {
         auto t86dbg = std::make_unique<T86Process>(std::move(tm2), reg_count,
                                                    float_reg_count);
         Native native(std::move(t86dbg));
-        CLI cli(std::move(native));
+        CLI cli(std::move(native), std::move(source));
         cli.Run();
         t86vm.join();
     }

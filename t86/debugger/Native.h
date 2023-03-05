@@ -255,7 +255,7 @@ public:
                 cached_event.emplace(event);
                 return;
             }
-            ContinueExecution();
+            process->ResumeExecution();
         }
     }
 

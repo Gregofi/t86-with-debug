@@ -59,16 +59,19 @@ add_executable(
   tests/utils_test.cpp
   tests/debugger/t86process_test.cpp
   tests/debugger/native_test.cpp
+  tests/debugger/source_test.cpp
 )
 
 target_link_libraries(
   unittests
   gtest
+  gmock
   GTest::gtest_main
   fmt::fmt
   t86
   common
   t86-parser
+  debugger
 )
 
 include(GoogleTest)
