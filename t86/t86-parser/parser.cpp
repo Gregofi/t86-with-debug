@@ -320,18 +320,18 @@ if (ins_name == #TYPE) { \
     } \
     GetNext(); \
     auto from = FROM_PARSE(); \
-    return std::make_unique<tiny::t86::TYPE>(std::move(dest), std::move(from)); \
+    return std::unique_ptr<tiny::t86::TYPE>(new tiny::t86::TYPE(std::move(dest), std::move(from))); \
 }
 
 #define PARSE_UNARY(TYPE, OPERAND_PARSE) \
 if (ins_name == #TYPE) { \
     auto op = OPERAND_PARSE(); \
-    return std::make_unique<tiny::t86::TYPE>(std::move(op)); \
+    return std::unique_ptr<tiny::t86::TYPE>(new tiny::t86::TYPE(std::move(op))); \
 }
 
 #define PARSE_NULLARY(TYPE) \
 if (ins_name == #TYPE) { \
-    return std::make_unique<tiny::t86::TYPE>(); \
+    return std::unique_ptr<tiny::t86::TYPE>(new tiny::t86::TYPE()); \
 }
 
 /// Parses the operands of MOV
@@ -369,7 +369,8 @@ std::unique_ptr<tiny::t86::MOV> Parser::ParseMOV() {
             throw CreateError("MOV can't have from of type '{}' when dest is '{}', allowed froms are R, F or i", dest.toString(), from.toString());
         }
     }
-    return std::make_unique<tiny::t86::MOV>(std::move(dest), std::move(from));
+    return std::unique_ptr<tiny::t86::MOV>(
+        new tiny::t86::MOV(std::move(dest), std::move(from)));
 }
 
 std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
@@ -403,7 +404,7 @@ std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
         if (from.isMemoryRegister() || from.isMemoryImmediate()) {
             throw CreateError("LEA doesn't support [R] or [i]");
         }
-        return std::make_unique<tiny::t86::LEA>(dest, from);
+        return std::unique_ptr<tiny::t86::LEA>(new tiny::t86::LEA(dest, from));
     }
 
     PARSE_BINARY(ADD, Register, ImmOrRegisterPlusImmOrSimpleMemory);
