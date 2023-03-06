@@ -14,6 +14,8 @@
 #include <string>
 #include <iostream>
 
+class Parser;
+
 namespace tiny::t86 {
     class Cpu;
 
@@ -257,8 +259,6 @@ namespace tiny::t86 {
 
         FloatBinaryArithmeticInstruction(std::function<Alu::FloatResult(double, double)> op, FloatRegister fReg, double val)
             : op_(std::move(op)), fReg_(fReg), val_(val) {}
-        FloatBinaryArithmeticInstruction(std::function<Alu::FloatResult(double, double)> op, FloatRegister fReg, Operand val)
-            : op_(std::move(op)), fReg_(fReg), val_(val) {}
 
         bool needsAlu() const override {
             return true;
@@ -276,7 +276,11 @@ namespace tiny::t86 {
             return { fReg_, Register::Flags() };
         }
 
-    private:
+    protected:
+        friend class ::Parser;
+        FloatBinaryArithmeticInstruction(std::function<Alu::FloatResult(double, double)> op, FloatRegister fReg, Operand val)
+            : op_(std::move(op)), fReg_(fReg), val_(val) {}
+
         std::function<Alu::FloatResult(double, double)> op_;
 
         FloatRegister fReg_;
@@ -466,8 +470,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         MOV(Memory::RegisterOffsetRegisterScaled destination, FloatRegister value) : destination_(destination), value_(value) {}
 
-        MOV(Operand destination, Operand value) : destination_(std::move(destination)), value_(std::move(value)) {}
-
     public:
         Type type() const override { return Type::MOV; }
 
@@ -493,7 +495,11 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
+
+        friend class ::Parser;
+        MOV(Operand destination, Operand value) : destination_(std::move(destination)), value_(std::move(value)) {}
+
         Operand destination_;
         Operand value_;
     };
@@ -534,9 +540,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         CMP(Register reg, Memory::RegisterOffset value)
                 : reg_(reg), value_(value) {}
 
-        CMP(Register reg, Operand value)
-                : reg_(reg), value_(value) {}
-
         bool needsAlu() const override {
             return true;
         }
@@ -557,7 +560,11 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry&) const override {}
 
-    private:
+    protected:
+        friend class ::Parser;
+        CMP(Register reg, Operand value)
+                : reg_(reg), value_(value) {}
+
         Register reg_;
         Operand value_;
     };
@@ -567,8 +574,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         FCMP(FloatRegister fReg, double value) : fReg_(fReg), value_(value) {}
 
         FCMP(FloatRegister fReg, FloatRegister value) : fReg_(fReg), value_(value) {}
-
-        FCMP(FloatRegister fReg, Operand value) : fReg_(fReg), value_(value) {}
 
         bool needsAlu() const override {
             return true;
@@ -590,7 +595,10 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry&) const override {}
 
-    private:
+    protected:
+        friend class ::Parser;
+        FCMP(FloatRegister fReg, Operand value) : fReg_(fReg), value_(value) {}
+
         FloatRegister fReg_;
         Operand value_;
     };
@@ -600,8 +608,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         PUSH(int64_t val) : val_(val) {}
 
         PUSH(Register val) : val_(val) {}
-
-        PUSH(Operand val) : val_(val) {}
 
         Type type() const override { return Type::PUSH; }
 
@@ -623,7 +629,10 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
+        friend class ::Parser;
+        PUSH(Operand val) : val_(val) {}
+
         Operand val_;
     };
 
@@ -632,8 +641,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         FPUSH(double val) : val_(val) {}
 
         FPUSH(FloatRegister fReg) : val_(fReg) {}
-
-        FPUSH(Operand fReg) : val_(fReg) {}
 
         Type type() const override { return Type::FPUSH; }
 
@@ -655,7 +662,10 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
+        friend class ::Parser;
+        FPUSH(Operand fReg) : val_(fReg) {}
+
         Operand val_;
     };
 
@@ -713,7 +723,7 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
         FloatRegister fReg_;
     };
 
@@ -737,7 +747,7 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
         std::function<void(Cpu&)> debugFunction_;
     };
 
@@ -770,8 +780,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
 
         PatchableJumpInstruction(Memory::RegisterOffset address) : address_(address) {}
 
-        PatchableJumpInstruction(Operand address) : address_(address) {}
-
         void setDestination(uint64_t address);
 
         Operand getDestination() const override {
@@ -783,6 +791,9 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         }
 
     protected:
+        friend class ::Parser;
+        PatchableJumpInstruction(Operand address) : address_(address) {}
+
         Operand address_;
     };
 
@@ -803,9 +814,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         ConditionalJumpInstruction(std::function<bool(Alu::Flags)> condition, Memory::RegisterOffset address)
                 : PatchableJumpInstruction{address}, condition_{std::move(condition)} {}
 
-        ConditionalJumpInstruction(std::function<bool(Alu::Flags)> condition, Operand address)
-                : PatchableJumpInstruction{address}, condition_{std::move(condition)} {}
-
         std::vector<Operand> operands() const override {
             return { address_, Register::Flags() };
         }
@@ -819,6 +827,10 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         void retire(ReservationStation::Entry& entry) const override;
 
     protected:
+        friend class ::Parser;
+        ConditionalJumpInstruction(std::function<bool(Alu::Flags)> condition, Operand address)
+                : PatchableJumpInstruction{address}, condition_{std::move(condition)} {}
+
         std::function<bool(Alu::Flags)> condition_;
     };
 
@@ -827,8 +839,6 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         JMP(Register address) : PatchableJumpInstruction(address) {}
 
         JMP(uint64_t address) : PatchableJumpInstruction(address) {}
-
-        JMP(Operand operand) : PatchableJumpInstruction(operand) {}
 
         Type type() const override { return Type::JMP; }
 
@@ -841,6 +851,9 @@ class INS_NAME : public UnaryArithmeticInstruction {      \
         void execute(ReservationStation::Entry& entry) const override;
 
         void retire(ReservationStation::Entry& entry) const override;
+    protected:
+        friend class ::Parser;
+        JMP(Operand operand) : PatchableJumpInstruction(operand) {}
     };
 
 #define COND_JMP_INS_DECL(INS_NAME)                           \
@@ -896,10 +909,6 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         LOOP(Register reg, uint64_t address)
                 : PatchableJumpInstruction{address}, reg_{reg} {}
 
-        LOOP(Operand reg, Operand address)
-                : PatchableJumpInstruction{address}, reg_{reg.getRegister()} {}
-
-
         Type type() const override { return Type::LOOP; }
 
         std::size_t length() const override;
@@ -919,8 +928,11 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         }
 
         void retire(ReservationStation::Entry& entry) const override;
+    protected:
+        friend class ::Parser;
+        LOOP(Operand reg, Operand address)
+                : PatchableJumpInstruction{address}, reg_{reg.getRegister()} {}
 
-    private:
         Register reg_;
     };
 
@@ -929,8 +941,6 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         CALL(Register address) : PatchableJumpInstruction{address} {}
 
         CALL(uint64_t address) : PatchableJumpInstruction{address} {}
-
-        CALL(Operand address) : PatchableJumpInstruction{address} {}
 
         Type type() const override { return Type::CALL; }
 
@@ -953,11 +963,13 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         void execute(ReservationStation::Entry& entry) const override;
 
         void retire(ReservationStation::Entry& entry) const override;
+    protected:
+        friend class ::Parser;
+        CALL(Operand address) : PatchableJumpInstruction{address} {}
     };
 
     class RET : public JumpInstruction {
     public:
-
         Type type() const override { return Type::RET; }
 
         std::size_t length() const override;
@@ -1003,9 +1015,6 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         LEA(Register reg, Memory::RegisterOffsetRegisterScaled mem)
             : reg_(reg), mem_(mem) {}
 
-        LEA(Register reg, Operand mem)
-            : reg_(reg), mem_(mem) {}
-
         Type type() const override { return Type::JMP; }
 
         std::size_t length() const override;
@@ -1030,7 +1039,11 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry&) const override {}
 
-    private:
+    protected:
+        friend class ::Parser;
+        LEA(Register reg, Operand mem)
+            : reg_(reg), mem_(mem) {}
+
         Register reg_;
         Operand mem_;
 
@@ -1060,7 +1073,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
         Register reg_;
 
         std::ostream& os_;
@@ -1090,7 +1103,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
         Register reg_;
 
         std::ostream& os_;
@@ -1124,7 +1137,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry& entry) const override;
 
-    private:
+    protected:
         Register reg_;
 
         std::istream& is_;
@@ -1158,7 +1171,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry&) const override {}
 
-    private:
+    protected:
         FloatRegister fReg_;
         Register reg_;
     };
@@ -1191,7 +1204,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
 
         void retire(ReservationStation::Entry&) const override {}
 
-    private:
+    protected:
         Register reg_;
         FloatRegister fReg_;
     };
