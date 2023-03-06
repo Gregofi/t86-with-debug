@@ -77,7 +77,7 @@ int main() {
     
     int x = 3;
     int y = 1;
-
+    
     struct coord s;
     s.x = x;
     s.y = y;
@@ -87,40 +87,51 @@ When using `variable get v`, you would expect that `3.5` is printed. The debugge
 the value must be interpreted as double. Here is an example of a metadata with a source program:
 
 ```
-.debug_metadata
-Type:
- - Name: double
- - Size: 1
- - Type: floating-point
+.debug_info
+DIE_primitive_type: {
+ATTR_name: double,
+ATTR_size: 1,
+},
 
-Type:
- - Name: int
- - Size: 1
- - Type: signed
+DIE_primitive_type: {
+ATTR_name: int,
+ATTR_size: 1,
+},
 
-StructuredType
- - Name: coord
- - Members:
-   - 0:int
-   - 1:int
+DIE_structured_type: {
+ATTR_name: coord,
+ATTR_size: 2,
+ATTR_members: {
+    0:int,
+    1:int,
+  }
+},
 
-CompilationUnit:
- - Path: /path/to/structs.tc
- - StartingPoint: main
- Function:
-  - Name: main
-  - BeginAddr: 0
-  - BeginSource: 
-  - EndAddr: 8
-  Variable:
-    - Name: d
-    - Type: double
-  Variable:
-    - Name: x
-    - Type: int
-  Variable: 5
-    - Name: y
-    - Type: int
+DIE_function: {
+  ATTR_name: main,
+  ATTR_begin_addr: 0,
+  ATTR_end_addr: 8,
+  DIE_scope: {
+    ATTR_begin_addr: 0,
+    ATTR_end_addr: 8, 
+    DIE_variable: {
+      ATTR_name: d,
+      ATTR_type: double,
+      ATTR_location: `BASE_REG_OFFSET -2`,
+    },
+    DIE_variable: {
+      ATTR_name: x,
+      ATTR_type: int,
+      ATTR_location: [PUSH BP; PUSH -3; ADD],
+    }
+    DIE_variable: {
+      ATTR_name: y,
+      ATTR_type: int,
+      ATTR_location: `BASE_REG_OFFSET -2`,
+    }
+  }
+}
+
 
 .debug_loc
 5: 0
@@ -146,25 +157,5 @@ CompilationUnit:
 8 HALT
 ```
 
-With this additional info, the breakpoints on functions will work as well.
-The beginning source location of an function will be used for that fact.
-The addresses are used to inform you where you currently are, in case
-you did instruction level single step into the function prologue.
-In case you won't provide the beginning source line of a function
-or if the `.debug_line` section is missing, then the beginning address
-is used for functions breakpoint, but be aware that at this point the
-prologue wasn't run.
-
-You don't have to include every debugging information. For example, you
-can only use this minimum:
-```
-.debug_metadata
-CompilationUnit:
- - Path: /path/to/exe.tc
-
-.debug_line
-...
-```
-
-So that we can map the location in the program and tell you where the
-breakpoint exactly happened.
+The debugging information is JSON like. It somewhat represents
+the actual program with its tree like structure.

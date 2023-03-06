@@ -228,3 +228,190 @@ TEST(SourceNative, SourceBreakpoints) {
     native.Terminate();
     t_os.join();
 }
+
+TEST(DIEs, Parsing1) {
+    auto program = 
+R"(.debug_info
+DIE_function: {
+    ATTR_name: main,
+}
+)";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::function);
+    ASSERT_EQ(top_die->begin(), top_die->end());
+    ASSERT_NE(top_die->begin_attr(), top_die->end_attr());
+    auto attr = *top_die->begin_attr();
+    ASSERT_TRUE(std::holds_alternative<ATTR_name>(attr));
+    EXPECT_EQ(std::get<ATTR_name>(attr).n, "main");
+}
+
+TEST(DIEs, Parsing2) {
+    auto program = 
+R"(.debug_info
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 0,
+    ATTR_end_addr: 10,
+    DIE_variable: {
+        ATTR_name: d,
+    },
+}
+)";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::function);
+
+    auto it_attr = top_die->begin_attr();
+    ASSERT_NE(it_attr, top_die->end_attr());
+    ASSERT_TRUE(std::holds_alternative<ATTR_name>(*it_attr));
+    EXPECT_EQ(std::get<ATTR_name>(*it_attr).n, "main");
+    ++it_attr;
+    ASSERT_NE(it_attr, top_die->end_attr());
+    ASSERT_TRUE(std::holds_alternative<ATTR_begin_addr>(*it_attr));
+    EXPECT_EQ(std::get<ATTR_begin_addr>(*it_attr).addr, 0);
+    ++it_attr;
+    ASSERT_NE(it_attr, top_die->end_attr());
+    ASSERT_TRUE(std::holds_alternative<ATTR_end_addr>(*it_attr));
+    EXPECT_EQ(std::get<ATTR_end_addr>(*it_attr).addr, 10);
+    ++it_attr;
+    ASSERT_EQ(it_attr, top_die->end_attr());
+
+    auto it_die = top_die->begin();
+    ASSERT_NE(it_die, top_die->end());
+    ASSERT_EQ(it_die->get_tag(), DIE::TAG::variable);
+    
+    it_attr = it_die->begin_attr();
+    ASSERT_NE(it_attr, it_die->end_attr());
+    ASSERT_TRUE(std::holds_alternative<ATTR_name>(*it_attr));
+    EXPECT_EQ(std::get<ATTR_name>(*it_attr).n, "d");
+    ++it_attr;
+    ASSERT_EQ(it_attr, it_die->end_attr());
+}
+
+TEST(LocationExpression, OneParsing) {
+    auto program = 
+R"(.debug_info
+DIE_variable: {
+    ATTR_location: `BASE_REG_OFFSET 0`,
+}
+)";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::variable);
+    auto it_attr = top_die->begin_attr();
+    ASSERT_TRUE(std::holds_alternative<ATTR_location_expr>(*it_attr));
+    const auto& loc_expr = std::get<ATTR_location_expr>(*it_attr).locs;
+    ASSERT_EQ(loc_expr.size(), 1);
+    ASSERT_TRUE(std::holds_alternative<expr::FrameBaseRegisterOffset>(loc_expr[0]));
+}
+
+TEST(LocationExpression, None) {
+    auto program = 
+R"(.debug_info
+DIE_variable: {
+    ATTR_location: ``,
+}
+)";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::variable);
+    auto it_attr = top_die->begin_attr();
+    ASSERT_TRUE(std::holds_alternative<ATTR_location_expr>(*it_attr));
+    const auto& loc_expr = std::get<ATTR_location_expr>(*it_attr).locs;
+    ASSERT_EQ(loc_expr.size(), 0);
+}
+
+TEST(LocationExpression, Multiple) {
+    auto program = 
+R"(.debug_info
+DIE_variable: {
+    ATTR_location: [PUSH BP; PUSH -2; ADD],
+}
+)";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::variable);
+    auto it_attr = top_die->begin_attr();
+    ASSERT_TRUE(std::holds_alternative<ATTR_location_expr>(*it_attr));
+    const auto& loc_expr = std::get<ATTR_location_expr>(*it_attr).locs;
+    ASSERT_EQ(loc_expr.size(), 3);
+    ASSERT_TRUE(std::holds_alternative<expr::Push>(loc_expr[0]));
+    auto e1 = std::get<expr::Push>(loc_expr[0]);
+    ASSERT_TRUE(std::holds_alternative<expr::Register>(e1.value)); 
+    EXPECT_EQ(std::get<expr::Register>(e1.value).name, "BP"); 
+    ASSERT_TRUE(std::holds_alternative<expr::Push>(loc_expr[1]));
+    auto e2 = std::get<expr::Push>(loc_expr[1]);
+    EXPECT_EQ(std::get<expr::Integer>(e2.value).value, -2); 
+    ASSERT_TRUE(std::holds_alternative<expr::Add>(loc_expr[2]));
+}
+
+TEST(DebugInfo, ParsingCombined) {
+    auto program =
+R"(.debug_info
+DIE_compilation_unit: {
+
+DIE_primitive_type: {
+ATTR_name: double,
+ATTR_size: 1,
+},
+
+DIE_primitive_type: {
+ATTR_name: int,
+ATTR_size: 1,
+},
+
+DIE_structured_type: {
+ATTR_name: coord,
+ATTR_size: 2,
+},
+
+DIE_function: {
+  ATTR_name: main,
+  ATTR_begin_addr: 0,
+  ATTR_end_addr: 8,
+  DIE_scope: {
+    ATTR_begin_addr: 0,
+    ATTR_end_addr: 8, 
+    DIE_variable: {
+      ATTR_name: d,
+      ATTR_type: double,
+      ATTR_location: `BASE_REG_OFFSET -2`,
+    },
+    DIE_variable: {
+      ATTR_name: x,
+      ATTR_type: int,
+      ATTR_location: [PUSH BP; PUSH -3; ADD],
+    },
+    DIE_variable: {
+      ATTR_name: y,
+      ATTR_type: int,
+      ATTR_location: `BASE_REG_OFFSET -4`,
+    }
+  }
+}
+
+})";
+    std::istringstream iss(program);
+    dbg::Parser p(iss);
+    auto info = p.Parse();
+    const auto& top_die = info.top_die;
+    ASSERT_TRUE(top_die);
+    ASSERT_EQ(top_die->get_tag(), DIE::TAG::compilation_unit);
+    // TODO: Finish the testing here
+}

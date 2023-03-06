@@ -21,8 +21,10 @@ enum class TokenKind {
     ID,
     DOT,
     NUM,
-    LBRACKET,
+    LBRACKET, // [
     RBRACKET,
+    LBRACE, // {
+    RBRACE,
     END,
     SEMICOLON,
     PLUS,
@@ -31,6 +33,7 @@ enum class TokenKind {
     STRING,
     FLOAT,
     DOUBLEDOT,
+    BACKTICK,
 };
 
 struct Token {
@@ -150,6 +153,12 @@ public:
         } else if (lookahead == ']') {
             GetChar();
             return MakeToken(TokenKind::RBRACKET);
+        } else if (lookahead == '{') {
+            GetChar();
+            return MakeToken(TokenKind::LBRACE);
+        } else if (lookahead == '}') {
+            GetChar();
+            return MakeToken(TokenKind::RBRACE);
         } else if (lookahead == '+') {
             GetChar();
            return MakeToken(TokenKind::PLUS);
@@ -159,6 +168,9 @@ public:
         } else if (lookahead == '*') {
             GetChar();
             return MakeToken(TokenKind::TIMES);
+        } else if (lookahead == '`') {
+            GetChar();
+            return MakeToken(TokenKind::BACKTICK);
         } else if (lookahead == '.') {
             GetChar();
             return MakeToken(TokenKind::DOT);
