@@ -1,0 +1,78 @@
+.text
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2]
+13      MOV     R1, [SP + -3]
+14      PUTNUM  R0
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+
+.debug_lines
+0: 2
+1: 2
+2: 3
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 12
+
+.debug_info
+DIE_compilation_unit: {
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 7,
+    ATTR_end_addr: 18,
+    DIE_scope: {
+        ATTR_begin_addr: 7,
+        ATTR_end_addr: 18,
+        DIE_variable: {
+            ATTR_name: a,
+            ATTR_type: int,
+            ATTR_location: [PUSH SP; PUSH -1; ADD],
+        },
+        DIE_variable: {
+            ATTR_name: b,
+            ATTR_type: int,
+            ATTR_location: [PUSH SP; PUSH -2; ADD],
+        }
+    }
+},
+DIE_function: {
+    ATTR_name: swap,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 7,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 7,
+        DIE_variable: {
+            ATTR_name: x,
+           # ATTR_type, int_pointer,
+        },
+        DIE_variable: {
+            ATTR_name: y,
+           # ATTR_type, int_pointer,
+        },
+        DIE_variable: {
+            ATTR_name: tmp,
+            ATTR_type: int,
+            ATTR_location: `PUSH R0`,
+        }
+    }
+}
+}

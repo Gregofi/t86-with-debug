@@ -20,13 +20,13 @@ TEST(LocationExpr, SimpleExpression) {
 
 TEST(LocationExpr, FrameBaseOffset) {
     std::vector<expr::LocExpr> exprs = {
-        FrameBaseRegisterOffset{4}, 
+        FrameBaseRegisterOffset{-4}, 
     };
     // Can't use make_unique with init lists :(
     std::unique_ptr<MockedProcess> p{new MockedProcess({}, {}, {{"BP", 20}})};
     Native n(std::move(p));
     auto res = ExpressionInterpreter::Interpret(exprs, n);
-    ASSERT_EQ(std::get<Offset>(res).value, 24);
+    ASSERT_EQ(std::get<Offset>(res).value, 16);
 }
 
 TEST(LocationExpr, RegResult) {

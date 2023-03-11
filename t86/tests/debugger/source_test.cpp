@@ -138,7 +138,6 @@ R"(int main() {
 })";
     const char* elf1 =
 R"(
-
 .text
 0 CALL 2
 1 HALT
@@ -394,5 +393,350 @@ DIE_function: {
     const auto& top_die = info.top_die;
     ASSERT_TRUE(top_die);
     ASSERT_EQ(top_die->get_tag(), DIE::TAG::compilation_unit);
+    ASSERT_EQ(std::distance(top_die->begin(), top_die->end()), 4);
+    auto function_die = std::next(top_die->begin(), 3);
+    ASSERT_EQ(std::distance(function_die->begin_attr(), function_die->end_attr()), 3);
     // TODO: Finish the testing here
+}
+
+TEST_F(NativeSourceTest, FunctionMapping1) {
+    auto source_code =
+R"(int main(void) {
+    int i = 5;
+    int y = 10;
+    return i + y;
+}
+)";
+    const char* elf =
+R"(
+.text
+0 CALL 2
+1 HALT
+2 PUSH BP
+3 MOV BP, SP
+4 SUB SP, 2
+5 MOV [BP + -1], 5
+6 MOV [BP + -2], 6
+7 MOV R0, [BP + -1]
+8 MOV R1, [BP + -2]
+9 ADD R0, R1
+10 ADD SP, 2
+11 POP BP
+12 RET
+
+.debug_line
+0: 2
+1: 5
+2: 6
+3: 7
+4: 11
+
+.debug_info
+DIE_compilation_unit: {
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 12,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 12,
+        DIE_variable: {
+            ATTR_name: i,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        },
+        DIE_variable: {
+            ATTR_name: y,
+            ATTR_location: `BASE_REG_OFFSET -2`,
+        },
+    }
+}
+}
+)";
+    Run(elf, source_code);
+    native->WaitForDebugEvent();
+    for (uint64_t i = 2; i < 12; ++i) {
+        ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
+        EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
+    }
+
+    EXPECT_EQ(source.GetAddrFunctionByName("main"), 2);
+
+    ASSERT_FALSE(source.GetVariableLocation(*native, "i"));
+    native->SetBreakpoint(7);
+    native->ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    auto loc = source.GetVariableLocation(*native, "i");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1021);
+
+    loc = source.GetVariableLocation(*native, "y");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1020);
+}
+
+TEST_F(NativeSourceTest, FunctionMapping2) {
+auto elf1 =
+R"(.text
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2]
+13      MOV     R1, [SP + -3]
+14      PUTNUM  R0
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+
+.debug_lines
+0: 2
+1: 2
+2: 3
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 12
+
+.debug_info
+DIE_compilation_unit: {
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 7,
+    ATTR_end_addr: 18,
+    DIE_scope: {
+        ATTR_begin_addr: 7,
+        ATTR_end_addr: 18,
+        DIE_variable: {
+            ATTR_name: a,
+            ATTR_type: int,
+            ATTR_location: [PUSH SP; PUSH -2; ADD],
+        },
+        DIE_variable: {
+            ATTR_name: b,
+            ATTR_type: int,
+            ATTR_location: [PUSH SP; PUSH -3; ADD],
+        }
+    }
+},
+DIE_function: {
+    ATTR_name: swap,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 7,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 7,
+        DIE_variable: {
+            ATTR_name: x,
+           # ATTR_type, int_pointer,
+        },
+        DIE_variable: {
+            ATTR_name: y,
+           # ATTR_type, int_pointer,
+        },
+        DIE_variable: {
+            ATTR_name: tmp,
+            ATTR_type: int,
+            ATTR_location: `PUSH R0`,
+        }
+    }
+}
+})";
+    auto source_code = 
+R"(void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+int main() {
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
+}
+)";
+    Run(elf1, source_code);
+    native->WaitForDebugEvent();
+
+    for (uint64_t i = 2; i < 7; ++i) {
+        ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
+        EXPECT_EQ(*source.GetFunctionNameByAddress(i), "swap") << "bad name: " << i;
+    }
+    for (uint64_t i = 7; i < 18; ++i) {
+        ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
+        EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
+    }
+
+    EXPECT_EQ(source.GetAddrFunctionByName("swap"), 2);
+    EXPECT_EQ(source.GetAddrFunctionByName("main"), 7);
+
+    ASSERT_FALSE(source.GetVariableLocation(*native, "i"));
+    native->SetBreakpoint(9);
+    native->ContinueExecution();
+
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_EQ(native->GetRegister("SP"), 1023);
+
+    auto loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1021);
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1020);
+
+    native->SetBreakpoint(2);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    loc = source.GetVariableLocation(*native, "x");
+    ASSERT_FALSE(loc);
+    loc = source.GetVariableLocation(*native, "y");
+    ASSERT_FALSE(loc);
+
+    loc = source.GetVariableLocation(*native, "tmp");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+}
+
+TEST_F(NativeSourceTest, TestMappingScopes) {
+    auto source_code =
+R"(int main() {
+    int a = 1;
+    {
+        int b = 2;
+        {
+            int a = 3;
+        }
+        {
+            int b = 5;
+        }
+        a += b;
+    }
+})";
+    auto elf =
+R"(.text
+0   CALL 2
+1   HALT
+# main()
+2   MOV R0, 1
+3   MOV R1, 2
+4   MOV R2, 3
+5   MOV R3, 5
+6   ADD R0, R1
+7   RET
+
+.debug_info
+DIE_compilation_unit: {
+DIE_function: {
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 8,
+    ATTR_name: main,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 8,
+        DIE_variable: {
+            ATTR_name: a,
+            ATTR_location: `PUSH R0`,
+        },
+        DIE_scope: {
+            ATTR_begin_addr: 3,
+            ATTR_end_addr: 7,
+            DIE_variable: {
+                ATTR_name: b,
+                ATTR_location: `PUSH R1`,
+            },
+            DIE_scope: {
+                ATTR_begin_addr: 4,
+                ATTR_end_addr: 5,
+                DIE_variable: {
+                    ATTR_name: a,
+                    ATTR_location: `PUSH R2`,
+                },
+            },
+            DIE_scope: {
+                ATTR_begin_addr: 5,
+                ATTR_end_addr: 6,
+                DIE_variable: {
+                    ATTR_name: b,
+                    ATTR_location: `PUSH R3`,
+                },
+            },
+        },
+    },
+}
+})";
+    Run(elf, source_code);
+    native->WaitForDebugEvent();
+
+    for (uint64_t i = 2; i < 8; ++i) {
+        ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
+        EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
+    }
+
+    ASSERT_FALSE(source.GetVariableLocation(*native, "a"));
+    ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
+    native->SetBreakpoint(2);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    auto loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+    ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R2");
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R3");
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+
+    ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
 }
