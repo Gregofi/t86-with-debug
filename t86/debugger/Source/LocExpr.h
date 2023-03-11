@@ -12,7 +12,7 @@ struct Register {
 };
 
 struct Integer {
-    int value;
+    int64_t value;
 };
 
 using Operand = std::variant<Register, Integer>;
@@ -26,14 +26,9 @@ struct Push {
 struct Add {
 };
 
-/// Pops two values off the stack and does
-/// `first pop` - `second pop`.
-struct Subst {
-};
-
 struct FrameBaseRegisterOffset {
-    int offset;
+    int64_t offset;
 };
 
-using LocExpr = std::variant<Push, Add, Subst, FrameBaseRegisterOffset>;
+using LocExpr = std::variant<Push, Add, FrameBaseRegisterOffset>;
 }

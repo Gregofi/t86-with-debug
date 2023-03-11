@@ -60,6 +60,7 @@ add_executable(
   tests/debugger/t86process_test.cpp
   tests/debugger/native_test.cpp
   tests/debugger/source_test.cpp
+  tests/debugger/expr_test.cpp
 )
 
 target_link_libraries(

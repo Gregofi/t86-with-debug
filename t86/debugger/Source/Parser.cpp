@@ -110,8 +110,6 @@ expr::LocExpr Parser::ParseOneExprLoc() {
             return expr::Push{std::move(operand)};
         } else if (id == "ADD") {
             return expr::Add{};
-        } else if (id == "SUBST") {
-            return expr::Subst{};
         } else {
             throw CreateError("Unknown instruction '{}'", id);
         }
