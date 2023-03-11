@@ -1015,7 +1015,7 @@ class INS_NAME : public ConditionalJumpInstruction {          \
         LEA(Register reg, Memory::RegisterOffsetRegisterScaled mem)
             : reg_(reg), mem_(mem) {}
 
-        Type type() const override { return Type::JMP; }
+        Type type() const override { return Type::LEA; }
 
         std::size_t length() const override;
 
