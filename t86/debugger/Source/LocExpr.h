@@ -11,14 +11,14 @@ struct Register {
     std::string name;
 };
 
-struct Integer {
+struct Offset {
     int64_t value;
 };
 
-using Operand = std::variant<Register, Integer>;
+using Location = std::variant<Register, Offset>;
 
 struct Push {
-    Operand value;
+    Location value;
 };
 
 /// Pops two values off the stack, adds them and

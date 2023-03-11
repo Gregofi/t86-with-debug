@@ -7,15 +7,15 @@
 using namespace expr;
 TEST(LocationExpr, SimpleExpression) {
     std::vector<expr::LocExpr> exprs = {
-        Push{Integer{1}},
-        Push{Integer{3}},
+        Push{Offset{1}},
+        Push{Offset{3}},
         Add{},
     };
     // Can't use make_unique with init lists :(
     std::unique_ptr<MockedProcess> p{new MockedProcess({}, {}, {})};
     Native n(std::move(p));
     auto res = ExpressionInterpreter::Interpret(exprs, n);
-    ASSERT_EQ(std::get<Integer>(res).value, 4);
+    ASSERT_EQ(std::get<Offset>(res).value, 4);
 }
 
 TEST(LocationExpr, FrameBaseOffset) {
@@ -26,7 +26,7 @@ TEST(LocationExpr, FrameBaseOffset) {
     std::unique_ptr<MockedProcess> p{new MockedProcess({}, {}, {{"BP", 20}})};
     Native n(std::move(p));
     auto res = ExpressionInterpreter::Interpret(exprs, n);
-    ASSERT_EQ(std::get<Integer>(res).value, 24);
+    ASSERT_EQ(std::get<Offset>(res).value, 24);
 }
 
 TEST(LocationExpr, RegResult) {

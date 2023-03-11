@@ -21,7 +21,7 @@ class ExpressionInterpreter {
 public:
     /// Interprets the location program and returns
     /// resulting location;
-    static expr::Operand Interpret(const std::vector<expr::LocExpr>& exprs,
+    static expr::Location Interpret(const std::vector<expr::LocExpr>& exprs,
                                    Native& native,
                                    std::string frame_base_reg_name = "BP");
 private:
@@ -32,10 +32,10 @@ private:
                 exprs(exprs), native(native),
                 frame_base_reg_name(std::move(frame_base_reg_name)) { }
 
-    expr::Operand AddOperands(const expr::Operand& o1,
-                              const expr::Operand& o2) const;
+    expr::Location AddOperands(const expr::Location& o1,
+                              const expr::Location& o2) const;
 
-    std::stack<expr::Operand> s;
+    std::stack<expr::Location> s;
     const std::vector<expr::LocExpr>& exprs;
     Native& native;
     std::string frame_base_reg_name;
