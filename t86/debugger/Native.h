@@ -23,6 +23,10 @@ public:
 
     }
 
+    /// Initializes native in an empty state.
+    /// This native instance does NOT represent a process.
+    Native() = default;
+
     /// Tries to connect to a process at given port and returns
     /// new Native object that represents that process.
     static std::unique_ptr<Process> Initialize(int port) {
@@ -261,6 +265,10 @@ public:
 
     void Terminate() {
         process->Terminate();
+    }
+
+    bool Active() {
+        return static_cast<bool>(process);
     }
 protected:
     /// Returns SW BP opcode for current architecture.

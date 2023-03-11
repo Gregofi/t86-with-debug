@@ -23,29 +23,8 @@ SourceFile ParseSourceFile(std::ifstream& ifs) {
 
 int main(int argc, char* argv[]) {
     argparse::ArgumentParser args("debugger");
-    
-    argparse::ArgumentParser run_command("run-t86");
-    run_command.add_description("Run the debugger with T86 file to debug");
-    run_command.add_argument("file")
+    args.add_argument("file")
         .help("Input file with T86 assembly to be debugged.");
-    run_command.add_argument("--source")
-        .help("File containing the original source code for debugging information");
-    run_command.add_argument("--register-count")
-        .help("How many general purpose registers will the T86 vm have available")
-        .default_value(8);
-    run_command.add_argument("--float-register-count")
-        .help("How many general purpose registers will the T86 vm have available")
-        .default_value(4);
-
-    argparse::ArgumentParser remote_command("remote");
-    remote_command.add_description(
-        "Connect to remote VM to debug the program it is currently running");
-    remote_command.add_argument("--port")
-        .help("The connection port on which the VM is located")
-        .default_value(9110);
-
-    args.add_subparser(run_command);
-    args.add_subparser(remote_command);
     
     try {
         args.parse_args(argc, argv);
@@ -54,7 +33,10 @@ int main(int argc, char* argv[]) {
         std::cerr << args;
         return 1;
     }
-
+    
+    Cli cli(args.get<std::string>("file"));
+    cli.Run();
+#if 0
     if (args.is_subcommand_used("remote")) {
         int port = remote_command.get<int>("port");
         // Initialize connection to debuggee
@@ -63,7 +45,7 @@ int main(int argc, char* argv[]) {
         Native native(std::move(debuggee_process));
         // Run CLI
         Source source;
-        CLI cli(std::move(native), std::move(source));
+        CliInstance cli(std::move(native), std::move(source));
         return cli.Run();
     } else if (args.is_subcommand_used("run-t86")) {
         auto reg_count = run_command.get<int>("register-count");
@@ -116,9 +98,10 @@ int main(int argc, char* argv[]) {
         auto t86dbg = std::make_unique<T86Process>(std::move(tm2), reg_count,
                                                    float_reg_count);
         Native native(std::move(t86dbg));
-        CLI cli(std::move(native), std::move(source));
+        CliInstance cli(std::move(native), std::move(source));
         cli.Run();
         t86vm.join();
     }
+#endif
 
 }

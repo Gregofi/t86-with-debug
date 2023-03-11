@@ -37,3 +37,27 @@ private:
     ThreadQueue<std::string>& in;
     ThreadQueue<std::string>& out;
 };
+
+/// Same as ThreadMessenger, but owns the thread queues.
+class ThreadMessengerOwner: public Messenger {
+public:
+    void Send(const std::string& message) override {
+        std::lock_guard l(in.m);
+        in.q.push(message);
+        in.cv.notify_one();
+    }
+
+    std::optional<std::string> Receive() override {
+        std::unique_lock<std::mutex> l(out.m);
+        out.cv.wait(l, [this]{ return !this->out.q.empty();});
+        auto response = out.q.front();
+        out.q.pop();
+        return response;
+    }
+
+    ThreadQueue<std::string>& GetInQueue() { return in; }
+    ThreadQueue<std::string>& GetOutQueue() { return out; }
+private:
+    ThreadQueue<std::string> in;
+    ThreadQueue<std::string> out;
+};
