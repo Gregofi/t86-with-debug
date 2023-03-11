@@ -76,11 +76,11 @@ DIE::TAG Parser::ParseDIETag(std::string_view v) const {
     }
 }
 
-expr::Operand Parser::ParseOperand() {
+expr::Location Parser::ParseOperand() {
     if (curtok.kind == TokenKind::NUM) {
         auto num = lex.getNumber();
         GetNext();
-        return expr::Integer{num};
+        return expr::Offset{num};
     } else if (curtok.kind == TokenKind::ID) {
         // Do not sanitize register names here
         // because this information should be

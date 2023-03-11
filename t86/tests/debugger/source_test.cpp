@@ -357,7 +357,7 @@ DIE_variable: {
     EXPECT_EQ(std::get<expr::Register>(e1.value).name, "BP"); 
     ASSERT_TRUE(std::holds_alternative<expr::Push>(loc_expr[1]));
     auto e2 = std::get<expr::Push>(loc_expr[1]);
-    EXPECT_EQ(std::get<expr::Integer>(e2.value).value, -2); 
+    EXPECT_EQ(std::get<expr::Offset>(e2.value).value, -2); 
     ASSERT_TRUE(std::holds_alternative<expr::Add>(loc_expr[2]));
 }
 

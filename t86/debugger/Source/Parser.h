@@ -31,7 +31,7 @@ private:
     DIE::TAG ParseDIETag(std::string_view v) const;
     DIE_ATTR ParseATTR(std::string_view v);
     std::vector<expr::LocExpr> ParseExprLoc();
-    expr::Operand ParseOperand();
+    expr::Location ParseOperand();
     expr::LocExpr ParseOneExprLoc();
     TokenKind GetNext();
     Lexer lex;
