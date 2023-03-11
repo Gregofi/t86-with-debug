@@ -129,6 +129,7 @@ R"(int main(void) {
     EXPECT_EQ(source_program.at(4), "}");
 }
 
+TEST_F(NativeSourceTest, SourceBreakpoints) {
     const char* source_code1 =
 R"(int main() {
     int a = 5;
@@ -160,25 +161,7 @@ R"(
 3: 7
 4: 11
 )";
-
-TEST(SourceNative, SourceBreakpoints) {
-    const size_t REG_COUNT = 6;
-    ThreadQueue<std::string> q1;
-    ThreadQueue<std::string> q2;
-    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
-    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
-    std::thread t_os(RunCPU, std::move(tm1), elf1, REG_COUNT, 0);
-    auto t86 = std::make_unique<T86Process>(std::move(tm2), REG_COUNT, 0);
-    Native native(std::move(t86));
-    
-    std::istringstream iss(elf1);
-    dbg::Parser p(iss);
-    auto debug_info = p.Parse();
-    ASSERT_TRUE(debug_info.line_mapping);
-    Source source;
-    source.RegisterLineMapping(std::move(*debug_info.line_mapping));
-    SourceFile file(source_code1);
-    source.RegisterSourceFile(std::move(file));
+    Run(elf1, source_code1);
 
     for (size_t i = 0; i < 5; ++i) {
         ASSERT_TRUE(source.LineToAddr(i));
@@ -190,43 +173,41 @@ TEST(SourceNative, SourceBreakpoints) {
     EXPECT_EQ(source.LineToAddr(3), 7);
     EXPECT_EQ(source.LineToAddr(4), 11);
 
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionBegin);
-    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 0), 2);
-    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 1), 5);
-    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 2), 6);
-    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 3), 7);
-    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(native, 4), 11);
-    ASSERT_THROW({source.SetSourceSoftwareBreakpoint(native, 5);}, DebuggerError);
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionBegin);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 0), 2);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 1), 5);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 2), 6);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 3), 7);
+    EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 4), 11);
+    ASSERT_THROW({source.SetSourceSoftwareBreakpoint(*native, 5);}, DebuggerError);
 
-    native.ContinueExecution();
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    EXPECT_EQ(native.GetIP(), 2);
+    native->ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    EXPECT_EQ(native->GetIP(), 2);
 
-    native.ContinueExecution();
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    EXPECT_EQ(native.GetIP(), 5);
+    native->ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    EXPECT_EQ(native->GetIP(), 5);
 
-    native.ContinueExecution();
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    EXPECT_EQ(native.GetIP(), 6);
+    native->ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    EXPECT_EQ(native->GetIP(), 6);
 
-    native.ContinueExecution();
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    EXPECT_EQ(native.GetIP(), 7);
+    native->ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    EXPECT_EQ(native->GetIP(), 7);
     // Check BP - 1 and BP - 2
-    auto bp = native.GetRegister("BP");
-    EXPECT_EQ(native.ReadMemory(bp - 1, 1)[0], 5);
-    EXPECT_EQ(native.ReadMemory(bp - 2, 1)[0], 6);
-    native.ContinueExecution();
+    auto bp = native->GetRegister("BP");
+    EXPECT_EQ(native->ReadMemory(bp - 1, 1)[0], 5);
+    EXPECT_EQ(native->ReadMemory(bp - 2, 1)[0], 6);
+    native->ContinueExecution();
 
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    EXPECT_EQ(native.GetIP(), 11);
-    EXPECT_EQ(native.GetRegister("R0"), 11);
-    native.ContinueExecution();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    EXPECT_EQ(native->GetIP(), 11);
+    EXPECT_EQ(native->GetRegister("R0"), 11);
+    native->ContinueExecution();
 
-    ASSERT_EQ(native.WaitForDebugEvent(), DebugEvent::ExecutionEnd);
-    native.Terminate();
-    t_os.join();
+    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
 }
 
 TEST(DIEs, Parsing1) {
