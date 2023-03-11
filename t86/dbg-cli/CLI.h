@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <string_view>
 #include <cstdlib>
 #include <cassert>
@@ -8,11 +9,30 @@
 #include "common/TCP.h"
 #include "common/helpers.h"
 #include "common/logger.h"
+#include "debugger/Source/Parser.h"
 #include "debugger/Source/Source.h"
+#include "t86/os.h"
+#include "threads_messenger.h"
 #include "utility/linenoise.h"
 #include "debugger/Native.h"
 
-class CLI {
+/// Checks if subcommands is atleast of subcommand_size and then
+/// if the first subcommand is prefix of 'of'.
+static bool check_command(const std::vector<std::string_view>& subcommands,
+                          std::string_view of,
+                          size_t subcommand_size) {
+    if (subcommands.size() < subcommand_size) {
+        return false;
+    }
+    return utils::is_prefix_of(subcommands[0], of);
+}
+
+template<typename ...Args>
+void Error(fmt::format_string<Args...> format_str, Args&& ...args) {
+    throw DebuggerError(fmt::format(format_str, std::forward<Args>(args)...));
+}
+
+class Cli {
     static constexpr const char* USAGE =
 R"(<command> <subcommand> [parameter [parameter...]]
 Example: `breakpoint set-addr 1` sets breakpoint at address 1.
@@ -29,8 +49,13 @@ commands:
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.
-- register = Read and write to registers
+- register = Read and write to registers.
+- run = Run the program, has no subcommands.
+- attach <port> = Attach to an already running VM, has no subcommands.
 )";
+// Do not append anything other than commands here because
+// the Cli class will add its own command after this string
+
     static constexpr const char* BP_USAGE = 
 R"(breakpoint <subcommads> [parameter [parameter...]]
 If you want to set breakpoint at a specific address, the commands are 
@@ -101,15 +126,11 @@ commands:
 )";
 
 public:
-    CLI(Native process, Source source): process(std::move(process)),
-                                        source(std::move(source)) {
-
+    Cli(std::string fname): fname(std::move(fname)) {
     }
 
-    /// Initializes connection to the process
-    void OpenConnection(int port) {
-        process.Initialize(port);
-    }
+    Cli() = default;
+
 
     /// Parses string from given stringview, converts most
     /// of the escape characters ('\' + 'n' -> '\n') into
@@ -225,6 +246,9 @@ public:
     }
 
     void HandleBreakpoint(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         // Breakpoint on raw address
         auto subcommands = utils::split_v(command);
         if (check_command(subcommands, "iset", 2)) {
@@ -276,8 +300,11 @@ public:
     }
 
     void HandleStepi(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         if (!is_running) {
-            throw DebuggerError("No process is running");
+            throw DebuggerError("Process finished executing, it's not possible to continue.");
         }
         if (command == "") {
             auto e = process.PerformSingleStep();
@@ -301,6 +328,9 @@ public:
     }
 
     void HandleDisassemble(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
             auto ip = process.GetIP();
@@ -348,6 +378,9 @@ public:
     }
 
     void HandleAssemble(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         auto subcommands = utils::split_v(command);
         if (check_command(subcommands, "interactive", 2)) {
             auto addr = utils::svtonum<size_t>(subcommands.at(1));
@@ -361,6 +394,9 @@ public:
     }
 
     void HandleRegister(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
             auto regs = process.GetRegisters();
@@ -397,6 +433,9 @@ public:
     }
 
     void HandleMemory(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No process is running");
+        }
         auto subcommands = utils::split_v(command);
         if (check_command(subcommands, "set", 3)) {
             auto cell = utils::svtonum<size_t>(subcommands.at(1));
@@ -452,8 +491,11 @@ public:
     }
 
     void HandleContinue(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
         if (!is_running) {
-            throw DebuggerError("No process is running");
+            throw DebuggerError("Process finished executing, it's not possible to continue.");
         }
         process.ContinueExecution();
         auto e = process.WaitForDebugEvent();
@@ -468,6 +510,25 @@ public:
         auto main_command = command.substr(0, command.find(' ') - 1);
         command = command.substr(main_command.size() +
                                  (command.size() != main_command.size()));
+        if (utils::is_prefix_of(main_command, "run")) {
+            ExitProcess();
+            Run(command);
+            is_running = true;
+            process.WaitForDebugEvent();
+            return;
+        } else if (utils::is_prefix_of(main_command, "attach")) {
+            ExitProcess();
+            Attach(command);
+            is_running = true;
+            process.WaitForDebugEvent();
+            return;
+        }
+        // Following commands needs active process
+        if (!process.Active()) {
+            fmt::print("{}", USAGE);
+            fmt::print("Use the `run` or `attach` command to run a process first");
+            return;
+        }
         if (utils::is_prefix_of(main_command, "breakpoint")) {
             HandleBreakpoint(command); 
         } else if (utils::is_prefix_of(main_command, "istep")) {
@@ -487,12 +548,19 @@ public:
         }
     }
 
-    int Run(bool attached = true) {
-        linenoiseHistorySetMaxLen(100);
-        if (attached) {
-            auto reason = process.WaitForDebugEvent();
-            assert(reason == DebugEvent::ExecutionBegin);
+    // Cleanly exits the underlying VM if running.
+    void ExitProcess() {
+        if (process.Active()) {
+            process.Terminate();
+            if (t86vm.joinable()) {
+                t86vm.join();
+            }
         }
+    }
+
+    int Run() {
+        int exit_code = 0;
+        linenoiseHistorySetMaxLen(100);
         char* line_raw;
         while((line_raw = linenoise("> ")) != NULL) {
             std::string line = utils::squash_strip_whitespace(line_raw);
@@ -507,29 +575,127 @@ public:
             }
             free(line_raw);
         }
-        process.Terminate();
-        return 0;
+        ExitProcess();
+        return exit_code;
     }
 private:
-    /// Checks if subcommands is atleast of subcommand_size and then
-    /// if the first subcommand is prefix of 'of'.
-    bool check_command(const std::vector<std::string_view>& subcommands,
-                       std::string_view of,
-                       size_t subcommand_size) {
-        if (subcommands.size() < subcommand_size) {
-            return false;
+    /// Checks if there is a command with `searched_command`
+    /// prefix and return the suffix.
+    /// ie. use for `--reg-count=<This-is-returned>`.
+    template<typename T>
+    std::optional<T> ParseOptionalCommand(const std::vector<std::string_view>& commands,
+                                       std::string_view searched_command) {
+        auto f_it = std::ranges::find_if(commands, [&](auto&& s) { return s.starts_with(searched_command); });
+        if (f_it != commands.end()) {
+            auto val = f_it->substr(searched_command.size());
+            auto opt = utils::svtonum<size_t>(val);
+            if (opt) {
+                return *opt;
+            }
         }
-        return utils::is_prefix_of(subcommands[0], of);
+        return {};
     }
 
-    template<typename ...Args>
-    void Error(fmt::format_string<Args...> format_str, Args&& ...args) {
-        throw DebuggerError(fmt::format(format_str, std::forward<Args>(args)...));
+    SourceFile ParseSourceFile(std::ifstream& ifs) {
+        std::stringstream buffer;
+        buffer << ifs.rdbuf();
+        return buffer.str();
     }
 
-  Native process;
-  Source source;
-  bool is_running{true};
+    void Attach(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+        if (subcommands.size() < 1) {
+            fmt::print("A port is needed, use `attach <port>`");
+            return;
+        }
+        auto port_o = utils::svtonum<int>(subcommands.at(0));
+        if (!port_o) {
+            fmt::print("Expected port, got '{}'", *port_o);
+        }
+        auto debuggee = Native::Initialize(*port_o);
+        process = Native(std::move(debuggee));
+    }
 
-  static const int DEFAULT_DBG_PORT = 9110;
+    std::pair<Source, tiny::t86::Program> ParseProgram(const std::string& path) {
+        std::ifstream file(path);
+        if (!file) {
+            throw DebuggerError(fmt::format("Unable to open file '{}'\n", *fname));
+        }
+        Parser parser(file);
+        auto program = parser.Parse();
+        // Parse debug info
+        Source source;
+        file.clear();
+        file.seekg(0);
+        if (file) {
+            dbg::Parser p(file);
+            auto debug_info = p.Parse();
+            if (debug_info.line_mapping) {
+                log_info("Found line mapping in debug info");
+                source.RegisterLineMapping(std::move(*debug_info.line_mapping));
+            }
+            if (debug_info.source_code) {
+                log_info("Found source code in debug info");
+                source.RegisterSourceFile(std::move(*debug_info.source_code));
+            }
+            if (debug_info.top_die) {
+                log_info("Found DIE information in debug info");
+                source.RegisterDebuggingInformation(std::move(*debug_info.top_die));
+            }
+        }
+        return {std::move(source), std::move(program)};
+    }
+
+    void Run(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+
+        if (!fname) {
+            fmt::print("No file name was provided, use `run --file=<file>` or provide the file name in argv at startup");
+            return;
+        }
+        auto [source, program] = ParseProgram(std::string{*fname});
+
+        size_t reg_count = 8;
+        auto v = ParseOptionalCommand<size_t>(subcommands, "--reg-count=");
+        if (v) {
+            reg_count = *v;
+        }
+        size_t float_reg_count = 4;
+        v = ParseOptionalCommand<size_t>(subcommands, "--float-reg-count=");
+        if (v) {
+            float_reg_count = *v;
+        }
+        size_t memory_size = 1024;
+        v = ParseOptionalCommand<size_t>(subcommands, "--data-size=");
+        if (v) {
+            memory_size = *v;
+        }
+
+        auto m1 = std::make_unique<ThreadMessengerOwner>();
+        auto m2 = std::make_unique<ThreadMessenger>(m1->GetOutQueue(), m1->GetInQueue());
+
+        t86vm = std::thread([](std::unique_ptr<ThreadMessenger> messenger,
+                           tiny::t86::Program program, size_t reg_cnt,
+                           double float_reg_cnt) {
+            tiny::t86::OS os(reg_cnt, float_reg_cnt);
+            os.SetDebuggerComms(std::move(messenger));
+            os.Run(std::move(program));
+        }, std::move(m2), std::move(program), reg_count, float_reg_count);
+        
+        auto t86dbg = std::make_unique<T86Process>(std::move(m1), reg_count,
+                                                   float_reg_count);
+        // Set those guys at the end in case something fails mid-way.
+        process = Native(std::move(t86dbg));
+        this->source = std::move(source);
+    }
+
+    std::optional<std::string> fname;
+
+    Native process;
+    Source source;
+    
+    // If the debugger spawned the VM,
+    std::thread t86vm;
+    
+    bool is_running{true};
 };
