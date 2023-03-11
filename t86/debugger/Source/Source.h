@@ -2,17 +2,29 @@
 #include <algorithm>
 #include "debugger/Source/LineMapping.h"
 #include "debugger/Source/SourceFile.h"
+#include "debugger/Source/Type.h"
 #include "debugger/Native.h"
+#include "debugger/Source/Die.h"
 
 /// Responsible for all source level debugging.
 class Source {
 public:
+    enum class PrimitiveTypes {
+        FLOAT,
+        INT,
+        BOOL,
+    };
+
     void RegisterSourceFile(SourceFile file) {
         source_file = std::move(file);
     }
 
     void RegisterLineMapping(LineMapping mapping) {
         line_mapping = std::move(mapping);
+    }
+
+    void RegisterDebuggingInformation(DIE topmost_die) {
+        top_die = std::move(topmost_die);
     }
 
     /// Sets software breakpoint at given line and returns the address
@@ -25,6 +37,16 @@ public:
     uint64_t EnableSourceSoftwareBreakpoint(Native& native, size_t line);
 
     uint64_t DisableSourceSoftwareBreakpoint(Native& native, size_t line);
+    /// Returns function that owns instruction at given address.
+    std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
+    /// Returns the address of the function prologue.
+    std::optional<uint64_t> GetAddrFunctionByName(std::string_view name);
+    /// Returns value of a variable if it is in current scope.
+    std::optional<Type> GetVariableTypeInformation(std::string_view name);
+    /// Returns a location of variable.
+    /// Be aware that this can make a lot of calls to the underlying debugged
+    /// process, depending on how complicated is the location expression.
+    std::optional<expr::Location> GetVariableLocation(Native& native, std::string_view name);
 
     /// Returns latest line that corresponds to given address if 
     /// debugging information is available, otherwise returns nullopt.
@@ -49,6 +71,12 @@ private:
         return *opt;
     }
 
+    /// Finds the innermost variable die in the provided die,
+    /// ie. the most nested one in scope (doesn't search through nested
+    /// functions). If the DIE is not found then nullptr is returned.
+    const DIE* GetVariableDie(uint64_t address, std::string_view name,
+                              const DIE& die) const;
     std::optional<LineMapping> line_mapping;
     std::optional<SourceFile> source_file;
+    std::optional<DIE> top_die;
 };
