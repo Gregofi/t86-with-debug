@@ -2,10 +2,12 @@
 #include <optional>
 #include <variant>
 #include <iostream>
+#include <sstream>
 #include <cstring>
 #include <string>
 #include <string_view>
 #include "fmt/core.h"
+#include "logger.h"
 
 class ParserError : public std::exception {
 public:
@@ -192,6 +194,14 @@ public:
                                               row, col, lookahead));
             }
         }
+    }
+
+    /// Reads the rest of the input into a string.
+    std::string RawMode() {
+        std::stringstream buffer;
+        buffer << input.rdbuf();
+        log_debug("Raw parsed >{}<", buffer.str());
+        return buffer.str();
     }
 
     std::string getId() const { return id; }

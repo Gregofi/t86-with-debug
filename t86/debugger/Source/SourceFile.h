@@ -5,7 +5,19 @@
 class SourceFile {
 public:
     SourceFile(const std::string& file_content) {
-        lines = utils::split(file_content, '\n');
+        std::string_view s = file_content;
+        while (true) {
+            auto offset = s.find('\n');
+            if (offset == s.npos) {
+                if (s != "") {
+                    lines.emplace_back(s);
+                }
+                break;
+            } else {
+                lines.emplace_back(s.substr(0, offset));
+            }
+            s.remove_prefix(offset + 1);
+        }
     }
     std::vector<std::string> GetRange(size_t begin, size_t amount);
     std::optional<std::string_view> GetLine(size_t idx) const;

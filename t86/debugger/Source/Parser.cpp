@@ -257,6 +257,16 @@ DebuggingInfo Parser::Parse() {
             throw CreateError("Expected section name");
         }
         auto section_name = lex.getId();
+        // This must be done before fetching next token, otherwise
+        // we will lose the beginning of the string to tokenization.
+        if (section_name == "debug_source") {
+            std::string source_code = lex.RawMode();
+            // Since the raw mode eats everything after the .debug_source header,
+            // we need to get rid of the newline.
+            info.source_code = SourceFile(source_code);
+            // debug_source must be last section
+            return info;
+        }
         GetNext();
 
         if (section_name == "debug_line") {
@@ -274,5 +284,4 @@ DebuggingInfo Parser::Parse() {
     }
     return info;
 }
-
 }
