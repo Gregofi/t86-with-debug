@@ -4,11 +4,13 @@
 #include <fmt/core.h>
 #include "common/parsing.h"
 #include "debugger/Source/Die.h"
+#include "debugger/Source/SourceFile.h"
 
 namespace dbg {
 struct DebuggingInfo {
     std::optional<std::map<size_t, uint64_t>> line_mapping;
     std::optional<DIE> top_die;
+    std::optional<SourceFile> source_code;
 };
 
 class Parser {
@@ -34,6 +36,7 @@ private:
     expr::Location ParseOperand();
     expr::LocExpr ParseOneExprLoc();
     TokenKind GetNext();
+
     Lexer lex;
     Token curtok;
 };

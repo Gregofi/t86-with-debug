@@ -86,19 +86,24 @@ TEST(Source, LineAndSourceMapping) {
     Source source;
     ASSERT_FALSE(source.AddrToLine(0));
 
-    auto source_code =
-R"(int main(void) {
-    int i = 5;
-    int y = 10;
-    return i + y;
-}
-)";
     auto program = R"(
 .debug_line
 0: 3
 1: 3
-2: 4
+2: 5
 3: 5
+4: 7
+5: 7
+6: 8
+
+.debug_source
+int main(void) {
+    int i = 5;
+
+    int y = 10;
+
+    return i + y;
+}
 )";
     std::istringstream iss(program);
     dbg::Parser p(iss);
@@ -111,22 +116,24 @@ R"(int main(void) {
     ASSERT_FALSE(source.AddrToLine(2));
     ASSERT_TRUE(source.AddrToLine(3));
     EXPECT_EQ(source.AddrToLine(3), 1);
-    ASSERT_TRUE(source.AddrToLine(4));
-    EXPECT_EQ(source.AddrToLine(4), 2);
     ASSERT_TRUE(source.AddrToLine(5));
     EXPECT_EQ(source.AddrToLine(5), 3);
-    ASSERT_FALSE(source.AddrToLine(6));
+    ASSERT_TRUE(source.AddrToLine(7));
+    EXPECT_EQ(source.AddrToLine(7), 5);
+    ASSERT_TRUE(source.AddrToLine(8));
+    EXPECT_EQ(source.AddrToLine(8), 6);
 
     ASSERT_THAT(source.GetLines(0, 3), testing::IsEmpty());
-    SourceFile file(source_code);
-    source.RegisterSourceFile(std::move(file));
+    source.RegisterSourceFile(*info.source_code);
     auto source_program = source.GetLines(0, 10);
-    ASSERT_EQ(source_program.size(), 5);
+    ASSERT_EQ(source_program.size(), 7);
     EXPECT_EQ(source_program.at(0), "int main(void) {");
     EXPECT_EQ(source_program.at(1), "    int i = 5;");
-    EXPECT_EQ(source_program.at(2), "    int y = 10;");
-    EXPECT_EQ(source_program.at(3), "    return i + y;");
-    EXPECT_EQ(source_program.at(4), "}");
+    EXPECT_EQ(source_program.at(2), "");
+    EXPECT_EQ(source_program.at(3), "    int y = 10;");
+    EXPECT_EQ(source_program.at(4), "");
+    EXPECT_EQ(source_program.at(5), "    return i + y;");
+    EXPECT_EQ(source_program.at(6), "}");
 }
 
 TEST_F(NativeSourceTest, SourceBreakpoints) {

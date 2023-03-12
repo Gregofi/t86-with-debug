@@ -20,7 +20,7 @@
 16      XOR     R0, R0        # return 0
 17      RET
 
-.debug_lines
+.debug_line
 0: 2
 1: 2
 2: 3
@@ -75,4 +75,17 @@ DIE_function: {
         }
     }
 }
+}
+
+.debug_source
+void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+int main() {
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
 }
