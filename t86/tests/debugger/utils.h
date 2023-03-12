@@ -99,7 +99,7 @@ inline void RunCPU(std::unique_ptr<ThreadMessenger> messenger,
 
 class NativeSourceTest: public ::testing::Test {
 protected:
-    void Run(const char* elf, const char* source_code) {
+    void Run(const char* elf) {
         const size_t REG_COUNT = 6;
         auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
         auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
@@ -112,9 +112,7 @@ protected:
         auto debug_info = p.Parse();
         source.RegisterLineMapping(std::move(*debug_info.line_mapping));
         source.RegisterDebuggingInformation(std::move(*debug_info.top_die));
-
-        SourceFile file(source_code);
-        source.RegisterSourceFile(std::move(file));
+        source.RegisterSourceFile(std::move(*debug_info.source_code));
     }
 
     void TearDown() override {
