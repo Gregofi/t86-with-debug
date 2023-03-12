@@ -16,7 +16,8 @@ commands:
 - register = Read and write to registers.
 - run = Run the program, has no subcommands.
 - attach <port> = Attach to an already running VM, has no subcommands.
-Use the `run` or `attach` command to run a process first
+Use the `run` or `attach` command to run a process first.
+Started process 'tests/sources/swap.t86'
 Breakpoint set on line 2: 'MOV R0, [R2]'
 Breakpoint set on line 7 (addr 7):     int a = 3;
 Breakpoint set on line 10: 'LEA R3, [SP + -3]'

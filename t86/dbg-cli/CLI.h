@@ -532,7 +532,7 @@ public:
         // Following commands needs active process
         if (!process.Active()) {
             fmt::print("{}", USAGE);
-            fmt::print("Use the `run` or `attach` command to run a process first\n");
+            fmt::print("Use the `run` or `attach` command to run a process first.\n");
             return;
         }
         if (utils::is_prefix_of(main_command, "breakpoint")) {
@@ -661,7 +661,7 @@ private:
         auto subcommands = utils::split_v(command);
 
         if (!fname) {
-            fmt::print("No file name was provided, use `run --file=<file>` or provide the file name in argv at startup");
+            fmt::print("No file name was provided, provide the file name as argument at startup");
             return;
         }
         auto [source, program] = ParseProgram(std::string{*fname});
@@ -698,6 +698,7 @@ private:
         // Set those guys at the end in case something fails mid-way.
         process = Native(std::move(t86dbg));
         this->source = std::move(source);
+        fmt::print("Started process '{}'\n", *fname);
     }
 
     std::optional<std::string> fname;
