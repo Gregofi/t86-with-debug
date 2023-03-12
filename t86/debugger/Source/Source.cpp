@@ -96,6 +96,23 @@ const Attr* FindDieAttribute(const DIE& die) {
     return nullptr;
 }
 
+/// Returns DIE with given id or nullptr if not found.
+const DIE* FindDIEById(const DIE& die, size_t id) {
+    auto found_id = FindDieAttribute<ATTR_id>(die);
+    if (found_id && found_id->id == id) {
+        return &die;
+    }
+
+    for (const auto& child: die) {
+        auto found = FindDIEById(child, id);
+        // IDs are unique, we can stop if we found one.
+        if (found) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
 std::optional<std::string> Source::GetFunctionNameByAddress(uint64_t address) const {
     auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
     // NOTE: we assume that nested functions aren't possible
@@ -186,4 +203,98 @@ std::optional<expr::Location> Source::GetVariableLocation(Native& native,
 
     auto loc = ExpressionInterpreter::Interpret(location_attr->locs, native);
     return loc;
+}
+
+std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
+    auto type_die = FindDIEById(*top_die, id);
+    if (type_die == nullptr) {
+        return {};
+    }
+    if (type_die->get_tag() == DIE::TAG::primitive_type) {
+        auto name = FindDieAttribute<ATTR_name>(*type_die);
+        if (!name) {
+            return {};
+        }
+        auto primitive_type = ToPrimitiveType(name->n);
+        if (!primitive_type) {
+            log_info("DIE id {}: Unsupported primitive type '{}'", id, name->n);
+            return {};
+        }
+        auto size = FindDieAttribute<ATTR_size>(*type_die);
+        if (!size) {
+            log_info("DIE id {}: Size not found", id);
+            return {};
+        }
+        return PrimitiveType{.type = *primitive_type, .size = size->size};
+    } else if (type_die->get_tag() == DIE::TAG::structured_type) {
+        auto name = FindDieAttribute<ATTR_name>(*type_die);
+        if (!name) {
+            return {};
+        }
+        auto size = FindDieAttribute<ATTR_size>(*type_die);
+        if (!size) {
+            return StructuredType{.name = name->n, .size = 0};
+        }
+        auto members = FindDieAttribute<ATTR_members>(*type_die);
+        if (!members) {
+            return StructuredType{.name = name->n, .size = size->size};
+        }
+        std::vector<std::pair<int64_t, std::optional<Type>>> members_vec;
+        std::ranges::transform(members->m, std::back_inserter(members_vec),
+                [this](auto &&m) {
+            return std::make_pair(m.first, ReconstructTypeInformation(m.second));
+        });
+        return StructuredType{.name = name->n, .size = size->size,
+                              .members = std::move(members_vec)};
+    } else if (type_die->get_tag() == DIE::TAG::pointer_type) {
+        auto pointing_to = FindDieAttribute<ATTR_type>(*type_die);
+        if (!pointing_to) {
+            log_info("DIE pointer type, missing pointing attr");
+            return PointerType{.size = 0};
+        }
+        auto size = FindDieAttribute<ATTR_size>(*type_die);
+        auto pointed_die = FindDIEById(*top_die, pointing_to->type_id);
+        if (!pointing_to || !size || !pointed_die) {
+            log_info("DIE pointer_type, id {}: Missing either dest or size", id);
+            return PointerType{.size = 0};
+        }
+        // We can't just recursively call ourselves because that might
+        // lead to infinite recursion, since structs can point to each other.
+        if (pointed_die->get_tag() == DIE::TAG::structured_type) {
+            auto name = FindDieAttribute<ATTR_name>(*pointed_die);
+            if (name) {
+                auto structured_type
+                    = std::make_unique<Type>(StructuredType{.name = name->n});
+                return PointerType{.to = std::move(structured_type),
+                                   .size = size->size};
+            }
+        } else {
+            auto pointed = ReconstructTypeInformation(pointing_to->type_id);
+            if (pointed) {
+                return PointerType{.to = std::make_shared<Type>(std::move(*pointed)),
+                                   .size = size->size};
+            } else {
+                return PointerType{.size = size->size};
+            }
+        }
+    } else {
+        log_error("Unknown DIE tag describing type");
+        UNREACHABLE;
+    }
+    UNREACHABLE;
+}
+
+std::optional<Type> Source::GetVariableTypeInformation(Native& native,
+                                                       std::string_view name) {
+    auto top_die = UnwrapOptional(this->top_die, "No debugging information provided!");
+    auto var = GetVariableDie(native.GetIP(), name, top_die);
+    if (var == nullptr) {
+        return {};
+    }
+    auto type = FindDieAttribute<ATTR_type>(*var);
+    if (type == nullptr) {
+        return {};
+    }
+    
+    return ReconstructTypeInformation(type->type_id);
 }

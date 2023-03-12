@@ -12,20 +12,20 @@ TokenKind Parser::GetNext() {
     return curtok.kind;
 }
 
-std::map<uint64_t, std::string> Parser::StructuredMembers() {
-    std::map<uint64_t, std::string> res;
+std::map<int64_t, size_t> Parser::StructuredMembers() {
+    std::map<int64_t, size_t> res;
     while (curtok.kind != TokenKind::RBRACE) {
         if (curtok.kind != TokenKind::NUM) {
-            throw CreateError("Expected line entry in form 'row:col'");
+            throw CreateError("Expected entry in form 'offset:type_id'");
         }
         auto offset = lex.getNumber();
         if (GetNext() != TokenKind::DOUBLEDOT) {
-            throw CreateError("Expected line entry in form 'row:col'");
+            throw CreateError("Expected entry in form 'offset:type_id'");
         }
-        if (GetNext() != TokenKind::ID) {
-            throw CreateError("Expected line entry in form 'row:col'");
+        if (GetNext() != TokenKind::NUM) {
+            throw CreateError("Expected entry in form 'offset:type_id'");
         }
-        auto type = lex.getId();
+        auto type = lex.getNumber();
         res[offset] = type;
         if (GetNext() == TokenKind::COMMA) {
             GetNext();
@@ -33,6 +33,7 @@ std::map<uint64_t, std::string> Parser::StructuredMembers() {
             throw CreateError("Expected comma or closing brace");
         }
     }
+    GetNext();
     return res;
 }
 
@@ -59,12 +60,12 @@ std::map<size_t, uint64_t> Parser::DebugLine() {
 DIE::TAG Parser::ParseDIETag(std::string_view v) const {
     if (v == "DIE_function") {
         return DIE::TAG::function;
-    } else if (v == "DIE_structured_type") {
-        return DIE::TAG::function;
     } else if (v == "DIE_primitive_type") {
         return DIE::TAG::primitive_type;
     } else if (v == "DIE_structured_type") {
         return DIE::TAG::structured_type;
+    } else if (v == "DIE_pointer_type") {
+        return DIE::TAG::pointer_type;
     } else if (v == "DIE_variable") {
         return DIE::TAG::variable;
     } else if (v == "DIE_scope") {
@@ -157,12 +158,19 @@ DIE_ATTR Parser::ParseATTR(std::string_view v) {
         GetNext();
         return ATTR_name{std::move(id)};
     } else if (v == "ATTR_type") {
-        if (curtok.kind != TokenKind::ID) {
-            throw CreateError("ATTR_name should have a string as its value");
+        if (curtok.kind != TokenKind::NUM) {
+            throw CreateError("ATTR_type should have a number as its value");
         }
-        auto id = lex.getId();
+        auto id = static_cast<size_t>(lex.getNumber());
         GetNext();
         return ATTR_type{std::move(id)};
+    } else if (v == "ATTR_id") {
+        if (curtok.kind != TokenKind::NUM) {
+            throw CreateError("ATTR_id should have a number as its value");
+        }
+        auto id = static_cast<size_t>(lex.getNumber());
+        GetNext();
+        return ATTR_id{std::move(id)};
     } else if (v == "ATTR_begin_addr") {
         if (curtok.kind != TokenKind::NUM) {
             throw CreateError("ATTR_begin_addr should have a number as its value");

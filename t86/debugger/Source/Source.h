@@ -9,12 +9,6 @@
 /// Responsible for all source level debugging.
 class Source {
 public:
-    enum class PrimitiveTypes {
-        FLOAT,
-        INT,
-        BOOL,
-    };
-
     void RegisterSourceFile(SourceFile file) {
         source_file = std::move(file);
     }
@@ -41,8 +35,8 @@ public:
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
     /// Returns the address of the function prologue.
     std::optional<uint64_t> GetAddrFunctionByName(std::string_view name);
-    /// Returns value of a variable if it is in current scope.
-    std::optional<Type> GetVariableTypeInformation(std::string_view name);
+    /// Returns the type of a variable if it is in current scope.
+    std::optional<Type> GetVariableTypeInformation(Native& native, std::string_view name);
     /// Returns a location of variable.
     /// Be aware that this can make a lot of calls to the underlying debugged
     /// process, depending on how complicated is the location expression.
@@ -63,6 +57,8 @@ public:
 
     std::optional<std::string_view> GetLine(size_t line);
 private:
+    std::optional<Type> ReconstructTypeInformation(size_t id) const;
+
     template<typename T>
     static const T& UnwrapOptional(const std::optional<T>& opt, const std::string& message) {
         if (!opt) {
