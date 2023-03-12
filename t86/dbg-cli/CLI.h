@@ -507,9 +507,15 @@ public:
     }
 
     void HandleCommand(std::string_view command) {
-        auto main_command = command.substr(0, command.find(' ') - 1);
-        command = command.substr(main_command.size() +
-                                 (command.size() != main_command.size()));
+        auto main_command_offset = command.find(' ');
+        std::string_view main_command;
+        if (main_command_offset == command.npos) {
+            main_command = command;
+            command = "";
+        } else {
+            main_command = command.substr(0, main_command_offset);
+            command = command.substr(main_command.size() + 1);
+        }
         if (utils::is_prefix_of(main_command, "run")) {
             ExitProcess();
             Run(command);
@@ -526,7 +532,7 @@ public:
         // Following commands needs active process
         if (!process.Active()) {
             fmt::print("{}", USAGE);
-            fmt::print("Use the `run` or `attach` command to run a process first");
+            fmt::print("Use the `run` or `attach` command to run a process first\n");
             return;
         }
         if (utils::is_prefix_of(main_command, "breakpoint")) {
@@ -562,7 +568,12 @@ public:
         int exit_code = 0;
         linenoiseHistorySetMaxLen(100);
         char* line_raw;
-        while((line_raw = linenoise("> ")) != NULL) {
+        const char* prompt = "> ";
+        // For testing purposes
+        if (std::getenv("NODBGPROMPT")) {
+            prompt = "";
+        }
+        while((line_raw = linenoise(prompt)) != NULL) {
             std::string line = utils::squash_strip_whitespace(line_raw);
             if (line == "") {
                 continue;

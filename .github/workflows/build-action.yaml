@@ -41,10 +41,12 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: t86
-          path: ${{ github.workspace }}/t86/build/t86-cli/t86-cli 
+          path: |
+            ${{ github.workspace }}/t86/build/t86-cli/t86-cli
+            ${{ github.workspace }}/t86/build/dbg-cli/dbg-cli
           retention-days: 1
             
-  test-t86-cli:
+  test-dbg-cli:
     needs: [build-t86]
     runs-on: ubuntu-latest
     steps:
@@ -54,13 +56,29 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: t86
-      # The artifacts are not executable by default
       - name: permissions
-        run: chmod +x ${{ github.workspace }}/t86-cli
+        run: chmod +x ${{ github.workspace }}/dbg-cli/dbg-cli
+      - name: Run tests
+        run: |
+          cd ${{ github.workspace }}/t86/dbg-cli
+          ./scripts/run_tests.sh ../../dbg-cli/dbg-cli
+
+  test-t86-cli:
+    needs: [build-t86]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download dbg-cli
+        uses: actions/download-artifact@v3
+        with:
+          name: t86
+      - name: permissions
+        run: chmod +x ${{ github.workspace }}/t86-cli/t86-cli
       - name: Run tests
         run: |
           cd ${{ github.workspace }}/t86
-          ./scripts/run_tests.sh ../t86-cli
+          ./scripts/run_tests.sh ../t86-cli/t86-cli
 
   test-compiler-to-binary:
     needs: [build-t86, build-tinyc]
@@ -78,8 +96,8 @@ jobs:
           name: t86
       # The artifacts are not executable by default
       - name: permissions
-        run: chmod +x ${{ github.workspace }}/t86-cli ${{ github.workspace }}/ni-gen
+        run: chmod +x ${{ github.workspace }}/t86-cli/t86-cli ${{ github.workspace }}/ni-gen
       - name: Run tests
         run: |
           cd ${{ github.workspace }}
-          ./scripts/run_tests.sh ./ni-gen ./t86-cli
+          ./scripts/run_tests.sh ./ni-gen ./t86-cli/t86-cli
