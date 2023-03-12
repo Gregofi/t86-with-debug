@@ -511,6 +511,10 @@ tiny::t86::Program Parser::Parse() {
     }
     while (curtok.kind == TokenKind::DOT) {
         GetNext();
+        if (curtok.kind == TokenKind::ID
+                && lex.getId() == "debug_source") {
+            return {std::move(program), std::move(data)};
+        }
         Section();
     }
     CheckEnd();

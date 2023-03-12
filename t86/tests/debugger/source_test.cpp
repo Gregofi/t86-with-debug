@@ -138,13 +138,7 @@ int main(void) {
 }
 
 TEST_F(NativeSourceTest, SourceBreakpoints) {
-    const char* source_code1 =
-R"(int main() {
-    int a = 5;
-    int b = 6;
-    return a + b;
-})";
-    const char* elf1 =
+    const char* elf =
 R"(
 .text
 0 CALL 2
@@ -167,8 +161,15 @@ R"(
 2: 6
 3: 7
 4: 11
+
+.debug_source
+int main() {
+    int a = 5;
+    int b = 6;
+    return a + b;
+}
 )";
-    Run(elf1, source_code1);
+    Run(elf);
 
     for (size_t i = 0; i < 5; ++i) {
         ASSERT_TRUE(source.LineToAddr(i));
@@ -353,19 +354,16 @@ TEST(DebugInfo, ParsingCombined) {
     auto program =
 R"(.debug_info
 DIE_compilation_unit: {
-
 DIE_primitive_type: {
     ATTR_name: double,
     ATTR_size: 1,
     ATTR_id: 1,
 },
-
 DIE_primitive_type: {
     ATTR_name: int,
     ATTR_size: 1,
     ATTR_id: 0,
 },
-
 DIE_structured_type: {
     ATTR_name: coord,
     ATTR_size: 2,
@@ -374,7 +372,6 @@ DIE_structured_type: {
         1: 0,
     }
 },
-
 DIE_function: {
   ATTR_name: main,
   ATTR_begin_addr: 0,
@@ -399,7 +396,6 @@ DIE_function: {
     }
   }
 }
-
 })";
     std::istringstream iss(program);
     dbg::Parser p(iss);
@@ -415,12 +411,7 @@ DIE_function: {
 
 TEST_F(NativeSourceTest, FunctionMapping1) {
     auto source_code =
-R"(int main(void) {
-    int i = 5;
-    int y = 10;
-    return i + y;
-}
-)";
+R"()";
     const char* elf =
 R"(
 .text
@@ -465,8 +456,14 @@ DIE_function: {
     }
 }
 }
+.debug_source
+int main(void) {
+    int i = 5;
+    int y = 10;
+    return i + y;
+}
 )";
-    Run(elf, source_code);
+    Run(elf);
     native->WaitForDebugEvent();
     for (uint64_t i = 2; i < 12; ++i) {
         ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
@@ -489,7 +486,7 @@ DIE_function: {
 }
 
 TEST_F(NativeSourceTest, FunctionMapping2) {
-auto elf1 =
+auto elf =
 R"(.text
 0       CALL    7            # main
 1       HALT
@@ -577,9 +574,9 @@ DIE_function: {
         }
     }
 }
-})";
-    auto source_code = 
-R"(void swap(int* x, int* y) {
+}
+.debug_source
+void swap(int* x, int* y) {
     int tmp = *x;
     *x = *y;
     *y = tmp;
@@ -590,8 +587,9 @@ int main() {
     int b = 6;
     swap(&a, &b);
 }
+
 )";
-    Run(elf1, source_code);
+    Run(elf);
     native->WaitForDebugEvent();
 
     for (uint64_t i = 2; i < 7; ++i) {
@@ -716,10 +714,6 @@ DIE_function: {
 }
 
 .debug_source
-ahoj)";
-
-auto source_code =
-R"(
 import io.print;
 
 struct coord {
@@ -733,7 +727,7 @@ int main() {
     c.y = 2.71;
     print(c.x + (int)c.y);
 })";
-    Run(elf, source_code);
+    Run(elf);
     native->WaitForDebugEvent();
     
     native->SetBreakpoint(4);
@@ -763,19 +757,7 @@ int main() {
 
 TEST_F(NativeSourceTest, TestMappingScopes) {
     auto source_code =
-R"(int main() {
-    int a = 1;
-    {
-        int b = 2;
-        {
-            int a = 3;
-        }
-        {
-            int b = 5;
-        }
-        a += b;
-    }
-})";
+R"()";
     auto elf =
 R"(.text
 0   CALL 2
@@ -827,8 +809,23 @@ DIE_function: {
         },
     },
 }
-})";
-    Run(elf, source_code);
+}
+.debug_source
+int main() {
+    int a = 1;
+    {
+        int b = 2;
+        {
+            int a = 3;
+        }
+        {
+            int b = 5;
+        }
+        a += b;
+    }
+}
+)";
+    Run(elf);
     native->WaitForDebugEvent();
 
     for (uint64_t i = 2; i < 8; ++i) {
