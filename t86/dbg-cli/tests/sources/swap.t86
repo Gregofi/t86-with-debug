@@ -34,6 +34,15 @@
 
 .debug_info
 DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_id: 0,
+    ATTR_size: 1,
+},
+DIE_pointer_type: {
+    ATTR_type: 1,
+    ATTR_id: 1,
+},
 DIE_function: {
     ATTR_name: main,
     ATTR_begin_addr: 7,
@@ -43,12 +52,12 @@ DIE_function: {
         ATTR_end_addr: 18,
         DIE_variable: {
             ATTR_name: a,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: [PUSH SP; PUSH -1; ADD],
         },
         DIE_variable: {
             ATTR_name: b,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: [PUSH SP; PUSH -2; ADD],
         }
     }
@@ -62,15 +71,15 @@ DIE_function: {
         ATTR_end_addr: 7,
         DIE_variable: {
             ATTR_name: x,
-           # ATTR_type, int_pointer,
+            ATTR_type: 1,
         },
         DIE_variable: {
             ATTR_name: y,
-           # ATTR_type, int_pointer,
+            ATTR_type: 1,
         },
         DIE_variable: {
             ATTR_name: tmp,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: `PUSH R0`,
         }
     }

@@ -2,22 +2,63 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include <memory>
+#include <optional>
 
-/// Represents 
-struct TypeInfo {
+struct PrimitiveType;
+struct StructuredType;
+struct PointerType;
+
+using Type = std::variant<PrimitiveType, StructuredType, PointerType>;
+
+struct PrimitiveType {
+    enum struct Type {
+        FLOAT,
+        SIGNED,
+        UNSIGNED,
+        BOOL,
+    };
+    Type type;
+    uint64_t size;
+};
+
+inline std::optional<PrimitiveType::Type> ToPrimitiveType(std::string_view type) {
+    if (type == "float") {
+        return PrimitiveType::Type::FLOAT; 
+    } else if (type == "signed_int") {
+        return PrimitiveType::Type::SIGNED;
+    } else if (type == "unsigned_int") {
+        return PrimitiveType::Type::UNSIGNED;
+    } else if (type == "bool") {
+        return PrimitiveType::Type::BOOL;
+    }
+    return {};
+}
+
+inline std::string FromPrimitiveType(PrimitiveType::Type type) {
+    switch (type) {
+    case PrimitiveType::Type::FLOAT:
+        return "float";
+    case PrimitiveType::Type::SIGNED:
+        return "int";
+    case PrimitiveType::Type::UNSIGNED:
+        return "unsigned";
+    case PrimitiveType::Type::BOOL:
+        return "bool";
+    }
+}
+
+
+struct PointerType {
+    // ptr is needed here since the types are recursive.
+    // Can be null if there is no info about the pointed type.
+    std::shared_ptr<Type> to;
+    uint64_t size;
+};
+
+struct StructuredType {
     std::string name;
-    int size;
-};
-
-class PrimitiveType;
-class StructuredType;
-
-using Type = std::variant<PrimitiveType, StructuredType>;
-
-class PrimitiveType: public TypeInfo {
-};
-
-class StructuredType: public TypeInfo {
+    uint64_t size;
     /// Offset from base of structured type - The type at that offset
-    std::vector<std::pair<int64_t, Type>> members;
+    std::vector<std::pair<int64_t, std::optional<Type>>> members;
 };

@@ -29,7 +29,7 @@ private:
     std::map<size_t, uint64_t> DebugLine();
     DIE DebugInfo();
     DIE ParseDIE(std::string name);
-    std::map<uint64_t, std::string> StructuredMembers();
+    std::map<int64_t, size_t> StructuredMembers();
     DIE::TAG ParseDIETag(std::string_view v) const;
     DIE_ATTR ParseATTR(std::string_view v);
     std::vector<expr::LocExpr> ParseExprLoc();

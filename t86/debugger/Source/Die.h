@@ -17,7 +17,7 @@ struct ATTR_end_addr {
 };
 
 struct ATTR_type {
-    std::string name;
+    size_t type_id;
 };
 
 struct ATTR_location_expr {
@@ -28,9 +28,13 @@ struct ATTR_size {
     uint64_t size;
 };
 
+struct ATTR_id {
+    size_t id;
+};
+
 struct ATTR_members {
     /// address offset from struct beginning -> name of type
-    std::map<uint64_t, std::string> m;
+    std::map<int64_t, size_t> m;
 };
 
 using DIE_ATTR = std::variant<ATTR_name,
@@ -39,7 +43,8 @@ using DIE_ATTR = std::variant<ATTR_name,
                               ATTR_type,
                               ATTR_location_expr,
                               ATTR_size,
-                              ATTR_members>;
+                              ATTR_members,
+                              ATTR_id>;
 
 /// Represents one DIE_TAG value. That value contains attributes
 /// and possibly other values.
@@ -51,6 +56,7 @@ public:
         variable,
         primitive_type,
         structured_type,
+        pointer_type,
         name,
         invalid,
         compilation_unit,

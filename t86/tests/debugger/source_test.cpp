@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <sstream>
+#include <variant>
 #include <thread>
 #include "debugger/Source/Parser.h"
 #include "debugger/Source/LineMapping.h"
@@ -354,18 +355,24 @@ R"(.debug_info
 DIE_compilation_unit: {
 
 DIE_primitive_type: {
-ATTR_name: double,
-ATTR_size: 1,
+    ATTR_name: double,
+    ATTR_size: 1,
+    ATTR_id: 1,
 },
 
 DIE_primitive_type: {
-ATTR_name: int,
-ATTR_size: 1,
+    ATTR_name: int,
+    ATTR_size: 1,
+    ATTR_id: 0,
 },
 
 DIE_structured_type: {
-ATTR_name: coord,
-ATTR_size: 2,
+    ATTR_name: coord,
+    ATTR_size: 2,
+    ATTR_members: {
+        0: 0,
+        1: 0,
+    }
 },
 
 DIE_function: {
@@ -377,17 +384,17 @@ DIE_function: {
     ATTR_end_addr: 8, 
     DIE_variable: {
       ATTR_name: d,
-      ATTR_type: double,
+      ATTR_type: 1,
       ATTR_location: `BASE_REG_OFFSET -2`,
     },
     DIE_variable: {
       ATTR_name: x,
-      ATTR_type: int,
+      ATTR_type: 0,
       ATTR_location: [PUSH BP; PUSH -3; ADD],
     },
     DIE_variable: {
       ATTR_name: y,
-      ATTR_type: int,
+      ATTR_type: 0,
       ATTR_location: `BASE_REG_OFFSET -4`,
     }
   }
@@ -519,6 +526,16 @@ R"(.text
 
 .debug_info
 DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_pointer_type: {
+    ATTR_type: 0,
+    ATTR_size: 1,
+    ATTR_id: 1,
+},
 DIE_function: {
     ATTR_name: main,
     ATTR_begin_addr: 7,
@@ -528,12 +545,12 @@ DIE_function: {
         ATTR_end_addr: 18,
         DIE_variable: {
             ATTR_name: a,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: [PUSH SP; PUSH -2; ADD],
         },
         DIE_variable: {
             ATTR_name: b,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: [PUSH SP; PUSH -3; ADD],
         }
     }
@@ -547,15 +564,15 @@ DIE_function: {
         ATTR_end_addr: 7,
         DIE_variable: {
             ATTR_name: x,
-           # ATTR_type, int_pointer,
+            ATTR_type: 1,
         },
         DIE_variable: {
             ATTR_name: y,
-           # ATTR_type, int_pointer,
+            ATTR_type: 1,
         },
         DIE_variable: {
             ATTR_name: tmp,
-            ATTR_type: int,
+            ATTR_type: 0,
             ATTR_location: `PUSH R0`,
         }
     }
@@ -596,9 +613,17 @@ int main() {
     ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
     ASSERT_EQ(native->GetRegister("SP"), 1023);
 
+    // Location
     auto loc = source.GetVariableLocation(*native, "a");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1021);
+    // Type
+    auto type = source.GetVariableTypeInformation(*native, "a");
+    ASSERT_TRUE(type);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*type));
+    auto type_info = std::get<PrimitiveType>(*type);
+    ASSERT_EQ(type_info.size, 1);
+    ASSERT_EQ(type_info.type, PrimitiveType::Type::SIGNED);
 
     loc = source.GetVariableLocation(*native, "b");
     ASSERT_TRUE(loc);
@@ -610,12 +635,130 @@ int main() {
 
     loc = source.GetVariableLocation(*native, "x");
     ASSERT_FALSE(loc);
+    type = source.GetVariableTypeInformation(*native, "x");
+    ASSERT_TRUE(type);
+    ASSERT_TRUE(std::holds_alternative<PointerType>(*type));
+    const auto& ptr_type = std::get<PointerType>(*type);
+    ASSERT_EQ(ptr_type.size, 1);
+    ASSERT_TRUE(ptr_type.to);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*ptr_type.to));
+    ASSERT_TRUE(std::get<PrimitiveType>(*ptr_type.to).type == PrimitiveType::Type::SIGNED);
+
     loc = source.GetVariableLocation(*native, "y");
     ASSERT_FALSE(loc);
 
     loc = source.GetVariableLocation(*native, "tmp");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+}
+
+TEST_F(NativeSourceTest, StructuredTypesBasic) {
+    auto elf = 
+R"(.text
+0   CALL 2 # main()
+1   HALT
+# main()
+2   PUSH BP
+3   MOV BP, SP
+4   MOV [BP + -2], 1
+5   MOV F0, 2.71
+6   MOV [BP + -1], F0
+7   NRW R0, F0
+8   MOV R1, [BP + -2]
+9   ADD R0, R1
+10  PUTNUM R0
+11  POP RBP
+12  RET
+
+.debug_line
+7: 2
+8: 4
+9: 4
+10: 5
+11: 6
+12: 10
+
+.debug_info
+DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_primitive_type: {
+    ATTR_name: float,
+    ATTR_size: 1,
+    ATTR_id: 1,
+},
+DIE_structured_type: {
+    ATTR_name: coord,
+    ATTR_size: 2,
+    ATTR_id: 2,
+    ATTR_members: {
+        0: 1,
+        1: 0,
+    }
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 13,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 13,
+        DIE_variable: {
+            ATTR_name: c,
+            ATTR_type: 2,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        }
+    }
+}
+}
+
+.debug_source
+ahoj)";
+
+auto source_code =
+R"(
+import io.print;
+
+struct coord {
+    int x;
+    float y;
+};
+
+int main() {
+    struct coord c;
+    c.x = 1;
+    c.y = 2.71;
+    print(c.x + (int)c.y);
+})";
+    Run(elf, source_code);
+    native->WaitForDebugEvent();
+    
+    native->SetBreakpoint(4);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+    auto loc = source.GetVariableLocation(*native, "c");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1021);
+    auto type = source.GetVariableTypeInformation(*native, "c");
+    ASSERT_TRUE(type);
+    ASSERT_TRUE(std::holds_alternative<StructuredType>(*type));
+    auto struc = std::get<StructuredType>(*type);
+    EXPECT_EQ(struc.name, "coord");
+    EXPECT_EQ(struc.size, 2);
+    ASSERT_EQ(struc.members.size(), 2);
+
+    auto subtype = struc.members[0];
+    ASSERT_EQ(subtype.first, 0);
+    ASSERT_TRUE(subtype.second);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.second));
+
+    subtype = struc.members[1];
+    ASSERT_EQ(subtype.first, 1);
+    ASSERT_TRUE(subtype.second);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.second));
 }
 
 TEST_F(NativeSourceTest, TestMappingScopes) {
