@@ -11,6 +11,7 @@
 namespace tiny::t86 {
     void Cpu::tick() {
         log_debug("main: flag register value: {:x}", getRegister(Register::Flags()));
+        log_debug("Beginning of tick");
         // Clear interrupt flag
         interrupted_ = 0;
 
@@ -123,6 +124,7 @@ namespace tiny::t86 {
         for (std::size_t i = 0; i < registerCount; ++i) {
             setRegister(Register{i}, 0);
         }
+        std::ranges::fill(debug_registers_, 0);
         setRegister(Register::ProgramCounter(), 0);
         setRegister(Register::Flags(), 0);
         setRegister(Register::StackPointer(), ram_.size());
@@ -202,7 +204,9 @@ namespace tiny::t86 {
     }
 
     void Cpu::writeMemory(MemoryWrite::Id id) {
+        auto write = writesManager_.getWrite(id);
         writesManager_.startWriting(id, ram_);
+        checkWrite(write.address());
     }
 
     int64_t Cpu::getMemory(uint64_t address) const {
@@ -433,5 +437,20 @@ namespace tiny::t86 {
 
     void Cpu::singleStepped() {
         single_stepped_ = true;
+    }
+
+    void Cpu::checkWrite(uint64_t address) {
+        log_debug("Write on {}", address);
+        for (size_t i = 0; i < debug_registers_.size() - 1; ++i) {
+            auto& control_reg = debug_registers_[DEBUG_CONTROL_REG_IDX];
+            if (!(control_reg & (1 << i))) {
+                continue;
+            }
+            if (debug_registers_[i] == address) {
+                log_info("Memory write on address '{}' where watchpoint is set", address);
+                reinterpret_cast<uint8_t*>(&control_reg)[1] = 1 << i;
+                interrupted_ = 2;
+            }
+        }
     }
 }

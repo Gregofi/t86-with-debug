@@ -76,6 +76,15 @@ public:
         return FloatRegister(*idx);
     }
 
+    size_t TranslateToDebugRegister(std::string_view s) {
+        auto idx = utils::svtonum<size_t>(s.substr(1));
+        if (!idx) {
+            throw std::runtime_error(fmt::format("Wrong debug register,"
+                       " expected D<index>, got '{}'", s));
+        }
+        return *idx;
+    }
+
     std::unique_ptr<Instruction> ParseInstruction(std::string_view s) {
         std::istringstream is{std::string(s)};
         Parser parser(is);
@@ -102,6 +111,14 @@ public:
         size_t reg_cnt = cpu.registersCount();
         for (size_t i = 0; i < reg_cnt; ++i) {
             acc += fmt::format("R{}:{}\n", i, cpu.getRegister(Register{i}));
+        }
+        return acc;
+    }
+
+    std::string DebugRegistersToString() const {
+        std::string acc;
+        for (size_t i = 0; i < Cpu::DEBUG_REGISTERS_CNT; ++i) {
+            acc += fmt::format("D{}:{}\n", i, cpu.getDebugRegister(i));
         }
         return acc;
     }
@@ -178,6 +195,14 @@ public:
             } else if (command == "PEEKFLOATREGS") {
                 auto regs = FloatRegistersToString();
                 messenger->Send(regs);
+            } else if (command == "PEEKDEBUGREGS") {
+                auto regs = DebugRegistersToString();
+                messenger->Send(regs);
+            } else if (command == "POKEDEBUGREGS") {
+                auto reg = TranslateToDebugRegister(commands.at(1));
+                auto val = *utils::svtonum<uint64_t>(commands.at(2));
+                cpu.setDebugRegister(reg, val);
+                messenger->Send("OK");
             } else if (command.starts_with("POKEFLOATREGS")) {
                 auto reg = TranslateToFloatRegister(commands.at(1));
                 auto val = *utils::svtonum<double>(commands.at(2));

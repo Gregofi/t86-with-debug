@@ -12,6 +12,9 @@ void OS::DispatchInterrupt(int n) {
     case 3:
         DebuggerMessage(Debug::BreakReason::SoftwareBreakpoint);
         break;
+    case 2:
+        DebuggerMessage(Debug::BreakReason::HardwareBreakpoint);
+        break;
     case 1:
         DebuggerMessage(Debug::BreakReason::SingleStep);
         break;

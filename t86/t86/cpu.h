@@ -217,6 +217,16 @@ namespace tiny::t86 {
         void unsetTrapFlag();
 
         bool isTrapFlagSet();
+
+        static const size_t DEBUG_REGISTERS_CNT = 5;
+
+        uint64_t getDebugRegister(size_t i) const {
+            return debug_registers_.at(i);
+        }
+
+        void setDebugRegister(size_t i, uint64_t value) {
+            debug_registers_.at(i) = value;
+        }
     private:
         /// If true then after every retired instruction an interrupt 1 is sent.
         /// TODO: This should really be a part of flags register. For now however,
@@ -234,6 +244,10 @@ namespace tiny::t86 {
         void registerBranchTaken(uint64_t sourcePc, uint64_t destination);
 
         PhysicalRegister nextFreeRegister() const;
+
+        /// Checks if any of the writes were done to location watched by debug
+        /// registers and if so then sets an interrupt.
+        void checkWrite(uint64_t address);
 
         // Harvard architecture
         Program program_;
@@ -269,6 +283,12 @@ namespace tiny::t86 {
 
         // Values of registers, indexed by PhysicalRegister
         std::vector<RegisterValue> registers_;
+
+        // Debug registers
+        // first four bits indicate whether i-th debug reg is active.
+        // 8-12 bits indicate which debug reg caused break.
+        static const size_t DEBUG_CONTROL_REG_IDX = DEBUG_REGISTERS_CNT - 1;
+        std::array<uint64_t, DEBUG_REGISTERS_CNT> debug_registers_;
 
         // Register allocation table
         RegisterAllocationTable rat_;
