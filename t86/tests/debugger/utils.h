@@ -124,6 +124,25 @@ protected:
     ThreadQueue<std::string> q2;
 };
 
+class T86ProcessTest: public ::testing::Test {
+protected:
+    void Run(const char* elf, size_t gp_regs, size_t fl_regs) {
+        auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+        auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+        t_os = std::thread(RunCPU, std::move(tm1), elf, gp_regs, fl_regs);
+        t86.emplace(std::move(tm2), gp_regs, fl_regs);
+    }
+
+    void TearDown() override {
+        t86->Terminate();
+        t_os.join();
+    }
+    std::optional<T86Process> t86;
+    std::thread t_os;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+};
+
 class NativeSourceTest: public ::testing::Test {
 protected:
     void Run(const char* elf) {
