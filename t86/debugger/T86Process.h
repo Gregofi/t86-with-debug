@@ -158,6 +158,22 @@ public:
         }
     }
 
+    std::map<std::string, uint64_t> FetchDebugRegisters() override {
+        process->Send("PEEKDEBUGREGS");
+        return FetchRegistersOfType<uint64_t>();
+    }
+
+    virtual void SetDebugRegisters(const std::map<std::string, uint64_t>& regs) override {
+        for (const auto& [name, val]: regs) {
+            if (!IsValidDebugRegisterName(name)) {
+                throw DebuggerError(fmt::format("Register name '{}' is not valid!", name));
+            }
+            log_debug("sending: `POKEDEBUGREGS {} {}`", name, val);
+            process->Send(fmt::format("POKEDEBUGREGS {} {}", name, val));
+            CheckResponse("POKEDEBUGREGS error");
+        }
+    }
+
     size_t TextSize() override {
         process->Send("TEXTSIZE");
         auto response = process->Receive();
@@ -240,7 +256,7 @@ private:
         if (name.size() >= 2 
                 && name[0] == 'D') {
             auto idx = utils::svtonum<size_t>(name.substr(1));
-            return idx && 0 <= *idx && *idx < float_regs_count;
+            return idx && 0 <= *idx && *idx < debug_register_cnt;
         }
         return false;
     }
@@ -257,4 +273,5 @@ private:
     const size_t data_size{1024};
     const size_t gen_purpose_regs_count{8};
     const size_t float_regs_count{4};
+    const size_t debug_register_cnt{5};
   };

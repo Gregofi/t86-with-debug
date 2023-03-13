@@ -66,6 +66,12 @@ public:
     void SetFloatRegisters(const std::map<std::string, double>& regs) override {
         NOT_IMPLEMENTED;
     }
+    std::map<std::string, uint64_t> FetchDebugRegisters() override {
+        NOT_IMPLEMENTED;
+    }
+    virtual void SetDebugRegisters(const std::map<std::string, uint64_t>& regs) override {
+        NOT_IMPLEMENTED;
+    }
     void ResumeExecution() override {
         NOT_IMPLEMENTED;
     }

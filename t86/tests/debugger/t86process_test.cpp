@@ -583,3 +583,43 @@ TEST(T86ProcessCpuTest, FloatRegisters) {
     t86.ResumeExecution();
     t_os.join();
 }
+
+TEST(T86ProcessCpuTest, DebugRegs) {
+    const size_t REG_COUNT = 1;
+    const size_t FLOAT_COUNT = 0;
+    ThreadQueue<std::string> q1;
+    ThreadQueue<std::string> q2;
+    auto tm1 = std::make_unique<ThreadMessenger>(q1, q2);
+    auto tm2 = std::make_unique<ThreadMessenger>(q2, q1);
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV [R0], 3
+2 MOV [0], 4
+3 HALT
+)";
+    std::thread t_os(RunCPU, std::move(tm1), program, REG_COUNT, FLOAT_COUNT);
+
+    auto t86 = T86Process(std::move(tm2), REG_COUNT, FLOAT_COUNT);
+    t86.Wait();
+    auto regs = t86.FetchDebugRegisters(); 
+    ASSERT_EQ(regs.size(), 5);
+    ASSERT_EQ(regs.at("D0"), 0);
+    ASSERT_EQ(regs.at("D4"), 0);
+    regs.at("D3") = 1;
+    regs.at("D4") = 8; // Activate fourth register
+    t86.SetDebugRegisters(regs);
+    t86.ResumeExecution();
+    t86.Wait();
+    auto reason = t86.GetReason();
+    ASSERT_EQ(reason, DebugEvent::HardwareBreakpointHit);
+    t86.ResumeExecution();
+    t86.Wait();
+    auto mem = t86.ReadMemory(0, 3);
+    EXPECT_EQ(mem.at(0), 4);
+    EXPECT_EQ(mem.at(1), 3);
+    EXPECT_EQ(mem.at(2), 0);
+    t86.Terminate();
+    t_os.join();
+}
