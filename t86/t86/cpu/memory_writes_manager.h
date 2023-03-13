@@ -15,7 +15,8 @@ namespace tiny::t86 {
             return currentId;
         }
 
-        /// Removes all finished outgoing writes
+        /// Removes all finished outgoing writes and returns
+        /// addresses of the finished writes.
         void removeFinished(const RAM& ram);
 
         /**

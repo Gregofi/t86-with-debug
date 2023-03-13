@@ -410,8 +410,6 @@ DIE_function: {
 }
 
 TEST_F(NativeSourceTest, FunctionMapping1) {
-    auto source_code =
-R"()";
     const char* elf =
 R"(
 .text
@@ -756,8 +754,6 @@ int main() {
 }
 
 TEST_F(NativeSourceTest, TestMappingScopes) {
-    auto source_code =
-R"()";
     auto elf =
 R"(.text
 0   CALL 2

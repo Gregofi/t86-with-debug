@@ -307,6 +307,8 @@ namespace tiny::t86 {
         if (cpu_.isTrapFlagSet()) {
             unrollSpeculation();
             cpu_.singleStepped();
+        } else if (cpu_.interrupted()) {
+            unrollSpeculation();
         }
         log_info("Retired instruction '{}'", instruction_->toString());
     }

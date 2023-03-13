@@ -384,3 +384,70 @@ R"(
                      "R0:8\n");
     EXPECT_EQ(*it++, "F0:8.5\nF1:4.5\n");
 }
+
+TEST(DebugTest, MemoryBreakpoint) {
+    OS os(1, 0);
+    std::queue<std::string> in({
+        "PEEKDEBUGREGS",
+        "POKEDEBUGREGS D0 5",
+        "POKEDEBUGREGS D1 1",
+        "POKEDEBUGREGS D4 3",
+        "PEEKDEBUGREGS",
+        "CONTINUE",
+        "REASON",
+        "PEEKDEBUGREGS",
+        "CONTINUE",
+        "REASON",
+        "PEEKDEBUGREGS",
+        "POKEDEBUGREGS D4 2", // Turn off the BP at memory 5
+        "CONTINUE",
+        "REASON",
+    });
+
+    std::vector<std::string> out;
+
+    os.SetDebuggerComms(std::make_unique<Comms>(in, out));
+
+    std::istringstream iss{
+R"(
+.text
+
+0 MOV R0, 1
+1 MOV [5], 2
+2 MOV [R0], 3
+3 MOV [5], 10
+4 HALT
+)"
+    };
+
+    Parser parser(iss);
+    Program p = parser.Parse();
+
+    os.Run(std::move(p));
+
+    auto it = out.begin();
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "D0:0\nD1:0\nD2:0\nD3:0\nD4:0\n");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "D0:5\nD1:1\nD2:0\nD3:0\nD4:3\n");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "HW_BKPT");
+    auto control_reg_expected = 1 // first reg is active
+        + (1 << 1) // second reg is active
+        + (1 << 8); // interrupt was triggered by first reg
+    ASSERT_EQ(*it++, fmt::format("D0:5\nD1:1\nD2:0\nD3:0\nD4:{}\n", control_reg_expected));
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "HW_BKPT");
+    control_reg_expected = 1 // first reg is active
+        + (1 << 1) // second reg is active
+        + (1 << 9); // interrupt was triggered by first reg
+    ASSERT_EQ(*it++, fmt::format("D0:5\nD1:1\nD2:0\nD3:0\nD4:{}\n", control_reg_expected));
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "OK");
+    ASSERT_EQ(*it++, "STOPPED");
+    ASSERT_EQ(*it++, "HALT");
+}
