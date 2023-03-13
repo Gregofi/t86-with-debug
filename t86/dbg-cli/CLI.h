@@ -221,7 +221,7 @@ public:
     std::string_view DebugEventToString(DebugEvent e) {
         switch (e) {
         case DebugEvent::SoftwareBreakpointHit: return "Software breakpoint hit";
-        case DebugEvent::HardwareBreakpointHit: return "Hardware breakpoint hit";
+        case DebugEvent::WatchpointWrite: return "Written to watchpoint";
         case DebugEvent::Singlestep: return "Singlestep done";
         case DebugEvent::ExecutionBegin: return "Execution started";
         case DebugEvent::ExecutionEnd: return "The program finished executing";

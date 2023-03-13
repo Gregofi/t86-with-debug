@@ -224,6 +224,21 @@ public:
         return process->ReadMemory(address, amount);
     }
 
+    DebugEvent MapReasonToEvent(StopReason reason) {
+        if (reason == StopReason::SoftwareBreakpointHit) {
+            return DebugEvent::SoftwareBreakpointHit;
+        } else if (reason == StopReason::HardwareBreak) {
+            return DebugEvent::WatchpointWrite;
+        } else if (reason == StopReason::Singlestep) {
+            return DebugEvent::Singlestep;
+        } else if (reason == StopReason::ExecutionEnd) {
+            return DebugEvent::ExecutionEnd;
+        } else if (reason == StopReason::ExecutionBegin) {
+            return DebugEvent::ExecutionBegin;
+        }
+        UNREACHABLE;
+    }
+
     DebugEvent WaitForDebugEvent() {
         DebugEvent reason;
         // If, for some reason, we got the event in some other
@@ -233,7 +248,7 @@ public:
             cached_event.reset();
         } else {
             process->Wait();
-            reason = process->GetReason();
+            reason = MapReasonToEvent(process->GetReason());
         }
 
         if (reason == DebugEvent::SoftwareBreakpointHit) {
