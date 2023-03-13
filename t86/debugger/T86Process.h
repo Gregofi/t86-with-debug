@@ -213,8 +213,8 @@ private:
     bool isGPRegister(std::string_view name) {
         if (name.size() >= 2 
                 && name[0] == 'R') {
-            auto idx = utils::svtoi64(name.substr(1));
-            return 0 <= idx && idx < gen_purpose_regs_count;
+            auto idx = utils::svtonum<size_t>(name.substr(1));
+            return idx && 0 <= *idx && *idx < gen_purpose_regs_count;
         }
         return false;
     }
@@ -228,10 +228,19 @@ private:
     }
 
     bool IsValidFloatRegisterName(std::string_view name) {
-        if (name.size() >= 2 
+        if (name.size() >= 2
                 && name[0] == 'F') {
-            auto idx = utils::svtonum<double>(name.substr(1));
-            return 0 <= idx && idx < float_regs_count;
+            auto idx = utils::svtonum<size_t>(name.substr(1));
+            return idx && 0 <= *idx && *idx < float_regs_count;
+        }
+        return false;
+    }
+
+    bool IsValidDebugRegisterName(std::string_view name) {
+        if (name.size() >= 2 
+                && name[0] == 'D') {
+            auto idx = utils::svtonum<size_t>(name.substr(1));
+            return idx && 0 <= *idx && *idx < float_regs_count;
         }
         return false;
     }
