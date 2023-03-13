@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdint>
+#include <variant>
+
 enum class StopReason {
     SoftwareBreakpointHit,
     HardwareBreak,
@@ -8,13 +11,31 @@ enum class StopReason {
     ExecutionEnd,
 };
 
-// Is separated into two because there could
-// be more debug events, like WatchpointRead,
-// HardwareBreakpointHit. 
-enum class DebugEvent {
-    SoftwareBreakpointHit,
-    WatchpointWrite,
-    Singlestep,
-    ExecutionBegin,
-    ExecutionEnd,
+enum class BPType {
+    Software,
+    Hardware,
 };
+
+enum class WatchpointType {
+    Read,
+    Write,
+};
+
+struct BreakpointHit {
+    BPType type;
+    uint64_t address;
+};
+
+struct WatchpointTrigger {
+    WatchpointType type;
+    uint64_t address;
+};
+
+struct Singlestep {};
+struct ExecutionBegin {};
+struct ExecutionEnd {};
+using DebugEvent = std::variant<BreakpointHit,
+                                WatchpointTrigger,
+                                Singlestep,
+                                ExecutionBegin,
+                                ExecutionEnd>;

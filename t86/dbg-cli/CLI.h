@@ -218,21 +218,36 @@ public:
         return *loc;
     }
 
-    std::string_view DebugEventToString(DebugEvent e) {
-        switch (e) {
-        case DebugEvent::SoftwareBreakpointHit: return "Software breakpoint hit";
-        case DebugEvent::WatchpointWrite: return "Written to watchpoint";
-        case DebugEvent::Singlestep: return "Singlestep done";
-        case DebugEvent::ExecutionBegin: return "Execution started";
-        case DebugEvent::ExecutionEnd: return "The program finished executing";
-        }
-        UNREACHABLE;
+    std::string DebugEventToString(const DebugEvent& e) {
+        using namespace std::literals;
+        return std::visit(utils::overloaded {
+            [&](const BreakpointHit& r) {
+                auto line = source.AddrToLine(r.address);
+                if (line) {
+                    return fmt::format("Software breakpoint hit at line {}", *line);
+                } else {
+                    return fmt::format("Software breakpoint hit at address {}", r.address);
+                }
+            },
+            [](const WatchpointTrigger& r) {
+                return fmt::format("Watchpoint triggered at memory address {}", r.address);
+            },
+            [](const Singlestep& r) {
+                return "Singlestep done"s;
+            },
+            [](const ExecutionBegin& r) {
+                return "Execution started"s;
+            },
+            [](const ExecutionEnd& r) {
+                return "The program finished execution"s;
+            },
+        }, e);
     }
 
-    void ReportBreak(DebugEvent e) {
+    void ReportBreak(const DebugEvent& e) {
         // The IP does not correspond to the HALT instruction,
         // it is one past it, rather not print anything.
-        if (e == DebugEvent::ExecutionEnd) {
+        if (std::holds_alternative<ExecutionEnd>(e)) {
             return;
         }
         auto ip = process.GetIP();
@@ -308,10 +323,10 @@ public:
         }
         if (command == "") {
             auto e = process.PerformSingleStep();
-            if (e != DebugEvent::Singlestep) {
+            if (!std::holds_alternative<Singlestep>(e)) {
                 fmt::print("Process stopped, reason: {}\n",
                            DebugEventToString(e));
-                if (e == DebugEvent::ExecutionEnd) {
+                if (std::holds_alternative<ExecutionEnd>(e)) {
                     is_running = false;
                 }
             }
@@ -499,7 +514,7 @@ public:
         }
         process.ContinueExecution();
         auto e = process.WaitForDebugEvent();
-        if (e == DebugEvent::ExecutionEnd) {
+        if (std::holds_alternative<ExecutionEnd>(e)) {
             is_running = false;
         }
         fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));

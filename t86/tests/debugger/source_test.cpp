@@ -181,7 +181,7 @@ int main() {
     EXPECT_EQ(source.LineToAddr(3), 7);
     EXPECT_EQ(source.LineToAddr(4), 11);
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionBegin);
+    ASSERT_TRUE(std::holds_alternative<ExecutionBegin>(native->WaitForDebugEvent()));
     EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 0), 2);
     EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 1), 5);
     EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 2), 6);
@@ -190,19 +190,19 @@ int main() {
     ASSERT_THROW({source.SetSourceSoftwareBreakpoint(*native, 5);}, DebuggerError);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     EXPECT_EQ(native->GetIP(), 2);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     EXPECT_EQ(native->GetIP(), 5);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     EXPECT_EQ(native->GetIP(), 6);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     EXPECT_EQ(native->GetIP(), 7);
     // Check BP - 1 and BP - 2
     auto bp = native->GetRegister("BP");
@@ -210,12 +210,12 @@ int main() {
     EXPECT_EQ(native->ReadMemory(bp - 2, 1)[0], 6);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     EXPECT_EQ(native->GetIP(), 11);
     EXPECT_EQ(native->GetRegister("R0"), 11);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST(DIEs, Parsing1) {
@@ -473,7 +473,7 @@ int main(void) {
     ASSERT_FALSE(source.GetVariableLocation(*native, "i"));
     native->SetBreakpoint(7);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     auto loc = source.GetVariableLocation(*native, "i");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Offset>(*loc).value, 1021);
@@ -606,7 +606,7 @@ int main() {
     native->SetBreakpoint(9);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("SP"), 1023);
 
     // Location

@@ -17,9 +17,9 @@ TEST_F(NativeTest, Basics) {
 4 HALT
 )";
     Run(program, 3, 0);
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionBegin);
+    ASSERT_TRUE(std::holds_alternative<ExecutionBegin>(native->WaitForDebugEvent()));
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, Reading) {
@@ -56,7 +56,7 @@ TEST_F(NativeTest, Reading) {
 
     ASSERT_EQ(native->GetRegister("IP"), 0);
     ASSERT_EQ(native->GetRegister("R0"), 0);
-    ASSERT_EQ(native->PerformSingleStep(), DebugEvent::Singlestep);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(native->PerformSingleStep()));
     ASSERT_EQ(native->GetRegister("IP"), 1);
     ASSERT_EQ(native->GetRegister("R0"), 3);
     
@@ -65,7 +65,7 @@ TEST_F(NativeTest, Reading) {
     }, DebuggerError);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, Writing) {
@@ -103,7 +103,7 @@ TEST_F(NativeTest, Writing) {
     ASSERT_EQ(native->GetRegister("R0"), 1);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 4);
 }
 
@@ -122,13 +122,13 @@ TEST_F(NativeTest, SimpleBreakpoint) {
     native->SetBreakpoint(2);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 2);
     ASSERT_EQ(native->GetRegister("R0"), 3);
     ASSERT_EQ(native->GetRegister("R1"), 2);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     // Check that the ADD R0, R1 was executed even though it
     // was replaced by a breakpoint.
     ASSERT_EQ(native->GetRegister("R2"), 5);
@@ -149,11 +149,11 @@ TEST_F(NativeTest, StepOverBreakpoint) {
     native->SetBreakpoint(2);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 3);
     ASSERT_EQ(native->GetRegister("R1"), 2);
 
-    ASSERT_EQ(native->PerformSingleStep(), DebugEvent::Singlestep);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(native->PerformSingleStep()));
     // Check that the ADD R0, R1 was executed even though it
     // was replaced by a breakpoint.
     ASSERT_EQ(native->GetRegister("R0"), 5);
@@ -179,8 +179,8 @@ TEST_F(NativeTest, BreakpointAtHaltSinglestep) {
     native->SetBreakpoint(4);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
-    ASSERT_EQ(native->PerformSingleStep(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->PerformSingleStep()));
 }
 
 TEST_F(NativeTest, BreakpointAtHaltContinue) {
@@ -198,9 +198,9 @@ TEST_F(NativeTest, BreakpointAtHaltContinue) {
     native->SetBreakpoint(4);
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, MultipleBreakpointHits) {
@@ -238,27 +238,27 @@ TEST_F(NativeTest, MultipleBreakpointHits) {
     native->WaitForDebugEvent();
     native->SetBreakpoint(10);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 1);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 3);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 5);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 7);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 9);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, EnableDisableBreakpoints) {
@@ -296,38 +296,38 @@ TEST_F(NativeTest, EnableDisableBreakpoints) {
     native->WaitForDebugEvent();
     native->SetBreakpoint(10);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 1);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 3);
     native->SetBreakpoint(13);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 13);
     native->DisableSoftwareBreakpoint(13);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 5);
     ASSERT_EQ(native->GetRegister("IP"), 10);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 7);
     ASSERT_EQ(native->GetRegister("IP"), 10);
     native->DisableSoftwareBreakpoint(10);
     native->EnableSoftwareBreakpoint(13);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 13);
     native->DisableSoftwareBreakpoint(13);
     native->ContinueExecution();
 
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R1"), 25);
 }
 
@@ -345,9 +345,9 @@ TEST_F(NativeTest, BreakpointAtHalt) {
     native->WaitForDebugEvent();
     native->SetBreakpoint(4);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, BreakpointSequence) {
@@ -367,19 +367,19 @@ TEST_F(NativeTest, BreakpointSequence) {
     native->SetBreakpoint(3);
     native->SetBreakpoint(4);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 1);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 2);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 3);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 4);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("IP"), 5);
     ASSERT_EQ(native->GetRegister("R2"), 5);
 }
@@ -404,7 +404,7 @@ TEST_F(NativeTest, PeekTextWithBreakpoints) {
 
     native->DisableSoftwareBreakpoint(1);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
 }
 
 TEST_F(NativeTest, PokeTextWithBreakpoints) {
@@ -431,10 +431,10 @@ TEST_F(NativeTest, PokeTextWithBreakpoints) {
     ASSERT_EQ(text[2], "ADD R0, R1");
 
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 3);
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R1"), 2);
 }
 
@@ -462,7 +462,7 @@ TEST_F(NativeTest, BreakpointsInvalid) {
     ASSERT_THROW({native->DisableSoftwareBreakpoint(2);}, DebuggerError);
     
     native->ContinueExecution();
-    ASSERT_EQ(native->WaitForDebugEvent(), DebugEvent::ExecutionEnd);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
     ASSERT_EQ(native->GetRegister("R0"), 5);
     ASSERT_EQ(native->GetRegister("R1"), 2);
     ASSERT_EQ(native->GetRegister("R2"), 5);
