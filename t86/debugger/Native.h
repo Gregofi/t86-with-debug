@@ -12,6 +12,7 @@
 #include "Process.h"
 #include "T86Process.h"
 #include "Breakpoint.h"
+#include "Watchpoint.h"
 #include "DebuggerError.h"
 #include "DebugEvent.h"
 #include "common/TCP.h"
@@ -20,7 +21,6 @@
 class Native {
 public:
     Native(std::unique_ptr<Process> process): process(std::move(process)) {
-
     }
 
     /// Initializes native in an empty state.
@@ -228,7 +228,11 @@ public:
         if (reason == StopReason::SoftwareBreakpointHit) {
             return BreakpointHit{BPType::Software, GetIP() - 1};
         } else if (reason == StopReason::HardwareBreak) {
-            NOT_IMPLEMENTED;
+            auto idx = Arch::GetResponsibleRegister(process->FetchDebugRegisters());
+            auto it = std::ranges::find_if(watchpoints,
+                    [idx](auto&& w) { return w.second.hw_reg == idx; });
+            assert(it != watchpoints.end());
+            return WatchpointTrigger{WatchpointType::Write, it->first};
         } else if (reason == StopReason::Singlestep) {
             return Singlestep{};
         } else if (reason == StopReason::ExecutionEnd) {
@@ -278,16 +282,68 @@ public:
         }
     }
 
+    void SetWatchpointWrite(uint64_t address) {
+        if (!Arch::SupportsHardwareWatchpoints()) {
+            throw DebuggerError("This architecture does not support watchpoints");
+        }
+        if (watchpoints.count(address)) {
+            throw DebuggerError("A watchpoint is already set on that address.");
+        }
+        auto idx = GetFreeDebugRegister();
+        if (!idx) {
+            throw DebuggerError("Maximum amount of watchpoints has been set");
+        }
+
+        auto dbg_regs = process->FetchDebugRegisters();
+        Arch::SetDebugRegister(*idx, address, dbg_regs);
+        Arch::ActivateDebugRegister(*idx, dbg_regs);
+        process->SetDebugRegisters(dbg_regs);
+        watchpoints.emplace(address, Watchpoint{Watchpoint::Type::Write, *idx});
+    }
+
+    void RemoveWatchpoint(uint64_t address) {
+        auto wp = watchpoints.find(address);
+        if (wp == watchpoints.end()) {
+            throw DebuggerError("A watchpoint is already set on that address.");
+        }
+        
+        auto dbg_regs = process->FetchDebugRegisters();
+        Arch::DeactivateDebugRegister(wp->second.hw_reg, dbg_regs);
+        watchpoints.erase(address); 
+    }
+
     void Terminate() {
         process->Terminate();
     }
 
-    bool Active() {
+    bool Active() const {
         return static_cast<bool>(process);
     }
 protected:
+    void SetDebugRegister(uint8_t idx, uint64_t value) {
+        if (idx >= Arch::DebugRegistersCount()) {
+            throw std::runtime_error("Out of bounds: Debug registers");
+        }
+        
+        auto dbg_regs = process->FetchDebugRegisters();
+        
+    }
+
+    std::optional<size_t> GetFreeDebugRegister() const {
+        auto count = Arch::DebugRegistersCount();
+        for (size_t i = 0; i < count; ++i) {
+            auto w = std::ranges::find_if(watchpoints, [i](auto&& w) {
+                return w.second.hw_reg == i;
+            });
+            if (w == watchpoints.end()) {
+                return i;
+            }
+        }
+        return {};
+    }
+
     /// Returns SW BP opcode for current architecture.
-    std::string_view GetSoftwareBreakpointOpcode() {
+    std::string_view GetSoftwareBreakpointOpcode() const {
         static const std::map<Arch::Machine, std::string_view> opcode_map = {
             {Arch::Machine::T86, "BKPT"},
         };
@@ -334,5 +390,6 @@ protected:
 
     std::unique_ptr<Process> process;
     std::map<uint64_t, SoftwareBreakpoint> software_breakpoints;
+    std::map<uint64_t, Watchpoint> watchpoints;
     std::optional<DebugEvent> cached_event;
 };

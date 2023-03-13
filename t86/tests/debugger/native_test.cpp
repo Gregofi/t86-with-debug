@@ -581,3 +581,85 @@ TEST_F(NativeTest, InvalidFloatRegisters) {
         native->SetFloatRegisters({{"F0", 1.0}, {"F3", 2.0}});
     }, DebuggerError);
 }
+
+TEST_F(NativeTest, Watchpoints) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV [R0], 2
+2 MOV [5], 3
+3 HALT
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+
+    native->SetWatchpointWrite(1);
+    native->SetWatchpointWrite(5);
+    native->ContinueExecution();
+
+    auto e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 1);
+    native->ContinueExecution();
+
+    e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 5);
+}
+
+TEST_F(NativeTest, RemoveWatchpoints) {
+    auto program = R"(
+.text
+
+MOV [0], 0
+MOV [1], 1
+MOV [2], 2
+MOV [3], 3
+MOV [4], 4
+MOV [5], 5
+HALT
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+
+    native->SetWatchpointWrite(0);
+    ASSERT_THROW({
+        native->SetWatchpointWrite(0);
+    }, DebuggerError);
+    native->SetWatchpointWrite(1);
+    native->SetWatchpointWrite(2);
+    native->SetWatchpointWrite(3);
+    ASSERT_THROW({
+        native->SetWatchpointWrite(4);
+    }, DebuggerError);
+
+    native->ContinueExecution();
+    auto e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 0);
+    native->RemoveWatchpoint(1);
+    native->SetWatchpointWrite(5);
+    native->ContinueExecution();
+
+    e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 2);
+
+    native->ContinueExecution();
+    e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 3);
+
+    native->ContinueExecution();
+    e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 5);
+    native->ContinueExecution();
+
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(native->WaitForDebugEvent()));
+    auto mem = native->ReadMemory(0, 6);
+    for (size_t i = 0; i < mem.size(); ++i) {
+        EXPECT_EQ(mem[i], i);
+    }
+}
