@@ -99,7 +99,7 @@ public:
         return result;
     }
 
-    DebugEvent GetReason() override {
+    StopReason GetReason() override {
         process->Send("REASON");
         auto reason_opt = process->Receive();
         if (!reason_opt) {
@@ -107,15 +107,15 @@ public:
         }
         auto &r = *reason_opt;
         if (r == "START") {
-            return DebugEvent::ExecutionBegin;
+            return StopReason::ExecutionBegin;
         } else if (r == "SW_BKPT") {
-            return DebugEvent::SoftwareBreakpointHit;
+            return StopReason::SoftwareBreakpointHit;
         } else if (r == "HW_BKPT") {
-            return DebugEvent::HardwareBreakpointHit;
+            return StopReason::HardwareBreak;
         } else if (r == "SINGLESTEP") {
-            return DebugEvent::Singlestep;
+            return StopReason::Singlestep;
         } else if (r == "HALT") {
-            return DebugEvent::ExecutionEnd;
+            return StopReason::ExecutionEnd;
         } else {
             UNREACHABLE;
         }

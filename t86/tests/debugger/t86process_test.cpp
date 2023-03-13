@@ -162,10 +162,10 @@ TEST_F(T86ProcessTest, StopReason) {
 )";
     Run(program, 3, 0);
     t86->Wait(); 
-    ASSERT_EQ(DebugEvent::ExecutionBegin, t86->GetReason());
+    ASSERT_EQ(StopReason::ExecutionBegin, t86->GetReason());
     t86->ResumeExecution();
     t86->Wait(); 
-    ASSERT_EQ(DebugEvent::ExecutionEnd, t86->GetReason());
+    ASSERT_EQ(StopReason::ExecutionEnd, t86->GetReason());
 }
 
 TEST_F(T86ProcessTest, PeekRegisters) {
@@ -180,7 +180,7 @@ TEST_F(T86ProcessTest, PeekRegisters) {
 )";
     Run(program, 3, 0);
     t86->Wait(); 
-    ASSERT_EQ(DebugEvent::ExecutionBegin, t86->GetReason());
+    ASSERT_EQ(StopReason::ExecutionBegin, t86->GetReason());
     auto regs = t86->FetchRegisters();
     ASSERT_EQ(regs.at("IP"), 0);
     ASSERT_EQ(regs.at("BP"), 1024);
@@ -197,7 +197,7 @@ TEST_F(T86ProcessTest, PeekRegisters) {
     ASSERT_EQ(regs.at("R0"), 3);
     ASSERT_EQ(regs.at("R1"), 2);
     ASSERT_EQ(regs.at("R2"), 3);
-    ASSERT_EQ(DebugEvent::ExecutionEnd, t86->GetReason());
+    ASSERT_EQ(StopReason::ExecutionEnd, t86->GetReason());
 }
 
 TEST_F(T86ProcessTest, SingleSteps) {
@@ -219,7 +219,7 @@ TEST_F(T86ProcessTest, SingleSteps) {
     ASSERT_EQ(regs.at("R2"), 0);
     t86->Singlestep();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::Singlestep);
+    ASSERT_EQ(t86->GetReason(), StopReason::Singlestep);
     regs = t86->FetchRegisters();
     ASSERT_EQ(regs.at("IP"), 1);
     ASSERT_EQ(regs.at("R0"), 1);
@@ -253,7 +253,7 @@ TEST_F(T86ProcessTest, SingleSteps) {
     ASSERT_EQ(regs.at("R0"), 3);
     ASSERT_EQ(regs.at("R1"), 2);
     ASSERT_EQ(regs.at("R2"), 3);
-    ASSERT_EQ(t86->GetReason(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(t86->GetReason(), StopReason::ExecutionEnd);
 }
 
 TEST_F(T86ProcessTest, SetRegisters) {
@@ -306,7 +306,7 @@ TEST_F(T86ProcessTest, SetRegisters) {
     ASSERT_EQ(regs2.at("R0"), 9);
     t86->ResumeExecution();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(t86->GetReason(), StopReason::ExecutionEnd);
 }
 
 TEST_F(T86ProcessTest, PeekText) {
@@ -334,7 +334,7 @@ TEST_F(T86ProcessTest, PeekText) {
 
     t86->ResumeExecution();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(t86->GetReason(), StopReason::ExecutionEnd);
 }
 
 TEST_F(T86ProcessTest, PokeText) {
@@ -368,7 +368,7 @@ TEST_F(T86ProcessTest, PokeText) {
 
     t86->ResumeExecution();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(t86->GetReason(), StopReason::ExecutionEnd);
     regs = t86->FetchRegisters();
     ASSERT_EQ(regs.at("R0"), 4);
     ASSERT_EQ(regs.at("R1"), 4);
@@ -394,14 +394,14 @@ TEST_F(T86ProcessTest, Breakpoint) {
     
     t86->ResumeExecution();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::SoftwareBreakpointHit);
+    ASSERT_EQ(t86->GetReason(), StopReason::SoftwareBreakpointHit);
     auto regs = t86->FetchRegisters();
     ASSERT_EQ(regs.at("R0"), 1);
     ASSERT_EQ(regs.at("R1"), 2);
 
     t86->ResumeExecution();
     t86->Wait();
-    ASSERT_EQ(t86->GetReason(), DebugEvent::ExecutionEnd);
+    ASSERT_EQ(t86->GetReason(), StopReason::ExecutionEnd);
     regs = t86->FetchRegisters();
     ASSERT_EQ(regs.at("R0"), 1);
     ASSERT_EQ(regs.at("R1"), 2);
@@ -493,7 +493,7 @@ TEST_F(T86ProcessTest, DebugRegs) {
     t86->ResumeExecution();
     t86->Wait();
     auto reason = t86->GetReason();
-    ASSERT_EQ(reason, DebugEvent::HardwareBreakpointHit);
+    ASSERT_EQ(reason, StopReason::HardwareBreak);
     t86->ResumeExecution();
     t86->Wait();
     auto mem = t86->ReadMemory(0, 3);

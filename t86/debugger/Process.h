@@ -18,7 +18,7 @@ public:
     virtual void WriteMemory(uint64_t address, const std::vector<int64_t>& data) = 0;
     virtual std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) = 0;
 
-    virtual DebugEvent GetReason() = 0;
+    virtual StopReason GetReason() = 0;
 
     /// Performs singlestep and returns true.
     /// Should throws runtime_error if architecture

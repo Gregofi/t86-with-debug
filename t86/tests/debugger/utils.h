@@ -43,7 +43,7 @@ public:
         return result;
     }
 
-    DebugEvent GetReason() override {
+    StopReason GetReason() override {
         NOT_IMPLEMENTED;
     }
 
