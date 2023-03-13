@@ -226,15 +226,15 @@ public:
 
     DebugEvent MapReasonToEvent(StopReason reason) {
         if (reason == StopReason::SoftwareBreakpointHit) {
-            return DebugEvent::SoftwareBreakpointHit;
+            return BreakpointHit{BPType::Software, GetIP() - 1};
         } else if (reason == StopReason::HardwareBreak) {
-            return DebugEvent::WatchpointWrite;
+            NOT_IMPLEMENTED;
         } else if (reason == StopReason::Singlestep) {
-            return DebugEvent::Singlestep;
+            return Singlestep{};
         } else if (reason == StopReason::ExecutionEnd) {
-            return DebugEvent::ExecutionEnd;
+            return ExecutionEnd{};
         } else if (reason == StopReason::ExecutionBegin) {
-            return DebugEvent::ExecutionBegin;
+            return ExecutionBegin{};
         }
         UNREACHABLE;
     }
@@ -251,7 +251,7 @@ public:
             reason = MapReasonToEvent(process->GetReason());
         }
 
-        if (reason == DebugEvent::SoftwareBreakpointHit) {
+        if (std::holds_alternative<BreakpointHit>(reason)) {
             auto regs = GetRegisters();
             regs.at("IP") -= 1;
             SetRegisters(regs);
@@ -270,7 +270,7 @@ public:
             // If some other thing happened other than singlestep
             // that requires pause cache the event here and return
             // it in WaitForDebugEvent.
-            if (event != DebugEvent::Singlestep) {
+            if (!std::holds_alternative<Singlestep>(event)) {
                 cached_event.emplace(event);
                 return;
             }
