@@ -124,6 +124,16 @@ commands:
                          quotation marks, they however needn't be escaped inside
                          the string itself.
 )";
+    static constexpr const char* WATCHPOINT_USAGE =
+R"(watchpoint <subcommands> [parameter [parameter...]]
+Watchpoint will watch for memory writes and break if any happen.
+
+commands:
+- iset <addr> - Creates a new watchpoint that will cause a
+                break if any write happens to <addr>.
+- irem <addr> - Remove watchpoint on address <addr>.
+- list - Lists all active watchpoints.
+)";
 
 public:
     Cli(std::string fname): fname(std::move(fname)) {
@@ -311,6 +321,31 @@ public:
             fmt::print("{}", BP_USAGE); 
         } else {
             fmt::print("{}", BP_USAGE); 
+        }
+    }
+
+    void HandleWatchpoint(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+        if (check_command(subcommands, "iset", 2)) {
+            auto address = ParseAddress(subcommands.at(1));
+            process.SetWatchpointWrite(address);
+        } else if (check_command(subcommands, "irem", 2)) {
+            auto address = ParseAddress(subcommands.at(1));
+            process.RemoveWatchpoint(address);
+        } else if (check_command(subcommands, "list", 1)) {
+            const auto& watchpoints = process.GetWatchpoints();
+            if (watchpoints.size() == 0) {
+                fmt::print("No active watchpoints\n");
+                return;
+            }
+
+            fmt::print("Active watchpoints:\n");
+            for (auto&& w: watchpoints) {
+                auto&& [address, wp] = w;
+                fmt::print(" - address {}\n", address);
+            }
+        } else {
+            fmt::print("{}", WATCHPOINT_USAGE);
         }
     }
 
@@ -566,6 +601,8 @@ public:
             HandleRegister(command);
         } else if (utils::is_prefix_of(main_command, "memory")) {
             HandleMemory(command);
+        } else if (utils::is_prefix_of(main_command, "watchpoint")) {
+            HandleWatchpoint(command);
         } else {
             fmt::print("{}", USAGE);
         }
