@@ -30,11 +30,13 @@ namespace tiny::t86 {
         if (singleStepDone()) {
             log_info("Breaking on single step!");
             single_stepped_ = false;
-            interrupted_ = 1;
-            return;
+            // It's possible that some other condition occured while we're single stepping (for example write
+            // onto watched memory cell). In that case do not overwrite that interrupt.
+            if (interrupted_ == 0) {
+                interrupted_ = 1;
+            }
         }
 
-        // TODO: Maybe not needed
         if (interrupted_ != 0) {
             log_info("Stop execution because of interrupt");
             return;

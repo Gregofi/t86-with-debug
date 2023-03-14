@@ -663,3 +663,35 @@ HALT
         EXPECT_EQ(mem[i], i);
     }
 }
+
+TEST_F(NativeTest, WatchpointsAndBreakpoints) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV [R0], 2
+2 MOV [5], 3
+3 HALT
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+
+    native->SetWatchpointWrite(1);
+    native->SetWatchpointWrite(5);
+    native->SetBreakpoint(1);
+    native->ContinueExecution();
+
+    auto e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e));
+    native->ContinueExecution();
+
+    e = native->WaitForDebugEvent();
+    EXPECT_EQ(native->GetIP(), 2);
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 1);
+    native->ContinueExecution();
+
+    e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
+    ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 5);
+}
