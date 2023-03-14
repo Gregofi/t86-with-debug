@@ -14,8 +14,8 @@
 10      LEA     R3, [SP + -3]
 11      CALL    2             # swap(int*, int*)
 12      MOV     R0, [SP + -2]
-13      MOV     R1, [SP + -3]
-14      PUTNUM  R0
+13      PUTNUM  R0
+14      MOV     R1, [SP + -3]
 15      PUTNUM  R1
 16      XOR     R0, R0        # return 0
 17      RET
@@ -31,6 +31,8 @@
 8: 8
 9: 9
 10: 12
+11: 14
+12: 16
 
 .debug_info
 DIE_compilation_unit: {
@@ -97,4 +99,6 @@ int main() {
     int a = 3;
     int b = 6;
     swap(&a, &b);
+    print(a);
+    print(b);
 }

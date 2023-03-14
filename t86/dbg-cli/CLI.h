@@ -177,9 +177,9 @@ public:
         for (size_t i = 0; i < inst.size(); ++i) {
             uint64_t curr_addr = i + begin;
             if (curr_addr == address) {
-                fmt::print(fg(fmt::color::dark_blue), "-> {}\t{}\n", curr_addr, inst[i]);
+                fmt::print(fg(fmt::color::dark_blue), "-> {:>4}:  {}\n", curr_addr, inst[i]);
             } else {
-                fmt::print("   {}\t{}\n", curr_addr, inst[i]);
+                fmt::print("   {:>4}:  {}\n", curr_addr, inst[i]);
             }
         }
     }
@@ -193,9 +193,9 @@ public:
             auto code = source.GetLine(i);
             if (code) {
                 if (i == line) {
-                    fmt::print(fg(fmt::color::dark_blue), "-> {}:{}\n", i, *code);
+                    fmt::print(fg(fmt::color::dark_blue), "-> {:>4}:{}\n", i, *code);
                 } else {
-                    fmt::print("   {}:{}\n", i, *code);
+                    fmt::print("   {:>4}:{}\n", i, *code);
                 }
             }
         }
@@ -547,7 +547,9 @@ public:
         // Following commands needs active process
         if (!process.Active()) {
             fmt::print("{}", USAGE);
-            fmt::print("Use the `run` or `attach` command to run a process first.\n");
+            fmt::print(fmt::emphasis::bold | fg(fmt::color::red),
+                       "Use the `run` or `attach` command to run a process first.");
+            fmt::print("\n");
             return;
         }
         if (utils::is_prefix_of(main_command, "breakpoint")) {
