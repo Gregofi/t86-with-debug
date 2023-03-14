@@ -1,4 +1,6 @@
 #pragma once
+#include "fmt/core.h"
+#include "helpers.h"
 #include <string>
 #include <vector>
 #include <variant>
@@ -12,7 +14,7 @@ struct PointerType;
 using Type = std::variant<PrimitiveType, StructuredType, PointerType>;
 
 struct PrimitiveType {
-    enum struct Type {
+    enum class Type {
         FLOAT,
         SIGNED,
         UNSIGNED,
@@ -46,6 +48,7 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
     case PrimitiveType::Type::BOOL:
         return "bool";
     }
+    UNREACHABLE;
 }
 
 
@@ -62,3 +65,16 @@ struct StructuredType {
     /// Offset from base of structured type - The type at that offset
     std::vector<std::pair<int64_t, std::optional<Type>>> members;
 };
+
+inline std::string TypeToString(const Type& type) {
+    return std::visit(utils::overloaded {
+        [](const PrimitiveType& t) { return FromPrimitiveType(t.type); },
+        [](const PointerType& t) {
+            auto pointed = TypeToString(*t.to);
+            return fmt::format("{}*", pointed);
+        },
+        [](const StructuredType& t) {
+            return t.name;
+        }
+    }, type);
+}

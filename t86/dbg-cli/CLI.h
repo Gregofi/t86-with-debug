@@ -134,6 +134,15 @@ commands:
 - irem <addr> - Remove watchpoint on address <addr>.
 - list - Lists all active watchpoints.
 )";
+    static constexpr const char* VARIABLE_USAGE =
+R"(variable <subcommands> [parameter [parameter...]]
+Manipulate with source variables.
+
+commands:
+- set <var> <value> - Set a variable <var> to <val>.
+- get <var> - Display variable value.
+- scope - List all variables in current scope.
+)";
 
 public:
     Cli(std::string fname): fname(std::move(fname)) {
@@ -321,6 +330,111 @@ public:
             fmt::print("{}", BP_USAGE); 
         } else {
             fmt::print("{}", BP_USAGE); 
+        }
+    }
+
+    /// Fetches the value at provided location.
+    uint64_t FetchRawValue(const expr::Location& loc) {
+        return std::visit(utils::overloaded {
+            [&](const expr::Register& reg) {
+                return process.GetRegister(reg.name);
+            },
+            [&](const expr::Offset& offset) {
+                return process.ReadMemory(offset.value, 1).at(0);
+            }
+        }, loc);
+    }
+
+    /// Special function to print typed variables for T86 because its memory
+    /// has 64-bit cells. Ie. if type is of size 1 it actually has 64-bits.
+    void PrintTypedVariableValueT86(std::string_view name, const expr::Location& loc,
+                                    const Type& type) {
+        auto var_val = std::visit(utils::overloaded {
+            [&](const PrimitiveType& t) {
+                if (t.size != 1) {
+                    throw DebuggerError("Only primitive types with size one are supported");
+                }
+                auto raw_value = FetchRawValue(loc);
+                if (t.type == PrimitiveType::Type::FLOAT) {
+                    return fmt::format("{}\n", static_cast<double>(raw_value));
+                } else if (t.type == PrimitiveType::Type::SIGNED) {
+                    return fmt::format("{}\n", static_cast<int64_t>(raw_value));
+                } else if (t.type == PrimitiveType::Type::UNSIGNED) {
+                    return fmt::format("{}\n", raw_value);
+                } else if (t.type == PrimitiveType::Type::BOOL) {
+                    return fmt::format("{}\n", raw_value > 0 ? "true" : "false");
+                } else {
+                    UNREACHABLE;
+                }
+            },
+            [&](const PointerType& t) {
+                if (t.size != 1) {
+                    throw DebuggerError("Only pointers with size one are supported");
+                }
+                auto raw_value = FetchRawValue(loc);
+                return fmt::format("{}\n", raw_value);
+            },
+            [](auto&&) -> std::string {
+                NOT_IMPLEMENTED;
+            },
+        }, type);
+        fmt::print("({}; {}) {} = {}", expr::LocationToStr(loc), TypeToString(type),
+                                       name, var_val);
+    }
+
+    void SetVariableT86(const expr::Location& location, int64_t value) {
+        std::visit(utils::overloaded {
+            [&](const expr::Register& r) {
+                process.SetRegister(r.name, value);
+            },
+            [&](const expr::Offset& m) {
+                process.SetMemory(m.value, {value});
+            },
+        }, location);
+    }
+
+    void PrintVariableValue(std::string_view name) {
+        auto location = source.GetVariableLocation(process, name);
+        if (!location) {
+            throw DebuggerError(fmt::format("Variable '{}' is not in scope or missing debug info", name));
+        }
+        auto type_info = source.GetVariableTypeInformation(process, name);
+        if (!type_info) {
+            fmt::print("No type information about variable '{}'.", name);
+            auto raw_value = FetchRawValue(*location);
+            fmt::print("({}) {} = {}", LocationToStr(*location), name, raw_value);
+        } else if (Arch::GetMachine() == Arch::Machine::T86) {
+            PrintTypedVariableValueT86(name, *location, *type_info);
+        } else {
+            throw DebuggerError("Printing typed variables is not supported in current architecture");
+        }
+    }
+
+    void SetVariableValue(std::string_view name, int64_t value_raw) {
+        auto location = source.GetVariableLocation(process, name);
+        if (!location) {
+            throw DebuggerError(fmt::format("Variable '{}' is not in scope or missing debug info", name));
+        }
+        if (Arch::GetMachine() == Arch::Machine::T86) {
+            SetVariableT86(*location, value_raw);    
+        }
+    }
+
+    void HandleVariable(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+        if (check_command(subcommands, "get", 2)) {
+            auto var_name = subcommands.at(1);
+            PrintVariableValue(var_name);
+        } else if (check_command(subcommands, "set", 3)) {
+            auto var_name = subcommands.at(1);
+            // TODO: Should, at the very least, handle other primitive types.
+            auto value = utils::svtonum<int64_t>(subcommands.at(2));
+            if (!value) {
+                throw DebuggerError(fmt::format("Expected number, got '{}'", subcommands.at(2)));
+            }
+            SetVariableValue(var_name, *value);
+        } else {
+            fmt::print(VARIABLE_USAGE);
         }
     }
 
@@ -601,6 +715,8 @@ public:
             HandleRegister(command);
         } else if (utils::is_prefix_of(main_command, "memory")) {
             HandleMemory(command);
+        } else if (utils::is_prefix_of(main_command, "variable")) {
+            HandleVariable(command);
         } else if (utils::is_prefix_of(main_command, "watchpoint")) {
             HandleWatchpoint(command);
         } else {
@@ -636,7 +752,7 @@ public:
             try {
                 HandleCommand(line);
             } catch (const DebuggerError& err) {
-                fmt::print(stderr, "Error: {}\n", err.what());
+                fmt::print("Error: {}\n", err.what());
             }
 FREE_LINE:
             free(line_raw);

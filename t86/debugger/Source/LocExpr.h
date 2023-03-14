@@ -1,4 +1,6 @@
 #pragma once
+#include "fmt/core.h"
+#include "helpers.h"
 #include <string>
 #include <variant>
 /// Describes the location in the executing code.
@@ -16,6 +18,17 @@ struct Offset {
 };
 
 using Location = std::variant<Register, Offset>;
+
+inline std::string LocationToStr(const Location& loc) {
+    return std::visit(utils::overloaded {
+        [](const Register& reg) {
+            return reg.name;
+        },
+        [](const Offset& offset) {
+            return fmt::format("[{}]", offset.value);
+        }
+    }, loc);
+}
 
 struct Push {
     Location value;

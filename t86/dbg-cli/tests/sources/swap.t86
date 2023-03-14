@@ -55,12 +55,12 @@ DIE_function: {
         DIE_variable: {
             ATTR_name: a,
             ATTR_type: 0,
-            ATTR_location: [PUSH SP; PUSH -1; ADD],
+            ATTR_location: [PUSH SP; PUSH -2; ADD],
         },
         DIE_variable: {
             ATTR_name: b,
             ATTR_type: 0,
-            ATTR_location: [PUSH SP; PUSH -2; ADD],
+            ATTR_location: [PUSH SP; PUSH -3; ADD],
         }
     }
 },
@@ -74,10 +74,12 @@ DIE_function: {
         DIE_variable: {
             ATTR_name: x,
             ATTR_type: 1,
+            ATTR_location: ``,
         },
         DIE_variable: {
             ATTR_name: y,
             ATTR_type: 1,
+            ATTR_location: ``,
         },
         DIE_variable: {
             ATTR_name: tmp,

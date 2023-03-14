@@ -1,0 +1,12 @@
+r
+var get a
+b s 2
+b s 10
+c
+var get x
+var get tmp
+c
+var get a
+var set a -55
+var get a
+c
