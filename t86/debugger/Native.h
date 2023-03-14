@@ -312,6 +312,10 @@ public:
         watchpoints.erase(address); 
     }
 
+    const std::map<uint64_t, Watchpoint>& GetWatchpoints() {
+        return watchpoints;
+    }
+
     void Terminate() {
         process->Terminate();
     }

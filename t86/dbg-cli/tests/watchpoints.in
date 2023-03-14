@@ -1,0 +1,7 @@
+run
+watchpoint list
+watchpoint iset 1020
+watchpoint list
+c
+c
+c
