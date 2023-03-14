@@ -43,7 +43,7 @@ expr::Location ExpressionInterpreter::AddOperands(const expr::Location& o1,
                     return expr::Offset{rval1 + rval2};
                 },
             }, o2);
-        }
+        },
     }, o1);
 }
 
