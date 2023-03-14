@@ -593,7 +593,7 @@ public:
         while((line_raw = linenoise(prompt)) != NULL) {
             std::string line = utils::squash_strip_whitespace(line_raw);
             if (line == "") {
-                continue;
+                goto FREE_LINE;
             }
             linenoiseHistoryAdd(line_raw);
             try {
@@ -601,6 +601,7 @@ public:
             } catch (const DebuggerError& err) {
                 fmt::print(stderr, "Error: {}\n", err.what());
             }
+FREE_LINE:
             free(line_raw);
         }
         ExitProcess();
