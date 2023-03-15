@@ -189,6 +189,20 @@ public:
         return result;
     }
 
+    void PrintFunctionInfo(uint64_t address) {
+        auto fun_name = source.GetFunctionNameByAddress(address);
+        if (!fun_name) {
+            return;
+        }
+        auto fun_loc = source.GetFunctionAddrByName(*fun_name);
+        if (!fun_loc) {
+            return;
+        }
+        auto [fun_begin, fun_end] = *fun_loc;
+
+        fmt::print("function {} at {}-{}:\n", *fun_name, fun_begin, fun_end);
+    }
+
     /// Dumps text around current IP
     /// @param range - How many instructions to dump above
     ///                and below current IP.
@@ -200,6 +214,7 @@ public:
         size_t begin = static_cast<size_t>(range) > address ? 0 : address - range;
         size_t end = std::min(text_size, static_cast<size_t>(address) + range + 1);
         auto inst = process.ReadText(begin, end - begin);
+        PrintFunctionInfo(address);
         PrintText(begin, inst);
     }
 
@@ -208,16 +223,8 @@ public:
     void PrettyPrintCode(ssize_t line, int range = 2) {
         auto begin = std::max(line - range, 0l);
         auto end = line + range + 1;
-        for (ssize_t i = begin; i < end; ++i) {
-            auto code = source.GetLine(i);
-            if (code) {
-                if (i == line) {
-                    fmt::print(fg(fmt::color::dark_blue), "-> {:>4}:{}\n", i, *code);
-                } else {
-                    fmt::print("   {:>4}:{}\n", i, *code);
-                }
-            }
-        }
+        PrintFunctionInfo(process.GetIP());
+        PrintCode(begin, end);
     }
 
     /// Returns red '@' if enabled or gray if disabled. If breakpoint is not set on i then
@@ -232,6 +239,41 @@ public:
             }
         }
         return res;
+    }
+
+    std::string GetPrettyBpForLine(size_t line) {
+        const auto& bkpts = process.GetBreakpoints();
+        auto addr = source.LineToAddr(line);
+        if (!addr) {
+            return " ";
+        }
+        // One line may map to multiple addresses,
+        // but this function always returns the last
+        // line the address is mapped onto.
+        // This is done to prevent displaying breakpoints
+        // on multiple lines belonging to the same instruction.
+        auto line_back = source.AddrToLine(*addr);
+        if (line_back && line == *line_back) {
+            return GetPrettyBp(*addr, bkpts);
+        }
+        return " ";
+    }
+
+    void PrintCode(size_t from, size_t to) {
+        auto curr_loc = source.AddrToLine(process.GetIP());
+        for (size_t i = from; i < to; ++i) {
+            auto line = source.GetLine(i);
+            if (!line) {
+                continue;
+            }
+            std::string pretty_rest;
+            if (curr_loc && i == *curr_loc) {
+                pretty_rest = fmt::format(fg(fmt::color::dark_blue), "->{:>4}:{}\n", i, *line);
+            } else {
+                pretty_rest = fmt::format("  {:>4}:{}\n", i, *line);
+            }
+            fmt::print("{}{}", GetPrettyBpForLine(i), pretty_rest);
+        }
     }
 
     /// Prints the provided text and markups current address and breakpoints.
