@@ -1,0 +1,52 @@
+
+.text
+0       CALL 2
+1       HALT
+# main:
+2       PUSH    BP
+3       MOV     BP, SP
+4       MOV     [BP + -1], 0
+5       MOV     [BP + -2], 5
+6       LEA     R0, [BP + -2]
+7       MOV     [BP + -4], R0
+8       MOV     R0, [BP + -4]
+9       MOV     [R0], 10
+10      MOV     R0, [BP + -4]
+11      MOV     R1, [R0]
+12      ADD     R1, [BP + -2]
+13      POP     BP
+14      RET
+
+.debug_line
+0: 2
+1: 5
+2: 5
+3: 5
+4: 5
+5: 5
+6: 6
+7: 8
+8: 8
+9: 10
+10: 10
+11: 10
+12: 10
+13: 10
+14: 13
+
+.debug_source
+define dso_local i32 @main() #0 !dbg !10 {
+  %1 = alloca i32, align 4
+  %2 = alloca i32, align 4
+  %3 = alloca ptr, align 8
+  store i32 0, ptr %1, align 4
+  store i32 5, ptr %2, align 4, !dbg !17
+  store ptr %2, ptr %3, align 8, !dbg !20
+  %4 = load ptr, ptr %3, align 8, !dbg !21
+  store i32 10, ptr %4, align 4, !dbg !22
+  %5 = load ptr, ptr %3, align 8, !dbg !23
+  %6 = load i32, ptr %5, align 4, !dbg !24
+  %7 = load i32, ptr %2, align 4, !dbg !25
+  %8 = add nsw i32 %6, %7, !dbg !26
+  ret i32 %8, !dbg !27
+}

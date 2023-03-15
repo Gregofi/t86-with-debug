@@ -298,7 +298,7 @@ public:
     uint64_t ParseAddress(std::string_view address) {
         auto loc = utils::svtoi64(address);
         if (!loc || loc < 0) {
-            Error("The disable-addr expected address, got '{}' instead", address);
+            Error("Expected unsigned number, got '{}' instead", address);
         }
         return *loc;
     }
@@ -604,9 +604,13 @@ public:
             auto begin = ParseAddress(subcommands.at(1));
             // If to is not specified then disassemble the rest
             // of the file.
+            size_t text_size = process.TextSize();
+            if (begin >= text_size) {
+                Error("Size of text is '{}'", text_size);
+            }
             auto amount = subcommands.size() > 2
                 ? ParseAddress(subcommands.at(2))
-                : process.TextSize() - begin;
+                : text_size - begin;
             auto text = process.ReadText(begin, amount);
             PrintText(begin, text);
         } else if (check_command(subcommands, "help", 1)) {
