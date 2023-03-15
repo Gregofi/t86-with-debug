@@ -46,6 +46,7 @@ which should be used alone.
 commands:
 - continue = Continues execution, has no subcommands.
 - istep = Assembly level stepping.
+- step = Source level stepping.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.
@@ -74,6 +75,13 @@ R"(istep <subcommands> [parameter [parameter...]]
 Used for instruction level single stepping
 
 Without any subcommands (just istep) = Performs instruction level single step.
+- help = Print this.
+)";
+    static constexpr const char* STEP_USAGE =
+R"(step <subcommands> [parameter [parameter...]]
+Used for source level stepping.
+
+Without any subcommands (just `step`) performs source level single step.
 - help = Print this.
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
@@ -463,6 +471,32 @@ public:
         }
     }
 
+    void HandleStep(std::string_view command) {
+        if (!process.Active()) {
+            throw DebuggerError("No active process.");
+        }
+        if (!is_running) {
+            throw DebuggerError("Process finished executing, it's not possible to continue.");
+        }
+        if (command == "") {
+            auto e = source.StepIn(process);
+            if (!std::holds_alternative<Singlestep>(e)) {
+                fmt::print("Process stopped, reason {}\n", DebugEventToString(e));
+            }
+            if (std::holds_alternative<ExecutionEnd>(e)) {
+                is_running = false;
+            } else {
+                auto ip = process.GetIP();
+                auto line = source.AddrToLine(ip);
+                // The line must be valid here since we did a source level singlestep.
+                assert(line);
+                PrettyPrintCode(*line);
+            }
+        } else {
+            fmt::print("{}", STEP_USAGE);
+        }
+    }
+
     void HandleStepi(std::string_view command) {
         if (!process.Active()) {
             throw DebuggerError("No active process.");
@@ -719,6 +753,8 @@ public:
             HandleVariable(command);
         } else if (utils::is_prefix_of(main_command, "watchpoint")) {
             HandleWatchpoint(command);
+        } else if (utils::is_prefix_of(main_command, "step")) {
+            HandleStep(command);
         } else {
             fmt::print("{}", USAGE);
         }
