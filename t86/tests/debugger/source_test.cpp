@@ -468,7 +468,10 @@ int main(void) {
         EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
     }
 
-    EXPECT_EQ(source.GetAddrFunctionByName("main"), 2);
+    auto fun_loc = source.GetFunctionAddrByName("main");
+    ASSERT_TRUE(fun_loc);
+    EXPECT_EQ(fun_loc->first, 2);
+    EXPECT_EQ(fun_loc->second, 12);
 
     ASSERT_FALSE(source.GetVariableLocation(*native, "i"));
     native->SetBreakpoint(7);
@@ -599,8 +602,8 @@ int main() {
         EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
     }
 
-    EXPECT_EQ(source.GetAddrFunctionByName("swap"), 2);
-    EXPECT_EQ(source.GetAddrFunctionByName("main"), 7);
+    EXPECT_EQ(source.GetFunctionAddrByName("swap")->first, 2);
+    EXPECT_EQ(source.GetFunctionAddrByName("main")->first, 7);
 
     ASSERT_FALSE(source.GetVariableLocation(*native, "i"));
     native->SetBreakpoint(9);

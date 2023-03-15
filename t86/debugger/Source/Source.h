@@ -34,8 +34,8 @@ public:
     /// Returns function that owns instruction at given address.
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
     /// Returns the address of the function prologue.
-    std::optional<uint64_t> GetAddrFunctionByName(std::string_view name) const;
-    /// Returns the type of a variable if it is in current scope.
+    std::optional<std::pair<uint64_t, uint64_t>> GetFunctionAddrByName(std::string_view name) const;
+    /// Returns the address of the last functions instruction plus one.
     std::optional<Type> GetVariableTypeInformation(Native& native, std::string_view name) const;
     /// Returns a location of variable.
     /// Be aware that this can make a lot of calls to the underlying debugged
