@@ -2,7 +2,7 @@
 #include "debugger/Source/ExpressionInterpreter.h"
 #include "debugger/Source/LineMapping.h"
 
-uint64_t Source::SetSourceSoftwareBreakpoint(Native& native, size_t line) {
+uint64_t Source::SetSourceSoftwareBreakpoint(Native& native, size_t line) const {
     auto mapping = UnwrapOptional(line_mapping, "No debug info for line mapping");
     auto addr =
         UnwrapOptional(mapping.GetAddress(line),
@@ -11,7 +11,7 @@ uint64_t Source::SetSourceSoftwareBreakpoint(Native& native, size_t line) {
     return addr;
 }
 
-uint64_t Source::UnsetSourceSoftwareBreakpoint(Native& native, size_t line) {
+uint64_t Source::UnsetSourceSoftwareBreakpoint(Native& native, size_t line) const {
     auto mapping = UnwrapOptional(line_mapping, "No debug info for line mapping");
     auto addr =
         UnwrapOptional(mapping.GetAddress(line),
@@ -20,7 +20,7 @@ uint64_t Source::UnsetSourceSoftwareBreakpoint(Native& native, size_t line) {
     return addr;
 }
 
-uint64_t Source::EnableSourceSoftwareBreakpoint(Native& native, size_t line) {
+uint64_t Source::EnableSourceSoftwareBreakpoint(Native& native, size_t line) const {
     auto mapping = UnwrapOptional(line_mapping, "No debug info for line mapping");
     auto addr =
         UnwrapOptional(mapping.GetAddress(line),
@@ -29,7 +29,7 @@ uint64_t Source::EnableSourceSoftwareBreakpoint(Native& native, size_t line) {
     return addr;
 }
 
-uint64_t Source::DisableSourceSoftwareBreakpoint(Native& native, size_t line) {
+uint64_t Source::DisableSourceSoftwareBreakpoint(Native& native, size_t line) const {
     auto mapping = UnwrapOptional(line_mapping, "No debug info for line mapping");
     auto addr =
         UnwrapOptional(mapping.GetAddress(line),
@@ -38,7 +38,7 @@ uint64_t Source::DisableSourceSoftwareBreakpoint(Native& native, size_t line) {
     return addr;
 }
 
-std::optional<size_t> Source::AddrToLine(size_t addr) {
+std::optional<size_t> Source::AddrToLine(size_t addr) const {
     if (!line_mapping) {
         return {};
     }
@@ -50,7 +50,7 @@ std::optional<size_t> Source::AddrToLine(size_t addr) {
     return *max;
 }
 
-std::optional<size_t> Source::LineToAddr(size_t addr) {
+std::optional<size_t> Source::LineToAddr(size_t addr) const {
     if (!line_mapping) {
         return {};
     }
@@ -72,7 +72,7 @@ std::vector<std::string_view> Source::GetLines(size_t idx, size_t amount) const 
     return result;
 }
 
-std::optional<std::string_view> Source::GetLine(size_t line) {
+std::optional<std::string_view> Source::GetLine(size_t line) const {
     return source_file->GetLine(line);
 }
 
@@ -134,7 +134,7 @@ std::optional<std::string> Source::GetFunctionNameByAddress(uint64_t address) co
     return {};
 }
 
-std::optional<uint64_t> Source::GetAddrFunctionByName(std::string_view name) {
+std::optional<uint64_t> Source::GetAddrFunctionByName(std::string_view name) const {
     auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
     // NOTE: we assume that nested functions aren't possible
     for (const auto& die: top_die) {
@@ -188,7 +188,7 @@ const DIE* Source::GetVariableDie(uint64_t address, std::string_view name,
 }
 
 std::optional<expr::Location> Source::GetVariableLocation(Native& native,
-                                                          std::string_view name) {
+                                                          std::string_view name) const {
     auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
     auto var = GetVariableDie(native.GetIP(), name, top_die);
     if (var == nullptr) {
@@ -285,7 +285,7 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
 }
 
 std::optional<Type> Source::GetVariableTypeInformation(Native& native,
-                                                       std::string_view name) {
+                                                       std::string_view name) const {
     auto top_die = UnwrapOptional(this->top_die, "No debugging information provided!");
     auto var = GetVariableDie(native.GetIP(), name, top_die);
     if (var == nullptr) {
