@@ -43,5 +43,9 @@ struct FrameBaseRegisterOffset {
     int64_t offset;
 };
 
-using LocExpr = std::variant<Push, Add, FrameBaseRegisterOffset>;
+struct Dereference {
+    uint64_t location;
+};
+
+using LocExpr = std::variant<Push, Add, FrameBaseRegisterOffset, Dereference>;
 }
