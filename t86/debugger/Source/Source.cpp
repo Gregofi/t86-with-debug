@@ -134,7 +134,7 @@ std::optional<std::string> Source::GetFunctionNameByAddress(uint64_t address) co
     return {};
 }
 
-std::optional<uint64_t> Source::GetAddrFunctionByName(std::string_view name) const {
+std::optional<std::pair<uint64_t, uint64_t>> Source::GetFunctionAddrByName(std::string_view name) const {
     auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
     // NOTE: we assume that nested functions aren't possible
     for (const auto& die: top_die) {
@@ -148,7 +148,11 @@ std::optional<uint64_t> Source::GetAddrFunctionByName(std::string_view name) con
             if (begin_addr == nullptr) {
                 return {};
             }
-            return {begin_addr->addr};
+            auto end_addr = FindDieAttribute<ATTR_end_addr>(die);
+            if (end_addr == nullptr) {
+                return {};
+            }
+            return {std::make_pair(begin_addr->addr, end_addr->addr)};
         }
     }
     return {};
