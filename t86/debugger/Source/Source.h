@@ -56,6 +56,12 @@ public:
     std::vector<std::string_view> GetLines(size_t idx, size_t amount) const;
 
     std::optional<std::string_view> GetLine(size_t line) const;
+
+    /// Performs a source level step in.
+    /// Beware, line number information should be complete if you
+    /// wish to use this, otherwise weird behaviour might occur,
+    /// like skipping parts of functions etc.
+    DebugEvent StepIn(Native& native) const;
 private:
     std::optional<Type> ReconstructTypeInformation(size_t id) const;
 

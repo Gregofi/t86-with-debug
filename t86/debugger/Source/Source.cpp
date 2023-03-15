@@ -298,3 +298,16 @@ std::optional<Type> Source::GetVariableTypeInformation(Native& native,
     
     return ReconstructTypeInformation(type->type_id);
 }
+
+DebugEvent Source::StepIn(Native& native) const {
+    // Step until the current address matches some existing line mapping
+    // In case we hit an instruction level breakpoint in between stepping
+    // we want to stop and report it. However, we want to step over the
+    // breakpoint on current line if it is set.
+    auto e = native.PerformSingleStep();
+    while (std::holds_alternative<Singlestep>(e)
+            && !AddrToLine(native.GetIP())) {
+        e = native.DoRawSingleStep();
+    }
+    return e;
+}

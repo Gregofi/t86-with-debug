@@ -10,6 +10,7 @@ which should be used alone.
 commands:
 - continue = Continues execution, has no subcommands.
 - istep = Assembly level stepping.
+- step = Source level stepping.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.

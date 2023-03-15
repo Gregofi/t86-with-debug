@@ -883,3 +883,92 @@ int main() {
 
     ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
 }
+
+TEST_F(NativeSourceTest, SourceStepIn) {
+    auto elf =
+R"(.text
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2] # No debug information about these guys
+13      MOV     R1, [SP + -3]
+14      PUTNUM  R0
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+
+.debug_line
+0: 2
+1: 2
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 16
+
+.debug_source
+void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y; // No debug info for this line, should be skipped
+    *y = tmp;
+}
+
+int main() {
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
+}
+)";
+    Run(elf);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(15); // BP on address which is not mapped to source
+    native->SetBreakpoint(7); // BP on line which IS mapped to source (Should be ignored)
+
+    auto e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 7);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 8);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 9);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 2);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 5);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 6);
+
+    e = source.StepIn(*native);
+    ASSERT_EQ(native->GetIP(), 15);
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e));
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 16);
+
+    e = source.StepIn(*native);
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(e));
+}
