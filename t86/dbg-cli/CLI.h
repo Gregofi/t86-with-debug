@@ -201,14 +201,7 @@ public:
         size_t begin = static_cast<size_t>(range) > address ? 0 : address - range;
         size_t end = std::min(text_size, static_cast<size_t>(address) + range + 1);
         auto inst = process.ReadText(begin, end - begin);
-        for (size_t i = 0; i < inst.size(); ++i) {
-            uint64_t curr_addr = i + begin;
-            if (curr_addr == address) {
-                fmt::print(fg(fmt::color::dark_blue), "-> {:>4}:  {}\n", curr_addr, inst[i]);
-            } else {
-                fmt::print("   {:>4}:  {}\n", curr_addr, inst[i]);
-            }
-        }
+        PrintText(begin, inst);
     }
 
     /// Prints source code around given line, if no line exists then
@@ -228,10 +221,36 @@ public:
         }
     }
 
+    /// Returns red '@' if enabled or gray if disabled. If breakpoint is not set on i then
+    /// returns a space (' ').
+    std::string GetPrettyBp(uint64_t i, const std::map<uint64_t, SoftwareBreakpoint>& bps) {
+        std::string res = " ";
+        if (bps.contains(i) > 0) {
+            if (bps.at(i).enabled) {
+                res = fmt::format(fg(fmt::color::red), "@");
+            } else {
+                res = fmt::format(fg(fmt::color::gray), "@");
+            }
+        }
+        return res;
+    }
+
+    /// Prints the provided text and markups current address and breakpoints.
     void PrintText(uint64_t address, const std::vector<std::string>& ins) {
+        auto ip = process.GetIP();
+        const auto& bkpts = process.GetBreakpoints();
         for (size_t i = 0; i < ins.size(); ++i) {
             uint64_t curr_addr = i + address;
-            fmt::print("{}\t{}\n", curr_addr, ins[i]);
+            auto bp_s = GetPrettyBp(curr_addr, bkpts);
+            std::string pretty_rest;
+            if (curr_addr == ip) {
+                pretty_rest = fmt::format(fg(fmt::color::dark_blue), "->{:>4}:  {}\n", curr_addr, ins[i]);
+            } else {
+                pretty_rest = fmt::format("  {:>4}:  {}\n",  curr_addr, ins[i]);
+            }
+            // The print itself has to be done separately, because the style
+            // of breakpoints would cancel out the style of the instruction.
+            fmt::print("{}{}", bp_s, pretty_rest);
         }
     }
 
@@ -297,7 +316,7 @@ public:
             auto address = ParseAddress(subcommands.at(1));
             auto line = process.ReadText(address, 1);
             process.SetBreakpoint(address);
-            fmt::print("Breakpoint set on line {}: '{}'\n", address, line[0]);
+            fmt::print("Breakpoint set on address {}: '{}'\n", address, line[0]);
         // Breakpoint on line
         } else if (check_command(subcommands, "set", 2)) {
             auto line = utils::svtonum<size_t>(subcommands.at(1));
@@ -328,12 +347,15 @@ public:
         } else if (check_command(subcommands, "idisable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.DisableSoftwareBreakpoint(address);
+            fmt::print("Breakpoint disabled at address {}", address);
         } else if (check_command(subcommands, "ienable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.EnableSoftwareBreakpoint(address);
+            fmt::print("Breakpoint enabled at address {}", address);
         } else if (check_command(subcommands, "iremove", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
+            fmt::print("Breakpoint removed from address {}", address);
         } else if (check_command(subcommands, "help", 1)) {
             fmt::print("{}", BP_USAGE); 
         } else {
@@ -509,15 +531,16 @@ public:
             if (!std::holds_alternative<Singlestep>(e)) {
                 fmt::print("Process stopped, reason: {}\n",
                            DebugEventToString(e));
-                if (std::holds_alternative<ExecutionEnd>(e)) {
-                    is_running = false;
-                }
             }
-            // Instruction level stepping should always
-            // display the instructions even if they
-            // have source line mapping.
-            auto ip = process.GetIP();
-            PrettyPrintText(ip);
+            if (std::holds_alternative<ExecutionEnd>(e)) {
+                is_running = false;
+            } else {
+                // Instruction level stepping should always
+                // display the instructions even if they
+                // have source line mapping.
+                auto ip = process.GetIP();
+                PrettyPrintText(ip);
+            }
         } else if (utils::is_prefix_of(command, "help")) {
             fmt::print("{}", STEPI_USAGE);
         } else {
