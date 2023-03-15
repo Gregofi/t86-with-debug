@@ -141,7 +141,7 @@ public:
             if (bp != software_breakpoints.end() && bp->second.enabled) {
                 return StepOverBreakpoint(ip);
             } else {
-                return DoSingleStep();
+                return DoRawSingleStep();
             }
         }
     }
@@ -323,6 +323,12 @@ public:
     bool Active() const {
         return static_cast<bool>(process);
     }
+
+    /// Does singlestep, does not check for breakpoints.
+    DebugEvent DoRawSingleStep() {
+        process->Singlestep();
+        return WaitForDebugEvent();
+    }
 protected:
     void SetDebugRegister(uint8_t idx, uint64_t value) {
         if (idx >= Arch::DebugRegistersCount()) {
@@ -352,12 +358,6 @@ protected:
             {Arch::Machine::T86, "BKPT"},
         };
         return opcode_map.at(Arch::GetMachine());
-    }
-
-    /// Does singlestep, does not check for breakpoints.
-    DebugEvent DoSingleStep() {
-        process->Singlestep();
-        return WaitForDebugEvent();
     }
 
     /// Creates new enabled software breakpoint at given address.
