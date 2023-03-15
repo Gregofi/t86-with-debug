@@ -164,7 +164,7 @@ public:
     /// one and checks if it begins and ends with '"'.
     std::string ParseString(std::string_view s) {
         if (s.size() < 2 || !s.starts_with('"') || !s.ends_with('"')) {
-            throw DebuggerError("Expected string to begin and end with '\"'");
+            Error("Expected string to begin and end with '\"'");
         }
         s.remove_prefix(1);
         std::string result;
@@ -178,8 +178,7 @@ public:
                 } else if (s[i] == '0') {
                     result += '\0';
                 } else {
-                    throw DebuggerError(fmt::format("Unknown escape sequence '{}{}'",
-                                                    prev, s[i]));
+                    Error("Unknown escape sequence '{}{}'", prev, s[i]);
                 }
                 prev = s[++i];
             } else {
@@ -257,9 +256,7 @@ public:
     uint64_t ParseAddress(std::string_view address) {
         auto loc = utils::svtoi64(address);
         if (!loc || loc < 0) {
-            throw DebuggerError(fmt::format(
-                "The disable-addr expected address, got '{}' instead",
-                address));
+            Error("The disable-addr expected address, got '{}' instead", address);
         }
         return *loc;
     }
@@ -308,7 +305,7 @@ public:
 
     void HandleBreakpoint(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         // Breakpoint on raw address
         auto subcommands = utils::split_v(command);
@@ -382,7 +379,7 @@ public:
         auto var_val = std::visit(utils::overloaded {
             [&](const PrimitiveType& t) {
                 if (t.size != 1) {
-                    throw DebuggerError("Only primitive types with size one are supported");
+                    Error("Only primitive types with size one are supported");
                 }
                 auto raw_value = FetchRawValue(loc);
                 if (t.type == PrimitiveType::Type::FLOAT) {
@@ -399,7 +396,7 @@ public:
             },
             [&](const PointerType& t) {
                 if (t.size != 1) {
-                    throw DebuggerError("Only pointers with size one are supported");
+                    Error("Only pointers with size one are supported");
                 }
                 auto raw_value = FetchRawValue(loc);
                 return fmt::format("{}\n", raw_value);
@@ -426,7 +423,7 @@ public:
     void PrintVariableValue(std::string_view name) {
         auto location = source.GetVariableLocation(process, name);
         if (!location) {
-            throw DebuggerError(fmt::format("Variable '{}' is not in scope or missing debug info", name));
+            Error("Variable '{}' is not in scope or missing debug info", name);
         }
         auto type_info = source.GetVariableTypeInformation(process, name);
         if (!type_info) {
@@ -436,14 +433,14 @@ public:
         } else if (Arch::GetMachine() == Arch::Machine::T86) {
             PrintTypedVariableValueT86(name, *location, *type_info);
         } else {
-            throw DebuggerError("Printing typed variables is not supported in current architecture");
+            Error("Printing typed variables is not supported in current architecture");
         }
     }
 
     void SetVariableValue(std::string_view name, int64_t value_raw) {
         auto location = source.GetVariableLocation(process, name);
         if (!location) {
-            throw DebuggerError(fmt::format("Variable '{}' is not in scope or missing debug info", name));
+            Error("Variable '{}' is not in scope or missing debug info", name);
         }
         if (Arch::GetMachine() == Arch::Machine::T86) {
             SetVariableT86(*location, value_raw);    
@@ -460,7 +457,7 @@ public:
             // TODO: Should, at the very least, handle other primitive types.
             auto value = utils::svtonum<int64_t>(subcommands.at(2));
             if (!value) {
-                throw DebuggerError(fmt::format("Expected number, got '{}'", subcommands.at(2)));
+                Error("Expected number, got '{}'", subcommands.at(2));
             }
             SetVariableValue(var_name, *value);
         } else {
@@ -495,10 +492,10 @@ public:
 
     void HandleStep(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         if (!is_running) {
-            throw DebuggerError("Process finished executing, it's not possible to continue.");
+            Error("Process finished executing, it's not possible to continue.");
         }
         if (command == "") {
             auto e = source.StepIn(process);
@@ -521,10 +518,10 @@ public:
 
     void HandleStepi(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         if (!is_running) {
-            throw DebuggerError("Process finished executing, it's not possible to continue.");
+            Error("Process finished executing, it's not possible to continue.");
         }
         if (command == "") {
             auto e = process.PerformSingleStep();
@@ -550,7 +547,7 @@ public:
 
     void HandleDisassemble(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
@@ -584,8 +581,8 @@ public:
         for (size_t i = 0; ;++i) {
             line_raw = linenoise(fmt::format("{}: > ", address + i).c_str());
             if (line_raw == NULL) {
-                throw DebuggerError("Unexpected end of input in interactive assembling, "
-                                    "use blank line to indicate the end.");
+                Error("Unexpected end of input in interactive assembling, "
+                      "use blank line to indicate the end.");
             }
             std::string line{line_raw};
             if (line == "") {
@@ -600,7 +597,7 @@ public:
 
     void HandleAssemble(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         auto subcommands = utils::split_v(command);
         if (check_command(subcommands, "interactive", 2)) {
@@ -616,7 +613,7 @@ public:
 
     void HandleRegister(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         auto subcommands = utils::split_v(command);
         if (subcommands.size() == 0) {
@@ -643,9 +640,7 @@ public:
             auto reg = subcommands.at(1);
             auto value = utils::svtonum<double>(subcommands.at(2));
             if (!value) {
-                throw DebuggerError(
-                    fmt::format("Expected register value, instead got '{}'",
-                                subcommands.at(2)));
+                Error("Expected register value, instead got '{}'", subcommands.at(2));
             }
             process.SetFloatRegister(std::string(reg), *value);
         } else {
@@ -655,7 +650,7 @@ public:
 
     void HandleMemory(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No process is running");
+            Error("No process is running");
         }
         auto subcommands = utils::split_v(command);
         if (check_command(subcommands, "set", 3)) {
@@ -665,7 +660,7 @@ public:
                     std::back_inserter(values), [&](auto&& s) { 
                 auto v = utils::svtonum<int64_t>(s);
                 if (!v) {
-                    throw DebuggerError(fmt::format("Expected number, got '{}'", s));
+                    Error("Expected number, got '{}'", s);
                 }
                 return *v;
             });
@@ -673,7 +668,7 @@ public:
         } else if (check_command(subcommands, "setstr", 3)) {
             auto cell = utils::svtonum<size_t>(subcommands.at(1));
             if (!cell) {
-                throw DebuggerError(fmt::format("Expected memory cell and string"));
+                Error("Expected memory cell and string");
             }
             auto str = utils::join(std::next(subcommands.begin(), 2), subcommands.end());
             auto unescaped_str = ParseString(str);
@@ -689,9 +684,8 @@ public:
             auto begin = utils::svtonum<size_t>(subcommands.at(1));
             auto end = utils::svtonum<size_t>(subcommands.at(2));
             if (!begin || !end || begin > end) {
-                throw DebuggerError(fmt::format("Expected range of memory cells, "
-                            "instead got '{}', '{}'", subcommands.at(1),
-                            subcommands.at(2)));
+                Error("Expected range of memory cells, instead got '{}', '{}'",
+                        subcommands.at(1), subcommands.at(2));
             }
             auto vals = process.ReadMemory(*begin, *end - *begin + 1);
             if (subcommands.at(0).starts_with("gets")) {
@@ -713,10 +707,10 @@ public:
 
     void HandleContinue(std::string_view command) {
         if (!process.Active()) {
-            throw DebuggerError("No active process.");
+            Error("No active process.");
         }
         if (!is_running) {
-            throw DebuggerError("Process finished executing, it's not possible to continue.");
+            Error("Process finished executing, it's not possible to continue.");
         }
         process.ContinueExecution();
         auto e = process.WaitForDebugEvent();
@@ -860,7 +854,7 @@ private:
     std::pair<Source, tiny::t86::Program> ParseProgram(const std::string& path) {
         std::ifstream file(path);
         if (!file) {
-            throw DebuggerError(fmt::format("Unable to open file '{}'\n", *fname));
+            Error("Unable to open file '{}'\n", *fname);
         }
         Parser parser(file);
         auto program = parser.Parse();
