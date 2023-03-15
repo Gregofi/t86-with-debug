@@ -66,6 +66,20 @@ void ExpressionInterpreter::Interpret() {
                 auto loc = bp + ins.offset;
                 s.push(expr::Offset{loc});
             },
+            [&](const expr::Dereference& ins) {
+                auto v1 = s.top();
+                auto v = std::visit(utils::overloaded {
+                        [&](const expr::Register& reg) {
+                            auto idx = native.GetRegister(reg.name);
+                            return native.ReadMemory(idx, 1)[0];
+                        },
+                        [&](const expr::Offset& offset) {
+                            auto idx = native.ReadMemory(offset.value, 1)[0];
+                            return native.ReadMemory(idx, 1)[0];
+                        }
+                }, v1);
+                s.push(expr::Offset{v});
+            }
         }, ins);
     }
 }
