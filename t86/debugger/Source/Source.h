@@ -23,30 +23,30 @@ public:
 
     /// Sets software breakpoint at given line and returns the address
     /// of the breakpoint (the assembly address).
-    uint64_t SetSourceSoftwareBreakpoint(Native& native, size_t line);
+    uint64_t SetSourceSoftwareBreakpoint(Native& native, size_t line) const;
 
     /// Removes software breakpoint at given line and returns the address
     /// of where the breakpoint was (the assembly address).
-    uint64_t UnsetSourceSoftwareBreakpoint(Native& native, size_t line);
-    uint64_t EnableSourceSoftwareBreakpoint(Native& native, size_t line);
+    uint64_t UnsetSourceSoftwareBreakpoint(Native& native, size_t line) const;
+    uint64_t EnableSourceSoftwareBreakpoint(Native& native, size_t line) const;
 
-    uint64_t DisableSourceSoftwareBreakpoint(Native& native, size_t line);
+    uint64_t DisableSourceSoftwareBreakpoint(Native& native, size_t line) const;
     /// Returns function that owns instruction at given address.
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
     /// Returns the address of the function prologue.
-    std::optional<uint64_t> GetAddrFunctionByName(std::string_view name);
+    std::optional<uint64_t> GetAddrFunctionByName(std::string_view name) const;
     /// Returns the type of a variable if it is in current scope.
-    std::optional<Type> GetVariableTypeInformation(Native& native, std::string_view name);
+    std::optional<Type> GetVariableTypeInformation(Native& native, std::string_view name) const;
     /// Returns a location of variable.
     /// Be aware that this can make a lot of calls to the underlying debugged
     /// process, depending on how complicated is the location expression.
-    std::optional<expr::Location> GetVariableLocation(Native& native, std::string_view name);
+    std::optional<expr::Location> GetVariableLocation(Native& native, std::string_view name) const;
 
     /// Returns latest line that corresponds to given address if 
     /// debugging information is available, otherwise returns nullopt.
-    std::optional<size_t> AddrToLine(size_t addr);
+    std::optional<size_t> AddrToLine(size_t addr) const;
 
-    std::optional<size_t> LineToAddr(size_t addr);
+    std::optional<size_t> LineToAddr(size_t addr) const;
 
     /// Returns lines from the source file. This function does
     /// not throw if out of bounds, instead it stops.
@@ -55,7 +55,7 @@ public:
     /// Returns empty vector if no debugging info is provided.
     std::vector<std::string_view> GetLines(size_t idx, size_t amount) const;
 
-    std::optional<std::string_view> GetLine(size_t line);
+    std::optional<std::string_view> GetLine(size_t line) const;
 private:
     std::optional<Type> ReconstructTypeInformation(size_t id) const;
 
