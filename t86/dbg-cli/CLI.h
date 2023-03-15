@@ -538,7 +538,7 @@ public:
             auto end = ParseAddress(subcommands.at(2));
             auto text = process.ReadText(begin, end - begin);
             PrintText(begin, text);
-        } else if (check_command(subcommands, "from", 3)) {
+        } else if (check_command(subcommands, "from", 2)) {
             auto begin = ParseAddress(subcommands.at(1));
             // If to is not specified then disassemble the rest
             // of the file.
