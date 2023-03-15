@@ -42,11 +42,15 @@ public:
     /// process, depending on how complicated is the location expression.
     std::optional<expr::Location> GetVariableLocation(Native& native, std::string_view name) const;
 
+
     /// Returns latest line that corresponds to given address if 
     /// debugging information is available, otherwise returns nullopt.
     std::optional<size_t> AddrToLine(size_t addr) const;
 
     std::optional<size_t> LineToAddr(size_t addr) const;
+
+    /// Return names of variables that are currently in scope.
+    std::set<std::string> GetScopedVariables(uint64_t address) const;
 
     /// Returns lines from the source file. This function does
     /// not throw if out of bounds, instead it stops.
@@ -63,6 +67,7 @@ public:
     /// like skipping parts of functions etc.
     DebugEvent StepIn(Native& native) const;
 private:
+    std::map<std::string, const DIE*> GetActiveVariables(uint64_t address) const;
     std::optional<Type> ReconstructTypeInformation(size_t id) const;
 
     template<typename T>

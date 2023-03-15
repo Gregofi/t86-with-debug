@@ -843,6 +843,9 @@ int main() {
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
     ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
 
+    auto vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a"));
+
     native->PerformSingleStep();
     loc = source.GetVariableLocation(*native, "a");
     ASSERT_TRUE(loc);
@@ -860,6 +863,8 @@ int main() {
     loc = source.GetVariableLocation(*native, "b");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
+    vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a", "b"));
 
     native->PerformSingleStep();
     loc = source.GetVariableLocation(*native, "a");
@@ -885,6 +890,9 @@ int main() {
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
 
     ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
+    vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a"));
+
 }
 
 TEST_F(NativeSourceTest, SourceStepIn) {

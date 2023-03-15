@@ -165,35 +165,12 @@ std::optional<std::pair<uint64_t, uint64_t>> Source::GetFunctionAddrByName(std::
 
 const DIE* Source::GetVariableDie(uint64_t address, std::string_view name,
                                   const DIE& die) const {
-    if (die.get_tag() == DIE::TAG::variable) {
-        auto name_attr = FindDieAttribute<ATTR_name>(die);
-        if (name_attr->n == name) {
-            return &die;
-        } else {
-            return nullptr;
-        }
+    auto vars = GetActiveVariables(address);
+    std::string n = std::string{name};
+    if (vars.contains(n)) {
+        return vars.at(n);
     }
-
-    // Check that we are inside scope
-    if (die.get_tag() == DIE::TAG::scope ||
-        die.get_tag() == DIE::TAG::function) {
-        auto begin_addr = FindDieAttribute<ATTR_begin_addr>(die);
-        auto end_addr = FindDieAttribute<ATTR_end_addr>(die);
-        if (!begin_addr || !end_addr
-                || !(begin_addr->addr <= address && address < end_addr->addr)) {
-            return nullptr;
-        }
-    }
-    const DIE* variable = nullptr;
-    for (const auto& d: die) {
-        auto found_var = GetVariableDie(address, name, d);
-        // Overwrite old variable with newer, because newer is more
-        // nested, ie. it overshadows the old one.
-        if (found_var != nullptr) {
-            variable = found_var;
-        }
-    }
-    return variable;
+    return nullptr;
 }
 
 std::optional<expr::Location> Source::GetVariableLocation(Native& native,
@@ -323,4 +300,42 @@ DebugEvent Source::StepIn(Native& native) const {
         e = native.DoRawSingleStep();
     }
     return e;
+}
+
+void FindVariables(uint64_t address, const DIE& die, std::map<std::string, const DIE*>& result) {
+    if (die.get_tag() == DIE::TAG::variable) {
+        auto name = FindDieAttribute<ATTR_name>(die);
+        if (name) {
+            result.insert_or_assign(name->n, &die);
+            return;
+        }
+    }
+    if (die.get_tag() == DIE::TAG::scope ||
+        die.get_tag() == DIE::TAG::function) {
+        auto begin_addr = FindDieAttribute<ATTR_begin_addr>(die);
+        auto end_addr = FindDieAttribute<ATTR_end_addr>(die);
+        if (!begin_addr || !end_addr
+                || !(begin_addr->addr <= address && address < end_addr->addr)) {
+            return;
+        }
+    }
+    for (const auto& d: die) {
+        FindVariables(address, d, result);
+    }
+}
+
+std::map<std::string, const DIE*> Source::GetActiveVariables(uint64_t address) const {
+    std::map<std::string, const DIE*> result;
+    if (top_die) {
+        FindVariables(address, *top_die, result); 
+    }
+    return result;
+}
+
+std::set<std::string> Source::GetScopedVariables(uint64_t address) const {
+    std::set<std::string> result;
+    auto vars = GetActiveVariables(address);
+    std::ranges::transform(vars, std::inserter(result, result.end()),
+            [](auto&& p) { return p.first; });
+    return result;
 }
