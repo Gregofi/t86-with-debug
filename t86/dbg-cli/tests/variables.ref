@@ -3,17 +3,19 @@ Error: Variable 'a' is not in scope or missing debug info
 Breakpoint set on line 2 (addr 3):     *x = *y;
 Breakpoint set on line 10 (addr 12):     print(a);
 Process stopped, reason: Software breakpoint hit at line 2
+function swap at 2-7:
       0:void swap(int* x, int* y) {
       1:    int tmp = *x;
-->    2:    *x = *y;
+@->   2:    *x = *y;
       3:    *y = tmp;
       4:}
 Error: Variable 'x' is not in scope or missing debug info
 (R0; int) tmp = 3
 Process stopped, reason: Software breakpoint hit at line 10
+function main at 7-18:
       8:    int b = 6;
       9:    swap(&a, &b);
-->   10:    print(a);
+@->  10:    print(a);
      11:    print(b);
      12:}
 ([1021]; int) a = 6
