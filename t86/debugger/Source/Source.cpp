@@ -114,9 +114,11 @@ const DIE* FindDIEById(const DIE& die, size_t id) {
 }
 
 std::optional<std::string> Source::GetFunctionNameByAddress(uint64_t address) const {
-    auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
+    if (!top_die) {
+        return {};
+    }
     // NOTE: we assume that nested functions aren't possible
-    for (const auto& die: top_die) {
+    for (const auto& die: *top_die) {
         if (die.get_tag() == DIE::TAG::function) {
             log_info("Found function DIE");
             auto begin_addr = FindDieAttribute<ATTR_begin_addr>(die);
@@ -135,7 +137,10 @@ std::optional<std::string> Source::GetFunctionNameByAddress(uint64_t address) co
 }
 
 std::optional<std::pair<uint64_t, uint64_t>> Source::GetFunctionAddrByName(std::string_view name) const {
-    auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
+    if (!top_die) {
+        return {};
+    }
+    const auto& top_die = *this->top_die;
     // NOTE: we assume that nested functions aren't possible
     for (const auto& die: top_die) {
         if (die.get_tag() == DIE::TAG::function) {
@@ -193,8 +198,10 @@ const DIE* Source::GetVariableDie(uint64_t address, std::string_view name,
 
 std::optional<expr::Location> Source::GetVariableLocation(Native& native,
                                                           std::string_view name) const {
-    auto top_die = UnwrapOptional(this->top_die, "No debugging information provided");
-    auto var = GetVariableDie(native.GetIP(), name, top_die);
+    if (!top_die) {
+        return {};
+    }
+    auto var = GetVariableDie(native.GetIP(), name, *top_die);
     if (var == nullptr) {
         return {};
     }
@@ -290,8 +297,10 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
 
 std::optional<Type> Source::GetVariableTypeInformation(Native& native,
                                                        std::string_view name) const {
-    auto top_die = UnwrapOptional(this->top_die, "No debugging information provided!");
-    auto var = GetVariableDie(native.GetIP(), name, top_die);
+    if (!top_die) {
+        return {};
+    }
+    auto var = GetVariableDie(native.GetIP(), name, *top_die);
     if (var == nullptr) {
         return {};
     }
