@@ -316,6 +316,10 @@ public:
         return watchpoints;
     }
 
+    const std::map<uint64_t, SoftwareBreakpoint>& GetBreakpoints() {
+        return software_breakpoints;
+    }
+
     void Terminate() {
         process->Terminate();
     }

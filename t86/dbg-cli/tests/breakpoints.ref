@@ -19,9 +19,9 @@ commands:
 - attach <port> = Attach to an already running VM, has no subcommands.
 Use the `run` or `attach` command to run a process first.
 Started process 'tests/sources/swap.t86'
-Breakpoint set on line 2: 'MOV R0, [R2]'
+Breakpoint set on address 2: 'MOV R0, [R2]'
 Breakpoint set on line 7 (addr 7):     int a = 3;
-Breakpoint set on line 10: 'LEA R3, [SP + -3]'
+Breakpoint set on address 10: 'LEA R3, [SP + -3]'
 Process stopped, reason: Software breakpoint hit at line 7
       5:
       6:int main() {
@@ -31,7 +31,7 @@ Process stopped, reason: Software breakpoint hit at line 7
 Process stopped, reason: Software breakpoint hit at address 10
       8:  MOV [SP + -3], 6
       9:  LEA R2, [SP + -2]
-->   10:  LEA R3, [SP + -3]
+@->  10:  LEA R3, [SP + -3]
      11:  CALL 2
      12:  MOV R0, [SP + -2]
 Process stopped, reason: Software breakpoint hit at line 1
@@ -39,6 +39,12 @@ Process stopped, reason: Software breakpoint hit at line 1
 ->    1:    int tmp = *x;
       2:    *x = *y;
       3:    *y = tmp;
+Breakpoint set on address 1: 'HALT'
 6
 3
+Process stopped, reason: Software breakpoint hit at address 1
+      0:  CALL 7
+@->   1:  HALT
+@     2:  MOV R0, [R2]
+      3:  MOV R1, [R3]
 Process stopped, reason: The program finished execution
