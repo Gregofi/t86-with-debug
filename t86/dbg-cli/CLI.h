@@ -414,7 +414,7 @@ public:
             }
             auto addr = source.SetSourceSoftwareBreakpoint(process, *line);
             auto source_line = source.GetLines(*line, 1);
-            fmt::print("Breakpoint removed from line {} (addr {})", *line, addr);
+            fmt::print("Breakpoint removed from line {} (addr {})\n", *line, addr);
             if (source_line.size() > 0) {
                 fmt::print(": {}\n", source_line[0]);
             } else {
@@ -423,15 +423,15 @@ public:
         } else if (check_command(subcommands, "idisable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.DisableSoftwareBreakpoint(address);
-            fmt::print("Breakpoint disabled at address {}", address);
+            fmt::print("Breakpoint disabled at address {}\n", address);
         } else if (check_command(subcommands, "ienable", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.EnableSoftwareBreakpoint(address);
-            fmt::print("Breakpoint enabled at address {}", address);
+            fmt::print("Breakpoint enabled at address {}\n", address);
         } else if (check_command(subcommands, "iremove", 2)) {
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
-            fmt::print("Breakpoint removed from address {}", address);
+            fmt::print("Breakpoint removed from address {}\n", address);
         } else if (check_command(subcommands, "help", 1)) {
             fmt::print("{}", BP_USAGE); 
         } else {
