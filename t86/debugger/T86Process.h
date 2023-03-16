@@ -42,164 +42,40 @@ public:
     /// Caller is responsible that the text size of the program is
     /// respected.
     void WriteText(uint64_t address,
-                   const std::vector<std::string> &data) override {
-        for (size_t i = 0; i < data.size(); ++i) {
-            std::istringstream iss(data[i]);
-            Parser p(iss);
-            try {
-                p.Instruction();
-                p.CheckEnd();
-            } catch (const ParserError& err) {
-                throw DebuggerError(fmt::format("Error in parsing instruction: {}", err.what()));
-            }
-            process->Send(fmt::format("POKETEXT {} {}", address + i, data[i]));
-            CheckResponse("POKETEXT error");
-        }
-    }
+                   const std::vector<std::string> &data) override;
 
     /// Returns range of instructions of length 'amount' starting at 'address'.
     /// Caller is responsible that the size of the program is respected.
     /// Use the TextSize for getting the size of text.
-    std::vector<std::string> ReadText(uint64_t address, size_t amount) override {
-        process->Send(fmt::format("PEEKTEXT {} {}", address, amount));
-        auto text = process->Receive();
-        if (!text) {
-            throw DebuggerError("PEEKTEXT err");
-        }
+    std::vector<std::string> ReadText(uint64_t address, size_t amount);
 
-        return utils::split(*text, '\n');
-    }
+    void WriteMemory(uint64_t address, const std::vector<int64_t>& data) override;
 
-    void WriteMemory(uint64_t address, const std::vector<int64_t>& data) override {
-        if (address + data.size() > data_size) {
-            throw DebuggerError(fmt::format("Writing memory at {}-{}, but size is {}",
-                        address, address + data.size() - 1, data_size));
-        }
-        for (size_t i = 0; i < data.size(); ++i) {
-            process->Send(fmt::format("POKEDATA {} {}", address + i, data[i]));
-            CheckResponse("POKEDATA error");
-        }
-    }
+    std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) override;
 
-    std::vector<int64_t> ReadMemory(uint64_t address, size_t amount) override {
-        if (address + amount > data_size) {
-            throw DebuggerError(fmt::format("Reading memory at {}-{}, but size is {}",
-                        address, address + amount - 1, data_size));
-        }
-        process->Send(fmt::format("PEEKDATA {} {}", address, amount));
-        auto data = process->Receive();
-        if (!data) {
-            throw DebuggerError("PEEKDATA err");
-        }
+    StopReason GetReason() override;
 
-        auto splitted = utils::split(*data, '\n');
-        std::vector<int64_t> result;
-        std::transform(splitted.begin(), splitted.end(), std::back_inserter(result),
-                [](auto&& s) { return std::stoll(s); });
-        return result;
-    }
+    void Singlestep() override;
 
-    StopReason GetReason() override {
-        process->Send("REASON");
-        auto reason_opt = process->Receive();
-        if (!reason_opt) {
-            throw DebuggerError("REASON error");
-        }
-        auto &r = *reason_opt;
-        if (r == "START") {
-            return StopReason::ExecutionBegin;
-        } else if (r == "SW_BKPT") {
-            return StopReason::SoftwareBreakpointHit;
-        } else if (r == "HW_BKPT") {
-            return StopReason::HardwareBreak;
-        } else if (r == "SINGLESTEP") {
-            return StopReason::Singlestep;
-        } else if (r == "HALT") {
-            return StopReason::ExecutionEnd;
-        } else {
-            UNREACHABLE;
-        }
-    }
+    std::map<std::string, int64_t> FetchRegisters() override;
 
-    void Singlestep() override {
-        process->Send("SINGLESTEP");
-        CheckResponse("SINGLESTEP error");
-    }
+    void SetRegisters(const std::map<std::string, int64_t>& regs) override;
 
-    std::map<std::string, int64_t> FetchRegisters() override {
-        process->Send("PEEKREGS");
-        return FetchRegistersOfType<int64_t>();
-    }
+    std::map<std::string, double> FetchFloatRegisters() override;
 
-    void SetRegisters(const std::map<std::string, int64_t>& regs) override {
-        for (const auto& [name, val]: regs) {
-            if (!IsValidRegisterName(name)) {
-                throw DebuggerError(fmt::format("Register name '{}' is not valid!", name));
-            }
-            log_info("Setting register {} to value {}", name, val);
-            process->Send(fmt::format("POKEREGS {} {}", name, val));
-            CheckResponse("POKEREGS error");
-        }
-    }
+    void SetFloatRegisters(const std::map<std::string, double>& regs) override;
 
-    std::map<std::string, double> FetchFloatRegisters() override {
-        process->Send("PEEKFLOATREGS");
-        return FetchRegistersOfType<double>();
-    }
+    std::map<std::string, uint64_t> FetchDebugRegisters() override;
 
-    void SetFloatRegisters(const std::map<std::string, double>& regs) override {
-        for (const auto& [name, val]: regs) {
-            if (!IsValidFloatRegisterName(name)) {
-                throw DebuggerError(fmt::format("Register name '{}' is not valid!", name));
-            }
-            log_info("Setting register {} to value {}", name, val);
-            process->Send(fmt::format("POKEFLOATREGS {} {}", name, val));
-            CheckResponse("POKEFLOATREGS error");
-        }
-    }
+    void SetDebugRegisters(const std::map<std::string, uint64_t>& regs) override;
 
-    std::map<std::string, uint64_t> FetchDebugRegisters() override {
-        process->Send("PEEKDEBUGREGS");
-        return FetchRegistersOfType<uint64_t>();
-    }
+    size_t TextSize() override;
 
-    virtual void SetDebugRegisters(const std::map<std::string, uint64_t>& regs) override {
-        for (const auto& [name, val]: regs) {
-            if (!IsValidDebugRegisterName(name)) {
-                throw DebuggerError(fmt::format("Register name '{}' is not valid!", name));
-            }
-            log_debug("sending: `POKEDEBUGREGS {} {}`", name, val);
-            process->Send(fmt::format("POKEDEBUGREGS {} {}", name, val));
-            CheckResponse("POKEDEBUGREGS error");
-        }
-    }
+    void ResumeExecution() override;
 
-    size_t TextSize() override {
-        process->Send("TEXTSIZE");
-        auto response = process->Receive();
-        if (!response) {
-            throw DebuggerError("TEXTSIZE error");
-        }
-        size_t result = std::stoull(response->c_str() + strlen("TEXTSIZE:"));
-        return result;
-    }
+    void Wait() override;
 
-    void ResumeExecution() override {
-        process->Send("CONTINUE");
-        CheckResponse("CONTINUE fail");
-    }
-    
-    void Wait() override {
-        auto message = process->Receive();
-        if (!message || message != "STOPPED") {
-            throw DebuggerError(fmt::format("Expected STOPPED message in Wait()"));
-        }
-    }
-
-    void Terminate() override {
-        process->Send("TERMINATE");
-        CheckResponse("TERMINATE fail");
-    }
+    void Terminate() override;
 private:
     template<typename T>
     std::map<std::string, T> FetchRegistersOfType() {
@@ -214,60 +90,17 @@ private:
         return result;
     }
 
-    int64_t GetRegister(std::string_view name) {
-        process->Send(fmt::format("PEEKREGS {}", name));
-        auto response = process->Receive();
-        if (!response) {
-            throw DebuggerError("PEEKREGS error");
-        }
-        auto offset = response->find("VALUE:") + strlen("VALUE:");
-        auto str_val = response->substr(offset);
-        auto value = std::stoll(response->substr(offset));
-        return value;
-    }
+    int64_t GetRegister(std::string_view name);
 
-    bool isGPRegister(std::string_view name) {
-        if (name.size() >= 2 
-                && name[0] == 'R') {
-            auto idx = utils::svtonum<size_t>(name.substr(1));
-            return idx && 0 <= *idx && *idx < gen_purpose_regs_count;
-        }
-        return false;
-    }
+    bool isGPRegister(std::string_view name) const;
 
-    bool IsValidRegisterName(std::string_view name) {
-        return name == "IP"
-               || name == "BP"
-               || name == "SP"
-               || name == "FLAGS"
-               || isGPRegister(name);
-    }
+    bool IsValidRegisterName(std::string_view name) const;
 
-    bool IsValidFloatRegisterName(std::string_view name) {
-        if (name.size() >= 2
-                && name[0] == 'F') {
-            auto idx = utils::svtonum<size_t>(name.substr(1));
-            return idx && 0 <= *idx && *idx < float_regs_count;
-        }
-        return false;
-    }
+    bool IsValidFloatRegisterName(std::string_view name) const;
 
-    bool IsValidDebugRegisterName(std::string_view name) {
-        if (name.size() >= 2 
-                && name[0] == 'D') {
-            auto idx = utils::svtonum<size_t>(name.substr(1));
-            return idx && 0 <= *idx && *idx < debug_register_cnt;
-        }
-        return false;
-    }
+    bool IsValidDebugRegisterName(std::string_view name) const;
 
-    void CheckResponse(std::string_view error_message) {
-        auto message = process->Receive();
-        if (!message || message != "OK") {
-            throw DebuggerError(fmt::format(
-                "Error communicating with T86 VM: {}", error_message));
-        }
-    }
+    void CheckResponse(std::string_view error_message);
 
     std::unique_ptr<Messenger> process;
     const size_t data_size{1024};
