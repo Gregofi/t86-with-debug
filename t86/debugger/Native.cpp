@@ -167,6 +167,32 @@ void Native::SetRegister(const std::string& name, int64_t value) {
     SetRegisters(regs);
 }
 
+void Native::SetAllBreakpoints(std::map<uint64_t, SoftwareBreakpoint> bkpts) {
+    // Unset existing breakpoints
+    for (auto&& bp: software_breakpoints) {
+        DisableSoftwareBreakpoint(bp.first);
+    }
+
+    for (auto&& breakpoint: bkpts) {
+        auto& [address, bp] = breakpoint;
+        if (bp.enabled) {
+            SetBreakpoint(address);
+        } else {
+            software_breakpoints[address] = SoftwareBreakpoint{.enabled = false};
+        }
+    }
+}
+
+void Native::SetAllWatchpoints(std::map<uint64_t, Watchpoint> watchpoints) {
+    for (auto&& wp: this->watchpoints) {
+        RemoveWatchpoint(wp.first);
+    }
+
+    for (auto&& wp: watchpoints) {
+        SetWatchpointWrite(wp.first);
+    }
+}
+
 uint64_t Native::GetIP() {
     // TODO: Not architecture independent (take IP name from Arch singleton)
     return GetRegister("IP"); 

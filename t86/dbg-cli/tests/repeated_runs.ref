@@ -1,0 +1,44 @@
+Started process 'tests/sources/swap.t86'
+Started process 'tests/sources/swap.t86'
+Breakpoint set on address 10: 'LEA R3, [SP + -3]'
+Process stopped, reason: Watchpoint triggered at memory address 1020
+function main at 7-18; active variables: a, b
+      7:    int a = 3;
+      8:    int b = 6;
+ ->   9:    swap(&a, &b);
+     10:    print(a);
+     11:    print(b);
+Started process 'tests/sources/swap.t86'
+Process stopped, reason: Watchpoint triggered at memory address 1020
+function main at 7-18; active variables: a, b
+      7:    int a = 3;
+      8:    int b = 6;
+ ->   9:    swap(&a, &b);
+     10:    print(a);
+     11:    print(b);
+Process stopped, reason: Software breakpoint hit at address 10
+function main at 7-18; active variables: a, b
+      8:  MOV [SP + -3], 6
+      9:  LEA R2, [SP + -2]
+@->  10:  LEA R3, [SP + -3]
+     11:  CALL 2
+     12:  MOV R0, [SP + -2]
+Breakpoint disabled at address 10
+Started process 'tests/sources/swap.t86'
+Process stopped, reason: Watchpoint triggered at memory address 1020
+function main at 7-18; active variables: a, b
+      7:    int a = 3;
+      8:    int b = 6;
+ ->   9:    swap(&a, &b);
+     10:    print(a);
+     11:    print(b);
+Process stopped, reason: Watchpoint triggered at memory address 1020
+function swap at 2-7; active variables: tmp, x, y
+      2:    *x = *y;
+      3:    *y = tmp;
+ ->   4:}
+      5:
+      6:int main() {
+6
+3
+Process stopped, reason: The program finished execution
