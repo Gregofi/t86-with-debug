@@ -188,6 +188,14 @@ int main() {
     EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 3), 7);
     EXPECT_EQ(source.SetSourceSoftwareBreakpoint(*native, 4), 11);
     ASSERT_THROW({source.SetSourceSoftwareBreakpoint(*native, 5);}, DebuggerError);
+    EXPECT_EQ(source.GetAddressFromString("0"), 2);
+    EXPECT_EQ(source.GetAddressFromString("1"), 5);
+    EXPECT_EQ(source.GetAddressFromString("2"), 6);
+    EXPECT_EQ(source.GetAddressFromString("3"), 7);
+    EXPECT_EQ(source.GetAddressFromString("4"), 11);
+    ASSERT_THROW({source.GetAddressFromString("5");}, DebuggerError);
+    // the function is called main but we have no debug info about it.
+    ASSERT_THROW({source.GetAddressFromString("main");}, DebuggerError);
 
     native->ContinueExecution();
     ASSERT_TRUE(std::holds_alternative<BreakpointHit>(native->WaitForDebugEvent()));
@@ -551,6 +559,8 @@ int main(void) {
 )";
     Run(elf);
     native->WaitForDebugEvent();
+    EXPECT_EQ(source.GetAddressFromString("main"), 2);
+
     for (uint64_t i = 2; i < 12; ++i) {
         ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
         EXPECT_EQ(*source.GetFunctionNameByAddress(i), "main") << "bad name: " << i;
@@ -680,6 +690,8 @@ int main() {
 )";
     Run(elf);
     native->WaitForDebugEvent();
+    EXPECT_EQ(source.GetAddressFromString("swap"), 2);
+    EXPECT_EQ(source.GetAddressFromString("main"), 7);
 
     for (uint64_t i = 2; i < 7; ++i) {
         ASSERT_TRUE(source.GetFunctionNameByAddress(i)) << i << " is false";
