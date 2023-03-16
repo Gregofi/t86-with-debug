@@ -43,8 +43,8 @@ Example: `breakpoint set-addr 1` sets breakpoint at address 1.
 For help, use the `<command> help` syntax, for example
 `breakpoint help`, or `disassemble help`.
 
-Every command has its subcommands, except continue,
-which should be used alone.
+Every command has its subcommands unless explicitly specified.
+Some of the commands work with or without subcommands.
 
 commands:
 - continue = Continues execution, has no subcommands.
@@ -56,6 +56,7 @@ commands:
 - register = Read and write to registers.
 - run = Run the program, has no subcommands.
 - attach <port> = Attach to an already running VM, has no subcommands.
+- frame = Print information about current function, has no subcommads.
 )";
 // Do not append anything other than commands here because
 // the Cli class will add its own command after this string
@@ -770,6 +771,16 @@ public:
         }
     }
 
+    void HandleFrame(std::string_view command) {
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        if (!is_running) {
+            Error("Process finished executing, no frame information available.");
+        }
+        PrintFunctionInfo(process.GetIP());
+    }
+
     void HandleContinue(std::string_view command) {
         if (!process.Active()) {
             Error("No active process.");
@@ -837,6 +848,8 @@ public:
             HandleWatchpoint(command);
         } else if (utils::is_prefix_of(main_command, "step")) {
             HandleStep(command);
+        } else if (utils::is_prefix_of(main_command, "frame")) {
+            HandleFrame(command);
         } else {
             fmt::print("{}", USAGE);
         }
