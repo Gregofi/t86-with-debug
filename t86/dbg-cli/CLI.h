@@ -489,13 +489,13 @@ public:
                 [&](auto&& m) {
             std::string type = "unknown type";
             std::string value = "?";
-            if (m.second) {
-                type = fmt::format("{}", fmt::styled(TypeToString(*m.second),
+            if (m.type) {
+                type = fmt::format("{}", fmt::styled(TypeToString(*m.type),
                         fmt::fg(fmt::color::dark_blue)));
-                auto true_location = OffsetLocation(loc, m.first);
-                value = TypedVarToStringT86(true_location, *m.second);
+                auto true_location = OffsetLocation(loc, m.offset);
+                value = TypedVarToStringT86(true_location, *m.type);
             }
-            return fmt::format("{} = {}", type, value);
+            return fmt::format("{}: {} = {}", m.name, type, value);
         });
         return fmt::format("{{{}}}", utils::join(res.begin(), res.end(), ", "));
     }
@@ -924,6 +924,61 @@ public:
         }
     }
 
+    void HandleRun(std::string_view command) {
+        auto subcommands = utils::split_v(command);
+
+        if (!fname) {
+            fmt::print("No file name was provided, provide the file name as argument at startup");
+            return;
+        }
+        auto [source, program] = ParseProgram(std::string{*fname});
+
+        size_t reg_count = 8;
+        auto v = ParseOptionalCommand<size_t>(subcommands, "--reg-count=");
+        if (v) {
+            reg_count = *v;
+        }
+        size_t float_reg_count = 4;
+        v = ParseOptionalCommand<size_t>(subcommands, "--float-reg-count=");
+        if (v) {
+            float_reg_count = *v;
+        }
+        size_t memory_size = 1024;
+        v = ParseOptionalCommand<size_t>(subcommands, "--data-size=");
+        if (v) {
+            memory_size = *v;
+        }
+
+        auto m1 = std::make_unique<ThreadMessengerOwner>();
+        auto m2 = std::make_unique<ThreadMessenger>(m1->GetOutQueue(), m1->GetInQueue());
+
+        t86vm = std::thread([](std::unique_ptr<ThreadMessenger> messenger,
+                           tiny::t86::Program program, size_t reg_cnt,
+                           double float_reg_cnt) {
+            tiny::t86::OS os(reg_cnt, float_reg_cnt);
+            os.SetDebuggerComms(std::move(messenger));
+            os.Run(std::move(program));
+        }, std::move(m2), std::move(program), reg_count, float_reg_count);
+        
+        auto t86dbg = std::make_unique<T86Process>(std::move(m1), reg_count,
+                                                   float_reg_count);
+
+        // This is valid even if process is not yet running.
+        auto bkpts = process.GetBreakpoints();
+        auto wtchpts = process.GetWatchpoints();
+
+        // Set those guys at the end in case something fails mid-way.
+        process = Native(std::move(t86dbg));
+        this->source = std::move(source);
+
+        is_running = true;
+        process.WaitForDebugEvent();
+        process.SetAllBreakpoints(std::move(bkpts));
+        process.SetAllWatchpoints(std::move(wtchpts));
+        fmt::print("Started process '{}'\n", *fname);
+    }
+
+
     // Cleanly exits the underlying VM if running.
     void ExitProcess() {
         if (process.Active()) {
@@ -1026,60 +1081,6 @@ private:
             }
         }
         return {std::move(source), std::move(program)};
-    }
-
-    void HandleRun(std::string_view command) {
-        auto subcommands = utils::split_v(command);
-
-        if (!fname) {
-            fmt::print("No file name was provided, provide the file name as argument at startup");
-            return;
-        }
-        auto [source, program] = ParseProgram(std::string{*fname});
-
-        size_t reg_count = 8;
-        auto v = ParseOptionalCommand<size_t>(subcommands, "--reg-count=");
-        if (v) {
-            reg_count = *v;
-        }
-        size_t float_reg_count = 4;
-        v = ParseOptionalCommand<size_t>(subcommands, "--float-reg-count=");
-        if (v) {
-            float_reg_count = *v;
-        }
-        size_t memory_size = 1024;
-        v = ParseOptionalCommand<size_t>(subcommands, "--data-size=");
-        if (v) {
-            memory_size = *v;
-        }
-
-        auto m1 = std::make_unique<ThreadMessengerOwner>();
-        auto m2 = std::make_unique<ThreadMessenger>(m1->GetOutQueue(), m1->GetInQueue());
-
-        t86vm = std::thread([](std::unique_ptr<ThreadMessenger> messenger,
-                           tiny::t86::Program program, size_t reg_cnt,
-                           double float_reg_cnt) {
-            tiny::t86::OS os(reg_cnt, float_reg_cnt);
-            os.SetDebuggerComms(std::move(messenger));
-            os.Run(std::move(program));
-        }, std::move(m2), std::move(program), reg_count, float_reg_count);
-        
-        auto t86dbg = std::make_unique<T86Process>(std::move(m1), reg_count,
-                                                   float_reg_count);
-
-        // This is valid even if process is not yet running.
-        auto bkpts = process.GetBreakpoints();
-        auto wtchpts = process.GetWatchpoints();
-
-        // Set those guys at the end in case something fails mid-way.
-        process = Native(std::move(t86dbg));
-        this->source = std::move(source);
-
-        is_running = true;
-        process.WaitForDebugEvent();
-        process.SetAllBreakpoints(std::move(bkpts));
-        process.SetAllWatchpoints(std::move(wtchpts));
-        fmt::print("Started process '{}'\n", *fname);
     }
 
     std::optional<std::string> fname;

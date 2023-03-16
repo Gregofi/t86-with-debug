@@ -1,0 +1,126 @@
+.text
+0       CALL 2
+1       HALT
+# MAIN:
+2       PUSH    BP
+3       MOV     BP, SP
+4       SUB     SP, 8
+5       MOV     [BP + -4], 5
+6       LEA     R1, [BP + -6]
+7       MOV     [BP + -3], R1
+8       MOV     R1, [BP + -3]
+90      MOV     [R1], 10
+10      MOV     R1, [BP + -3]
+11      LEA     R2, [BP + -8]
+12      MOV     [R1 + 1], R2
+13      MOV     R1, [BP + -3]
+14      MOV     R1, [R1 + 1]
+15      MOV     [R1], 15
+16      MOV     R1, [BP + -3]
+17      MOV     R1, [R1 + 1]
+18      MOV     [R1 + 1], 0
+19      LEA     R1, [BP + -4]
+20      MOV     [BP + -1], R1
+21      JMP     28
+# .L3:
+22      MOV     R1, [BP + -1]
+23      MOV     R1, [R1]
+24      PUTNUM  R1
+25      MOV     R1, [BP + -1]
+26      MOV     R1, [R1 + 1]
+27      MOV     [BP + -1], R1
+# .L2:
+28      MOV     R0, [BP + -1]
+29      CMP     R0, 0
+30      JNE     22
+31      MOV     R0, 0
+32      ADD SP, 8
+33      POP BP
+34      RET
+
+.debug_line
+8: 2
+9: 5
+10: 5
+11: 5
+12: 5
+13: 6
+14: 8
+15: 10
+16: 13
+17: 16
+18: 19
+19: 19
+20: 28
+21: 22
+22: 25
+24: 32
+
+.debug_info
+DIE_compilation_unit: {
+DIE_structured_type: {
+    ATTR_size: 2,
+    ATTR_id: 1,
+    ATTR_name: "struct list",
+    ATTR_members: {
+        0: {2: v},
+        1: {0: next},
+    },
+},
+DIE_pointer_type: {
+    ATTR_size: 1,
+    ATTR_type: 1,
+    ATTR_id: 2,
+},
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 35,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 35,
+        DIE_variable: {
+            ATTR_name: l1,
+            ATTR_type: 1,
+            ATTR_location: `BASE_REG_OFFSET -4`,
+        },
+        DIE_variable: {
+            ATTR_name: it,
+            ATTR_type: 2,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        }
+    },
+}
+}
+
+.debug_source
+#include <stdlib.h>
+#include <stdio.h>
+
+struct list {
+    int v;
+    struct list* next;
+};
+
+int main() {
+    struct list l1;
+    struct list l2;
+    struct list l3;
+    l1.v = 5;
+    l1.next = &l2;
+    l1.next->v = 10;
+    l1.next->next = &l3;
+    l1.next->next->v = 15;
+    l1.next->next->next = NULL;
+
+    struct list* it = &l1;
+    while (it != NULL) {
+        printf("%d\n", it->v);
+        it = it->next;
+    }
+}

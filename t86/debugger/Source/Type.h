@@ -51,7 +51,6 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
     UNREACHABLE;
 }
 
-
 struct PointerType {
     // ptr is needed here since the types are recursive.
     // Can be null if there is no info about the pointed type.
@@ -59,11 +58,18 @@ struct PointerType {
     uint64_t size;
 };
 
+struct StructuredMember;
+
 struct StructuredType {
     std::string name;
     uint64_t size;
-    /// Offset from base of structured type - The type at that offset
-    std::vector<std::pair<int64_t, std::optional<Type>>> members;
+    std::vector<StructuredMember> members;
+};
+
+struct StructuredMember {
+    std::string name;
+    std::optional<Type> type;
+    int64_t offset;
 };
 
 inline std::string TypeToString(const Type& type) {
