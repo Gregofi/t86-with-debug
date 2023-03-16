@@ -825,9 +825,7 @@ public:
         }
         if (utils::is_prefix_of(main_command, "run")) {
             ExitProcess();
-            Run(command);
-            is_running = true;
-            process.WaitForDebugEvent();
+            HandleRun(command);
             return;
         } else if (utils::is_prefix_of(main_command, "attach")) {
             ExitProcess();
@@ -975,7 +973,7 @@ private:
         return {std::move(source), std::move(program)};
     }
 
-    void Run(std::string_view command) {
+    void HandleRun(std::string_view command) {
         auto subcommands = utils::split_v(command);
 
         if (!fname) {
@@ -1013,9 +1011,19 @@ private:
         
         auto t86dbg = std::make_unique<T86Process>(std::move(m1), reg_count,
                                                    float_reg_count);
+
+        // This is valid even if process is not yet running.
+        auto bkpts = process.GetBreakpoints();
+        auto wtchpts = process.GetWatchpoints();
+
         // Set those guys at the end in case something fails mid-way.
         process = Native(std::move(t86dbg));
         this->source = std::move(source);
+
+        is_running = true;
+        process.WaitForDebugEvent();
+        process.SetAllBreakpoints(std::move(bkpts));
+        process.SetAllWatchpoints(std::move(wtchpts));
         fmt::print("Started process '{}'\n", *fname);
     }
 

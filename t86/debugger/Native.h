@@ -31,6 +31,12 @@ public:
     /// new Native object that represents that process.
     static std::unique_ptr<Process> Initialize(int port);
 
+    // Removes all breakpoints and replaces them with bkpts.
+    void SetAllBreakpoints(std::map<uint64_t, SoftwareBreakpoint> bkpts);
+
+    // Removes all watchpoints and replaces them with provided watchpoints.
+    void SetAllWatchpoints(std::map<uint64_t, Watchpoint> watchpoints);
+
     /// Creates new breakpoint at given address and enables it.
     void SetBreakpoint(uint64_t address);
     /// Disables and removes breakpoint from address.
@@ -93,8 +99,12 @@ public:
 
     void RemoveWatchpoint(uint64_t address);
 
+    /// Returns watchpoints or empty map if the instance
+    /// does not represent a running process.
     const std::map<uint64_t, Watchpoint>& GetWatchpoints();
 
+    /// Returns breakpoints or empty map if the instance
+    /// does not represent a running process.
     const std::map<uint64_t, SoftwareBreakpoint>& GetBreakpoints();
 
     void Terminate();
