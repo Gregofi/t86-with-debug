@@ -56,7 +56,7 @@ commands:
 - register = Read and write to registers.
 - run = Run the program, has no subcommands.
 - attach <port> = Attach to an already running VM, has no subcommands.
-- frame = Print information about current function, has no subcommads.
+- frame = Print information about current function and variables, has no subcommads.
 )";
 // Do not append anything other than commands here because
 // the Cli class will add its own command after this string
@@ -194,7 +194,9 @@ public:
     }
 
     /// Prints current function and currently active variables (if available).
-    void PrintFunctionInfo(uint64_t address) {
+    /// if var_detailed is set to true then the values of the variables are
+    /// printed as well.
+    void PrintFunctionInfo(uint64_t address, bool var_detailed = false) {
         auto fun_name = source.GetFunctionNameByAddress(address);
         if (!fun_name) {
             return;
@@ -206,17 +208,29 @@ public:
         auto [fun_begin, fun_end] = *fun_loc;
         auto vars = source.GetScopedVariables(address);
         std::string variables = "";
-        auto it = vars.begin();
-        if (it != vars.end()) {
-            variables += "; active variables: " + *it++;
+        if (!var_detailed) {
+            auto it = vars.begin();
+            if (it != vars.end()) {
+                variables += "; active variables: " + *it++;
+            }
+            while (it != vars.end()) {
+                variables += ", " + *it++;
+            }
         }
-        while (it != vars.end()) {
-            variables += ", " + *it++;
-        }
-
         fmt::print("function {} at {}-{}{}\n", fmt::styled(*fun_name,
                     fmt::emphasis::bold | fmt::fg(fmt::color::dark_green)),
                     fun_begin, fun_end, variables);
+        if (var_detailed) {
+            for (auto&& varname: vars) {
+                try {
+                    PrintVariableValue(varname);
+                } catch (const DebuggerError& e) {
+                    // If debug info is missing about some var we
+                    // will silently ignore it.
+                    log_info("frame: debug info missing: {}", e.what());
+                }
+            }
+        }
     }
 
     /// Dumps text around current IP
@@ -346,7 +360,9 @@ public:
     }
 
     void ReportDebugEvent(const DebugEvent& e) {
-        fmt::print("Process stopped, reason: {}\n", fmt::styled(DebugEventToString(e), fmt::emphasis::bold | fg(fmt::color::dark_red)));
+        fmt::print("Process stopped, reason: {}\n",
+                fmt::styled(DebugEventToString(e),
+                    fmt::emphasis::bold | fg(fmt::color::dark_red)));
     }
 
     /// Prints code or text at current location, depending on available info.
@@ -778,7 +794,7 @@ public:
         if (!is_running) {
             Error("Process finished executing, no frame information available.");
         }
-        PrintFunctionInfo(process.GetIP());
+        PrintFunctionInfo(process.GetIP(), true);
     }
 
     void HandleContinue(std::string_view command) {
