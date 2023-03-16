@@ -5,6 +5,9 @@
 #include <string_view>
 #include <cstdlib>
 #include <cassert>
+#include <fmt/color.h>
+#include <fmt/format.h>
+#include <fmt/core.h>
 
 #include "common/TCP.h"
 #include "common/helpers.h"
@@ -189,6 +192,7 @@ public:
         return result;
     }
 
+    /// Prints current function and currently active variables (if available).
     void PrintFunctionInfo(uint64_t address) {
         auto fun_name = source.GetFunctionNameByAddress(address);
         if (!fun_name) {
@@ -199,8 +203,19 @@ public:
             return;
         }
         auto [fun_begin, fun_end] = *fun_loc;
+        auto vars = source.GetScopedVariables(address);
+        std::string variables = "";
+        auto it = vars.begin();
+        if (it != vars.end()) {
+            variables += "; active variables: " + *it++;
+        }
+        while (it != vars.end()) {
+            variables += ", " + *it++;
+        }
 
-        fmt::print("function {} at {}-{}:\n", *fun_name, fun_begin, fun_end);
+        fmt::print("function {} at {}-{}{}\n", fmt::styled(*fun_name,
+                    fmt::emphasis::bold | fmt::fg(fmt::color::dark_green)),
+                    fun_begin, fun_end, variables);
     }
 
     /// Dumps text around current IP
@@ -329,6 +344,11 @@ public:
         }, e);
     }
 
+    void ReportDebugEvent(const DebugEvent& e) {
+        fmt::print("Process stopped, reason: {}\n", fmt::styled(DebugEventToString(e), fmt::emphasis::bold | fg(fmt::color::dark_red)));
+    }
+
+    /// Prints code or text at current location, depending on available info.
     void ReportBreak(const DebugEvent& e) {
         // The IP does not correspond to the HALT instruction,
         // it is one past it, rather not print anything.
@@ -402,7 +422,7 @@ public:
         }
     }
 
-    /// Fetches the value at provided location.
+    /// Fetches the value at provided location as bytes.
     uint64_t FetchRawValue(const expr::Location& loc) {
         return std::visit(utils::overloaded {
             [&](const expr::Register& reg) {
@@ -542,7 +562,7 @@ public:
         if (command == "") {
             auto e = source.StepIn(process);
             if (!std::holds_alternative<Singlestep>(e)) {
-                fmt::print("Process stopped, reason {}\n", DebugEventToString(e));
+                ReportDebugEvent(e);
             }
             if (std::holds_alternative<ExecutionEnd>(e)) {
                 is_running = false;
@@ -568,8 +588,7 @@ public:
         if (command == "") {
             auto e = process.PerformSingleStep();
             if (!std::holds_alternative<Singlestep>(e)) {
-                fmt::print("Process stopped, reason: {}\n",
-                           DebugEventToString(e));
+                ReportDebugEvent(e);
             }
             if (std::holds_alternative<ExecutionEnd>(e)) {
                 is_running = false;
@@ -763,7 +782,7 @@ public:
         if (std::holds_alternative<ExecutionEnd>(e)) {
             is_running = false;
         }
-        fmt::print("Process stopped, reason: {}\n", DebugEventToString(e));
+        ReportDebugEvent(e);
         ReportBreak(e);
     }
 

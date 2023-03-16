@@ -20,4 +20,4 @@ Error: Size of text is '15'
      12:  %8 = add nsw i32 %6, %7, !dbg !26
 @    13:  ret i32 %8, !dbg !27
  ->  14:}
-Process stopped, reason The program finished execution
+Process stopped, reason: The program finished execution
