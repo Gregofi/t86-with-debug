@@ -21,15 +21,40 @@ public:
         top_die = std::move(topmost_die);
     }
 
+    // Those four guys are currently unused but are left here
+    // if needed in the future.
     /// Sets software breakpoint at given line and returns the address
     /// of the breakpoint (the assembly address).
     uint64_t SetSourceSoftwareBreakpoint(Native& native, size_t line) const;
-
     /// Removes software breakpoint at given line and returns the address
     /// of where the breakpoint was (the assembly address).
     uint64_t UnsetSourceSoftwareBreakpoint(Native& native, size_t line) const;
     uint64_t EnableSourceSoftwareBreakpoint(Native& native, size_t line) const;
     uint64_t DisableSourceSoftwareBreakpoint(Native& native, size_t line) const;
+
+    /// Tries to parse the 's' as number, if it succeeds then
+    /// returns an address that corresponds to line represented by 's'.
+    /// If the parse fails then the 's' is interpreted as function name
+    /// and the beginning address of that function is returned.
+    /// Throws if the information cannot be retrieved.
+    uint64_t GetAddressFromString(std::string_view s) {
+        uint64_t address;
+        auto line = utils::svtonum<uint64_t>(s);
+        if (!line) {
+            auto function = GetFunctionAddrByName(s);
+            if (!function) {
+                throw DebuggerError(fmt::format("Expected line or function name, '{}' is neither.", s));
+            }
+            address = function->first;
+        } else {
+            auto address_opt = LineToAddr(*line);
+            if (!address_opt) {
+                throw DebuggerError(fmt::format("No debug info for line {}", *line));
+            }
+            address = *address_opt;
+        }
+        return address;
+    }
 
     /// Returns function that owns instruction at given address.
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
