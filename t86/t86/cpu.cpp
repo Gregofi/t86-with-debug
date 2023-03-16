@@ -102,14 +102,14 @@ namespace tiny::t86 {
 
     Cpu::Cpu(size_t registerCount)
         : Cpu(registerCount, Cpu::Config::instance().floatRegisterCnt(),
-              Cpu::Config::instance().aluCnt()) {}
+              Cpu::Config::instance().ramSize()) {}
 
     Cpu::Cpu(size_t registerCount, size_t floatRegisterCount)
         : Cpu(registerCount, floatRegisterCount,
-              Cpu::Config::instance().aluCnt()) {}
+              Cpu::Config::instance().ramSize()) {}
 
-    Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt)
-            : Cpu(registerCount, floatRegisterCount, aluCnt, aluCnt * 2, Config::instance().ramSize(), Config::instance().ramGatesCount()) {}
+    Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t ramSize)
+            : Cpu(registerCount, floatRegisterCount, Cpu::Config::instance().aluCnt(), 2 * Cpu::Config::instance().aluCnt(), ramSize, Config::instance().ramGatesCount()) {}
 
     Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt, std::size_t reservationStationEntriesCount,
         std::size_t ramSize, std::size_t ramGatesCnt)

@@ -94,7 +94,7 @@ namespace tiny::t86 {
 
         Cpu(size_t registerCount, size_t floatRegisterCount);
 
-        Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt);
+        Cpu(std::size_t registerCount, std::size_t floatRegisterCount, size_t ramSize);
 
         Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt, std::size_t reservationStationEntriesCount, std::size_t ramSize, std::size_t ramGatesCnt);
 

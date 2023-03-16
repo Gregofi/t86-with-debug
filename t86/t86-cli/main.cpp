@@ -28,6 +28,21 @@ int main(int argc, char* argv[]) {
         .default_value(false)
         .implicit_value(true);
 
+    args.add_argument("--register-cnt")
+        .help("number of general purpose registers")
+        .default_value((size_t)8)
+        .scan<'u', size_t>();
+
+    args.add_argument("--float-register-cnt")
+        .help("number of float registers")
+        .default_value((size_t)4)
+        .scan<'u', size_t>();
+
+    args.add_argument("--memory-size")
+        .help("RAM memory size")
+        .default_value((size_t)1024)
+        .scan<'u', size_t>();
+
     try {
         args.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -53,7 +68,11 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    OS os;
+    size_t regs = args.get<size_t>("--register-cnt");
+    size_t fltregs = args.get<size_t>("--float-register-cnt");
+    size_t memsize = args.get<size_t>("--memory-size");
+
+    OS os(regs, fltregs, memsize);
 
     if (args["debug"] == true) {
         auto m = std::make_unique<TCP::TCPServer>(DEFAULT_DBG_PORT);

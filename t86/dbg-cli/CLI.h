@@ -954,14 +954,14 @@ public:
 
         t86vm = std::thread([](std::unique_ptr<ThreadMessenger> messenger,
                            tiny::t86::Program program, size_t reg_cnt,
-                           double float_reg_cnt) {
-            tiny::t86::OS os(reg_cnt, float_reg_cnt);
+                           double float_reg_cnt, size_t memory_size) {
+            tiny::t86::OS os(reg_cnt, float_reg_cnt, memory_size);
             os.SetDebuggerComms(std::move(messenger));
             os.Run(std::move(program));
-        }, std::move(m2), std::move(program), reg_count, float_reg_count);
+        }, std::move(m2), std::move(program), reg_count, float_reg_count, memory_size);
         
         auto t86dbg = std::make_unique<T86Process>(std::move(m1), reg_count,
-                                                   float_reg_count);
+                                                   float_reg_count, memory_size);
 
         // This is valid even if process is not yet running.
         auto bkpts = process.GetBreakpoints();

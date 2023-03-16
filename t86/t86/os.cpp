@@ -27,13 +27,17 @@ void OS::DispatchInterrupt(int n) {
 
 void OS::Run(Program program) {
     cpu.start(std::move(program));
-    DebuggerMessage(Debug::BreakReason::Begin);
+    if (debug_interface) {
+        DebuggerMessage(Debug::BreakReason::Begin);
+    }
     log_info("Starting execution\n");
     while (true) {
         cpu.tick();
         if (cpu.halted()) {
             log_info("Halt");
-            DebuggerMessage(Debug::BreakReason::Halt);
+            if (debug_interface) {
+                DebuggerMessage(Debug::BreakReason::Halt);
+            }
             return;
         }
 
