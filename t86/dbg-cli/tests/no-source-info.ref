@@ -1,0 +1,18 @@
+Started process 'tests/sources/no_debug_info.t86'
+Error: No debug info for line 5
+Breakpoint set on address 5: 'MOV R0, [BP + -1]'
+      0:  MOV [BP + -1], 0
+ ->   1:  JMP 8
+      2:  MOV R0, [BP + -1]
+      3:  MOV R1, [R0]
+Error: Expected line or function name, 'main' is neither.
+Error: Variable 'a' is not in scope or missing debug info
+HProcess stopped, reason: Software breakpoint hit at address 5
+      3:  MOV R1, [R0]
+      4:  PUTCHAR R1
+@->   5:  MOV R0, [BP + -1]
+      6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+Breakpoint removed from address 5
+ello, World!
+Process stopped, reason: The program finished execution
