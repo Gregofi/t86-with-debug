@@ -412,9 +412,35 @@ public:
             if (!line) {
                 Error("Expected line, got '{}'", subcommands.at(1));
             }
-            auto addr = source.SetSourceSoftwareBreakpoint(process, *line);
+            auto addr = source.UnsetSourceSoftwareBreakpoint(process, *line);
             auto source_line = source.GetLines(*line, 1);
             fmt::print("Breakpoint removed from line {} (addr {})\n", *line, addr);
+            if (source_line.size() > 0) {
+                fmt::print(": {}\n", source_line[0]);
+            } else {
+                fmt::print("\n");
+            }
+        } else if (check_command(subcommands, "enable", 2)) {
+            auto line = utils::svtonum<size_t>(subcommands.at(1));
+            if (!line) {
+                Error("Expected line, got '{}'", subcommands.at(1));
+            }
+            auto addr = source.EnableSourceSoftwareBreakpoint(process, *line);
+            auto source_line = source.GetLines(*line, 1);
+            fmt::print("Breakpoint enabled on line {} (addr {})\n", *line, addr);
+            if (source_line.size() > 0) {
+                fmt::print(": {}\n", source_line[0]);
+            } else {
+                fmt::print("\n");
+            }
+        } else if (check_command(subcommands, "disable", 2)) {
+            auto line = utils::svtonum<size_t>(subcommands.at(1));
+            if (!line) {
+                Error("Expected line, got '{}'", subcommands.at(1));
+            }
+            auto addr = source.DisableSourceSoftwareBreakpoint(process, *line);
+            auto source_line = source.GetLines(*line, 1);
+            fmt::print("Breakpoint disabled on line {} (addr {})\n", *line, addr);
             if (source_line.size() > 0) {
                 fmt::print(": {}\n", source_line[0]);
             } else {

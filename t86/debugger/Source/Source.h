@@ -29,8 +29,8 @@ public:
     /// of where the breakpoint was (the assembly address).
     uint64_t UnsetSourceSoftwareBreakpoint(Native& native, size_t line) const;
     uint64_t EnableSourceSoftwareBreakpoint(Native& native, size_t line) const;
-
     uint64_t DisableSourceSoftwareBreakpoint(Native& native, size_t line) const;
+
     /// Returns function that owns instruction at given address.
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
     /// Returns the address of the function prologue.
