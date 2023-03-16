@@ -42,7 +42,6 @@ public:
     /// process, depending on how complicated is the location expression.
     std::optional<expr::Location> GetVariableLocation(Native& native, std::string_view name) const;
 
-
     /// Returns latest line that corresponds to given address if 
     /// debugging information is available, otherwise returns nullopt.
     std::optional<size_t> AddrToLine(size_t addr) const;
