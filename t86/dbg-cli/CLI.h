@@ -18,6 +18,7 @@
 #include "threads_messenger.h"
 #include "utility/linenoise.h"
 #include "debugger/Native.h"
+#include "debugger/Source/ExpressionInterpreter.h"
 
 /// Checks if subcommands is atleast of subcommand_size and then
 /// if the first subcommand is prefix of 'of'.
@@ -473,9 +474,35 @@ public:
         }, loc);
     }
 
+    expr::Location OffsetLocation(const expr::Location& loc, int64_t offset) {
+        return ExpressionInterpreter::Interpret({
+                expr::Push{loc},
+                expr::Push{expr::Offset{offset}},
+                expr::Add{}}, process);
+    }
+
+    ///// Convertsd structured type value to string.
+    std::string StructuredTypeVal(const expr::Location& loc, const Type& type,
+                                  const StructuredType& t) {
+        std::vector<std::string> res;
+        std::ranges::transform(t.members, std::back_inserter(res),
+                [&](auto&& m) {
+            std::string type = "unknown type";
+            std::string value = "?";
+            if (m.second) {
+                type = fmt::format("{}", fmt::styled(TypeToString(*m.second),
+                        fmt::fg(fmt::color::dark_blue)));
+                auto true_location = OffsetLocation(loc, m.first);
+                value = TypedVarToStringT86(true_location, *m.second);
+            }
+            return fmt::format("{} = {}", type, value);
+        });
+        return fmt::format("{{{}}}", utils::join(res.begin(), res.end(), ", "));
+    }
+
     /// Special function to print typed variables for T86 because its memory
     /// has 64-bit cells. Ie. if type is of size 1 it actually has 64-bits.
-    void PrintTypedVariableValueT86(std::string_view name, const expr::Location& loc,
+    std::string TypedVarToStringT86(const expr::Location& loc,
                                     const Type& type) {
         auto var_val = std::visit(utils::overloaded {
             [&](const PrimitiveType& t) {
@@ -484,13 +511,13 @@ public:
                 }
                 auto raw_value = FetchRawValue(loc);
                 if (t.type == PrimitiveType::Type::FLOAT) {
-                    return fmt::format("{}\n", static_cast<double>(raw_value));
+                    return fmt::format("{}", static_cast<double>(raw_value));
                 } else if (t.type == PrimitiveType::Type::SIGNED) {
-                    return fmt::format("{}\n", static_cast<int64_t>(raw_value));
+                    return fmt::format("{}", static_cast<int64_t>(raw_value));
                 } else if (t.type == PrimitiveType::Type::UNSIGNED) {
-                    return fmt::format("{}\n", raw_value);
+                    return fmt::format("{}", raw_value);
                 } else if (t.type == PrimitiveType::Type::BOOL) {
-                    return fmt::format("{}\n", raw_value > 0 ? "true" : "false");
+                    return fmt::format("{}", raw_value > 0 ? "true" : "false");
                 } else {
                     UNREACHABLE;
                 }
@@ -500,14 +527,17 @@ public:
                     Error("Only pointers with size one are supported");
                 }
                 auto raw_value = FetchRawValue(loc);
-                return fmt::format("{}\n", raw_value);
+                return fmt::format("{}", raw_value);
+            },
+            [&](const StructuredType& t) {
+                return StructuredTypeVal(loc, type, t);
             },
             [](auto&&) -> std::string {
-                NOT_IMPLEMENTED;
+                Error("unknown type");
+                UNREACHABLE;
             },
         }, type);
-        fmt::print("({}; {}) {} = {}", expr::LocationToStr(loc), TypeToString(type),
-                                       name, var_val);
+        return var_val;
     }
 
     void SetVariableT86(const expr::Location& location, int64_t value) {
@@ -528,11 +558,14 @@ public:
         }
         auto type_info = source.GetVariableTypeInformation(process, name);
         if (!type_info) {
-            fmt::print("No type information about variable '{}'.", name);
+            fmt::print("No type information about variable '{}'.\n", name);
             auto raw_value = FetchRawValue(*location);
-            fmt::print("({}) {} = {}", LocationToStr(*location), name, raw_value);
+            fmt::print("Raw byte value: ({}) {} = {}\n",
+                    LocationToStr(*location), name, raw_value);
         } else if (Arch::GetMachine() == Arch::Machine::T86) {
-            PrintTypedVariableValueT86(name, *location, *type_info);
+            auto var_val = TypedVarToStringT86(*location, *type_info);
+            fmt::print("({}; {}) {} = {}\n", expr::LocationToStr(*location),
+                    TypeToString(*type_info), name, var_val);
         } else {
             Error("Printing typed variables is not supported in current architecture");
         }

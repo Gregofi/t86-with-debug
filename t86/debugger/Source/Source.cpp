@@ -238,13 +238,13 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
         auto pointing_to = FindDieAttribute<ATTR_type>(*type_die);
         if (!pointing_to) {
             log_info("DIE pointer type, missing pointing attr");
-            return PointerType{.size = 0};
+            return {};
         }
         auto size = FindDieAttribute<ATTR_size>(*type_die);
         auto pointed_die = FindDIEById(*top_die, pointing_to->type_id);
         if (!pointing_to || !size || !pointed_die) {
             log_info("DIE pointer_type, id {}: Missing either dest or size", id);
-            return PointerType{.size = 0};
+            return {};
         }
         // We can't just recursively call ourselves because that might
         // lead to infinite recursion, since structs can point to each other.
@@ -255,6 +255,8 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
                     = std::make_unique<Type>(StructuredType{.name = name->n});
                 return PointerType{.to = std::move(structured_type),
                                    .size = size->size};
+            } else {
+                return {};
             }
         } else {
             auto pointed = ReconstructTypeInformation(pointing_to->type_id);

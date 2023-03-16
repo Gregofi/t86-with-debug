@@ -151,10 +151,15 @@ DIE_ATTR Parser::ParseATTR(std::string_view v) {
     }
     GetNext();
     if (v == "ATTR_name") {
-        if (curtok.kind != TokenKind::ID) {
+        if (curtok.kind != TokenKind::ID && curtok.kind != TokenKind::STRING) {
             throw CreateError("ATTR_name should have a string as its value");
         }
-        auto id = lex.getId();
+        std::string id;
+        if (curtok.kind == TokenKind::ID) {
+            id = lex.getId();
+        } else {
+            id = lex.getStr();
+        }
         GetNext();
         return ATTR_name{std::move(id)};
     } else if (v == "ATTR_type") {
