@@ -819,12 +819,12 @@ public:
         } else if (check_command(subcommands, "get", 3)
                 || check_command(subcommands, "getstr", 3)) {
             auto begin = utils::svtonum<size_t>(subcommands.at(1));
-            auto end = utils::svtonum<size_t>(subcommands.at(2));
-            if (!begin || !end || begin > end) {
+            auto amount = utils::svtonum<size_t>(subcommands.at(2));
+            if (!begin || !amount) {
                 Error("Expected range of memory cells, instead got '{}', '{}'",
                         subcommands.at(1), subcommands.at(2));
             }
-            auto vals = process.ReadMemory(*begin, *end - *begin + 1);
+            auto vals = process.ReadMemory(*begin, *amount);
             if (subcommands.at(0).starts_with("gets")) {
                 for (size_t i = 0; i < vals.size(); ++i) {
                     fmt::print("{}", static_cast<char>(vals[i]));
