@@ -1,6 +1,7 @@
 #include <string>
 #include "Parser.h"
 #include "debugger/Source/Die.h"
+#include "debugger/Source/Type.h"
 #include "helpers.h"
 #include "logger.h"
 #include "common/parsing.h"
@@ -12,21 +13,27 @@ TokenKind Parser::GetNext() {
     return curtok.kind;
 }
 
-std::map<int64_t, size_t> Parser::StructuredMembers() {
-    std::map<int64_t, size_t> res;
+ATTR_members Parser::StructuredMembers() {
+#define ERR(token) \
+    if (GetNext() != token) { \
+        throw CreateError("Expected entry in form 'offset:{{type_id:name}}'"); \
+    }
+
+    ATTR_members members;
     while (curtok.kind != TokenKind::RBRACE) {
         if (curtok.kind != TokenKind::NUM) {
-            throw CreateError("Expected entry in form 'offset:type_id'");
+            throw CreateError("Expected entry in form 'offset:{{type_id:name}}'");
         }
         auto offset = lex.getNumber();
-        if (GetNext() != TokenKind::DOUBLEDOT) {
-            throw CreateError("Expected entry in form 'offset:type_id'");
-        }
-        if (GetNext() != TokenKind::NUM) {
-            throw CreateError("Expected entry in form 'offset:type_id'");
-        }
-        auto type = lex.getNumber();
-        res[offset] = type;
+        ERR(TokenKind::DOUBLEDOT);
+        ERR(TokenKind::LBRACE);
+        ERR(TokenKind::NUM);
+        auto type = static_cast<size_t>(lex.getNumber());
+        ERR(TokenKind::DOUBLEDOT);
+        ERR(TokenKind::ID);
+        auto name = lex.getId();
+        ERR(TokenKind::RBRACE);
+        members.m.push_back({std::move(name), type, offset});
         if (GetNext() == TokenKind::COMMA) {
             GetNext();
         } else if (curtok.kind != TokenKind::RBRACE) {
@@ -34,7 +41,7 @@ std::map<int64_t, size_t> Parser::StructuredMembers() {
         }
     }
     GetNext();
-    return res;
+    return members;
 }
 
 std::map<size_t, uint64_t> Parser::DebugLine() {
@@ -111,6 +118,8 @@ expr::LocExpr Parser::ParseOneExprLoc() {
             return expr::Push{std::move(operand)};
         } else if (id == "ADD") {
             return expr::Add{};
+        } else if (id == "DEREFERENCE") {
+            return expr::Dereference{};
         } else {
             throw CreateError("Unknown instruction '{}'", id);
         }
@@ -202,8 +211,7 @@ DIE_ATTR Parser::ParseATTR(std::string_view v) {
             throw CreateError("Expected opening brace");
         }
         GetNext();
-        auto members = StructuredMembers();
-        return ATTR_members{std::move(members)};
+        return StructuredMembers();
     } else if (v == "ATTR_location") {
         auto loc = ParseExprLoc(); 
         return ATTR_location_expr{std::move(loc)};

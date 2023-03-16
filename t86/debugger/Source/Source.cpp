@@ -227,10 +227,11 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
         if (!members) {
             return StructuredType{.name = name->n, .size = size->size};
         }
-        std::vector<std::pair<int64_t, std::optional<Type>>> members_vec;
+        std::vector<StructuredMember> members_vec;
         std::ranges::transform(members->m, std::back_inserter(members_vec),
                 [this](auto &&m) {
-            return std::make_pair(m.first, ReconstructTypeInformation(m.second));
+            auto type_info = ReconstructTypeInformation(m.type_id);
+            return StructuredMember{m.name, std::move(type_info), m.offset};
         });
         return StructuredType{.name = name->n, .size = size->size,
                               .members = std::move(members_vec)};

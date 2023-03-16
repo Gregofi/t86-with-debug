@@ -464,8 +464,8 @@ DIE_structured_type: {
     ATTR_name: coord,
     ATTR_size: 2,
     ATTR_members: {
-        0: 0,
-        1: 0,
+        0: {0: x},
+        1: {0: y},
     }
 },
 DIE_function: {
@@ -794,8 +794,8 @@ DIE_structured_type: {
     ATTR_size: 2,
     ATTR_id: 2,
     ATTR_members: {
-        0: 1,
-        1: 0,
+        0: {1:x},
+        1: {0:y},
     }
 },
 DIE_function: {
@@ -846,14 +846,14 @@ int main() {
     ASSERT_EQ(struc.members.size(), 2);
 
     auto subtype = struc.members[0];
-    ASSERT_EQ(subtype.first, 0);
-    ASSERT_TRUE(subtype.second);
-    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.second));
+    ASSERT_EQ(subtype.offset, 0);
+    ASSERT_TRUE(subtype.type);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.type));
 
     subtype = struc.members[1];
-    ASSERT_EQ(subtype.first, 1);
-    ASSERT_TRUE(subtype.second);
-    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.second));
+    ASSERT_EQ(subtype.offset, 1);
+    ASSERT_TRUE(subtype.type);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.type));
 }
 
 TEST_F(NativeSourceTest, TestMappingScopes) {

@@ -1,0 +1,23 @@
+Started process 'tests/sources/linked_list.t86'
+Breakpoint set on line 19 (addr 19):     struct list* it = &l1;
+Process stopped, reason: Software breakpoint hit at line 19
+function main at 2-35; active variables: it, l1
+     17:    l1.next->next->next = NULL;
+     18:
+@->  19:    struct list* it = &l1;
+     20:    while (it != NULL) {
+     21:        printf("%d\n", it->v);
+([1018]; struct list) l1 = {v: struct list* = 5, next: int = 1016}
+function main at 2-35; active variables: it, l1
+     18:
+@    19:    struct list* it = &l1;
+ ->  20:    while (it != NULL) {
+     21:        printf("%d\n", it->v);
+     22:        it = it->next;
+([1021]; struct list*) it = 1018
+1016:10
+1017:1014
+5
+10
+15
+Process stopped, reason: The program finished execution

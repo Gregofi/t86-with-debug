@@ -32,9 +32,15 @@ struct ATTR_id {
     size_t id;
 };
 
+struct ATTR_member {
+    std::string name;
+    size_t type_id;
+    int64_t offset;
+};
+
 struct ATTR_members {
     /// address offset from struct beginning -> name of type
-    std::map<int64_t, size_t> m;
+    std::vector<ATTR_member> m;
 };
 
 using DIE_ATTR = std::variant<ATTR_name,
