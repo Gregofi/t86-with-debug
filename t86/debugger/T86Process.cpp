@@ -214,8 +214,13 @@ bool T86Process::IsValidDebugRegisterName(std::string_view name) const {
 
 void T86Process::CheckResponse(std::string_view error_message) {
     auto message = process->Receive();
-    if (!message || message != "OK") {
-        throw DebuggerError(fmt::format(
-            "Error communicating with T86 VM: {}", error_message));
+    if (!message || *message != "OK") {
+        auto report = fmt::format("Error communicating with T86 VM: {}", error_message);
+        if (message) {
+            report += fmt::format("; Expected 'OK', got '{}'", *message);
+        } else {
+            report += fmt::format("; No confirmation was sent back");
+        }
+        throw DebuggerError(report);
     }
 }
