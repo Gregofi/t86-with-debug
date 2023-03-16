@@ -3,14 +3,14 @@ No active watchpoints
 Active watchpoints:
  - address 1020
 Process stopped, reason: Watchpoint triggered at memory address 1020
-function main at 7-18:
+function main at 7-18; active variables: a, b
       7:    int a = 3;
       8:    int b = 6;
  ->   9:    swap(&a, &b);
      10:    print(a);
      11:    print(b);
 Process stopped, reason: Watchpoint triggered at memory address 1020
-function swap at 2-7:
+function swap at 2-7; active variables: tmp, x, y
       2:    *x = *y;
       3:    *y = tmp;
  ->   4:}
