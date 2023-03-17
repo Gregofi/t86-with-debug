@@ -63,8 +63,8 @@ DIE_structured_type: {
     ATTR_id: 1,
     ATTR_name: "struct list",
     ATTR_members: {
-        0: {2: v},
-        1: {0: next},
+        0: {0: v},
+        1: {2: next},
     },
 },
 DIE_pointer_type: {

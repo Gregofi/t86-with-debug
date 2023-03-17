@@ -7,7 +7,7 @@ function main at 2-35; active variables: it, l1
 @->  19:    struct list* it = &l1;
      20:    while (it != NULL) {
      21:        printf("%d\n", it->v);
-([1018]; struct list) l1 = {v: struct list* = 5, next: int = 1016}
+([1018]; struct list) l1 = {v: int = 5, next: struct list* = 1016}
 function main at 2-35; active variables: it, l1
      18:
 @    19:    struct list* it = &l1;
