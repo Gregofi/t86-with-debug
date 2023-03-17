@@ -27,17 +27,19 @@ void OS::DispatchInterrupt(int n) {
 
 void OS::Run(Program program) {
     cpu.start(std::move(program));
-    if (debug_interface) {
-        DebuggerMessage(Debug::BreakReason::Begin);
-    }
+    DebuggerMessage(Debug::BreakReason::Begin);
     log_info("Starting execution\n");
     while (true) {
-        cpu.tick();
+        try {
+            cpu.tick();
+        } catch (const std::exception& e) {
+            log_error("The CPU throwed an exception! {}", e.what());
+            DebuggerMessage(Debug::BreakReason::CpuError);
+            return;
+        }
         if (cpu.halted()) {
             log_info("Halt");
-            if (debug_interface) {
-                DebuggerMessage(Debug::BreakReason::Halt);
-            }
+            DebuggerMessage(Debug::BreakReason::Halt);
             return;
         }
 
@@ -57,7 +59,7 @@ void OS::DebuggerMessage(Debug::BreakReason reason) {
     if (debug_interface) {
         stop = !debug_interface->Work(reason);
     } else {
-        log_warning("Call to debugger interface was initiated but no "
+        log_info("Call to debugger interface was initiated but no "
                     "debugger is connected!");
     }
 }

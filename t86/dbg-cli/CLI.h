@@ -357,6 +357,9 @@ public:
             [](const ExecutionEnd& r) {
                 return "The program finished execution"s;
             },
+            [](const CpuError& r) {
+                return "Inner CPU error occured."s;
+            },
         }, e);
     }
 
@@ -364,6 +367,20 @@ public:
         fmt::print("Process stopped, reason: {}\n",
                 fmt::styled(DebugEventToString(e),
                     fmt::emphasis::bold | fg(fmt::color::dark_red)));
+        if (std::holds_alternative<CpuError>(e)) {
+            const char* message =
+R"(The CPU is now in undefined state, you can try to
+fetch information about it, but be aware that the information
+may not be correct. Inspect the VM logs to see what kind of
+error happened. Continuing execution will cause the CPU
+to exit. We will provide an approximate address where the
+exception happened, but it will probably not be correct because
+we hadn't had a chance to unroll current speculations.
+Most often, the correct address will be one below it.)";
+            fmt::print(fg(fmt::color::red), "{}\n", message);
+            fmt::print("The error probably happened on address '{}'\n", process.GetIP());
+            is_running = false;
+        }
     }
 
     /// Prints code or text at current location, depending on available info.

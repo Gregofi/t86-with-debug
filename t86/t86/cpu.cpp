@@ -113,12 +113,12 @@ namespace tiny::t86 {
 
     Cpu::Cpu(std::size_t registerCount, std::size_t floatRegisterCount, std::size_t aluCnt, std::size_t reservationStationEntriesCount,
         std::size_t ramSize, std::size_t ramGatesCnt)
-            : reservationStation_(*this, aluCnt, reservationStationEntriesCount),
-              branchPredictor_{std::make_unique<NaiveBranchPredictor>()},
-              registerCnt_(registerCount),
+            : registerCnt_(registerCount),
               floatRegisterCnt_(floatRegisterCount),
               physicalRegisterCnt_(specialRegistersCnt + registerCount + floatRegisterCount + reservationStationEntriesCount * possibleRenamedRegisterCnt),
               registers_(physicalRegisterCnt_),
+              reservationStation_(*this, aluCnt, reservationStationEntriesCount),
+              branchPredictor_{std::make_unique<NaiveBranchPredictor>()},
               rat_(*this, registerCount, floatRegisterCount),
               ram_(ramSize, ramGatesCnt)
     {

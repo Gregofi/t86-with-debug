@@ -695,3 +695,19 @@ TEST_F(NativeTest, WatchpointsAndBreakpoints) {
     ASSERT_TRUE(std::holds_alternative<WatchpointTrigger>(e));
     ASSERT_EQ(std::get<WatchpointTrigger>(e).address, 5);
 }
+
+TEST_F(NativeTest, ErrorInCPU) {
+    auto program = R"(
+.text
+
+0 MOV R0, -1
+1 MOV [R0], 2
+2 MOV [5], 3
+3 HALT
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->ContinueExecution();
+    auto e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<CpuError>(e));
+}
