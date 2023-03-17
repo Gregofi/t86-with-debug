@@ -6,6 +6,7 @@
 #include <sstream>
 #include <memory>
 #include <iostream>
+#include <variant>
 #include <vector>
 #include <string_view>
 #include <charconv>
@@ -134,4 +135,83 @@ namespace utils {
     /// Variant utils
     template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
     template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+    template<typename Error>
+    class unexpected {
+    public:
+        unexpected() = delete;
+        explicit unexpected(Error error): v(std::move(error)) {}
+        constexpr const Error& error() const& noexcept {
+            return v;
+        }
+        constexpr Error& error() & noexcept {
+            return v;
+        }
+        constexpr Error&& error() && noexcept {
+            return std::move(v);
+        }
+        constexpr const Error&& error() const&& noexcept {
+            return std::move(v);
+        }
+    private:
+        Error v;
+    };
+
+    template<typename Value, typename Error>
+    class expected {
+    public:
+        constexpr expected() = default;
+
+        constexpr explicit expected(Value value): v(std::move(value)) {
+        }
+
+        constexpr explicit expected(Error error): v(unexpected{std::move(error)}) {
+        }
+
+        template<typename ...Args>
+        constexpr explicit expected(std::in_place_t, Args&&... args)
+                : v(std::forward<Args>(args)...) { }
+
+        expected(const expected&) = default;
+        expected(expected&&) = default;
+        expected& operator=(const expected&) = default;
+
+        constexpr operator bool() const {
+            return std::holds_alternative<unexpected<Error>>(v);
+        }
+
+        constexpr const Value& value() const& {
+            return std::get<Value>(v);
+        }
+
+        constexpr Value& value() & {
+            return std::get<Value>(v);
+        }
+
+        constexpr Value&& value() && {
+            return std::move(std::get<Value>(v));
+        }
+
+        constexpr const Value&& value() const && {
+            return std::move(std::get<Value>(v));
+        }
+
+        constexpr const Error& error() const& {
+            return std::get<unexpected<Error>>(v);
+        }
+
+        constexpr Error& error() & {
+            return std::get<unexpected<Error>>(v);
+        }
+
+        constexpr Error&& error() && {
+            return std::move(std::get<unexpected<Error>>(v));
+        }
+
+        constexpr const Error&& error() const && {
+            return std::move(std::get<unexpected<Error>>(v));
+        }
+    private:
+        std::variant<Value, unexpected<Error>> v;
+    };
 }

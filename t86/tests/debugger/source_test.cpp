@@ -6,6 +6,7 @@
 #include "debugger/Source/Parser.h"
 #include "debugger/Source/LineMapping.h"
 #include "debugger/Source/Source.h"
+#include "debugger/Source/Expression.h"
 #include "threads_messenger.h"
 #include "utils.h"
 
@@ -739,9 +740,7 @@ int main() {
     ASSERT_TRUE(std::holds_alternative<PointerType>(*type));
     const auto& ptr_type = std::get<PointerType>(*type);
     ASSERT_EQ(ptr_type.size, 1);
-    ASSERT_TRUE(ptr_type.to);
-    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*ptr_type.to));
-    ASSERT_TRUE(std::get<PrimitiveType>(*ptr_type.to).type == PrimitiveType::Type::SIGNED);
+    ASSERT_EQ(ptr_type.type_idx, 0);
 
     loc = source.GetVariableLocation(*native, "y");
     ASSERT_FALSE(loc);
@@ -1082,4 +1081,340 @@ int main() {
 
     e = source.StepIn(*native);
     ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(e));
+}
+
+TEST_F(NativeSourceTest, Expressions1) {
+    auto elf =
+R"(.text
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2]
+13      PUTNUM  R0
+14      MOV     R1, [SP + -3]
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+
+.debug_line
+0: 2
+1: 2
+2: 3
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 12
+11: 14
+12: 16
+
+.debug_info
+DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_id: 0,
+    ATTR_size: 1,
+},
+DIE_pointer_type: {
+    ATTR_type: 1,
+    ATTR_id: 1,
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 7,
+    ATTR_end_addr: 18,
+    DIE_scope: {
+        ATTR_begin_addr: 7,
+        ATTR_end_addr: 18,
+        DIE_variable: {
+            ATTR_name: a,
+            ATTR_type: 0,
+            ATTR_location: [PUSH SP; PUSH -2; ADD],
+        },
+        DIE_variable: {
+            ATTR_name: b,
+            ATTR_type: 0,
+            ATTR_location: [PUSH SP; PUSH -3; ADD],
+        }
+    }
+},
+DIE_function: {
+    ATTR_name: swap,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 7,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 7,
+        DIE_variable: {
+            ATTR_name: x,
+            ATTR_type: 1,
+            ATTR_location: ``,
+        },
+        DIE_variable: {
+            ATTR_name: y,
+            ATTR_type: 1,
+            ATTR_location: ``,
+        },
+        DIE_variable: {
+            ATTR_name: tmp,
+            ATTR_type: 0,
+            ATTR_location: `PUSH R0`,
+        }
+    }
+}
+}
+
+.debug_source
+void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+int main() {
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
+    print(a);
+    print(b);
+})";
+    Run(elf);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(9); // BP on address which is not mapped to source
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    ExpressionEvaluator ev(*native, source);
+    std::unique_ptr<Expression> ast = std::make_unique<Identifier>("a");
+    ast->Accept(ev);
+    auto res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 3);
+
+    ast = std::make_unique<Identifier>("b");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 6);
+
+    ast = std::make_unique<Plus>(std::make_unique<Identifier>("a"),
+            std::make_unique<Identifier>("b"));
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 9);
+
+    ast = std::make_unique<Plus>(
+        std::make_unique<Plus>(std::make_unique<Identifier>("a"),
+                               std::make_unique<Identifier>("a")),
+        std::make_unique<Identifier>("b"));
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 12);
+
+    ast = std::make_unique<Plus>(
+        std::make_unique<Plus>(std::make_unique<Integer>(5),
+                               std::make_unique<Identifier>("a")),
+        std::make_unique<Integer>(-10));
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, -2);
+}
+
+TEST_F(NativeSourceTest, Expressions2) {
+    auto program = R"(
+.text
+0       CALL 2
+1       HALT
+# MAIN:
+2       PUSH    BP
+3       MOV     BP, SP
+4       SUB     SP, 8
+5       MOV     [BP + -4], 5
+6       LEA     R1, [BP + -6]
+7       MOV     [BP + -3], R1
+8       MOV     R1, [BP + -3]
+90      MOV     [R1], 10
+10      MOV     R1, [BP + -3]
+11      LEA     R2, [BP + -8]
+12      MOV     [R1 + 1], R2
+13      MOV     R1, [BP + -3]
+14      MOV     R1, [R1 + 1]
+15      MOV     [R1], 15
+16      MOV     R1, [BP + -3]
+17      MOV     R1, [R1 + 1]
+18      MOV     [R1 + 1], 0
+19      LEA     R1, [BP + -4]
+20      MOV     [BP + -1], R1
+21      JMP     28
+# .L3:
+22      MOV     R1, [BP + -1]
+23      MOV     R1, [R1]
+24      PUTNUM  R1
+25      MOV     R1, [BP + -1]
+26      MOV     R1, [R1 + 1]
+27      MOV     [BP + -1], R1
+# .L2:
+28      MOV     R0, [BP + -1]
+29      CMP     R0, 0
+30      JNE     22
+31      MOV     R0, 0
+32      ADD SP, 8
+33      POP BP
+34      RET
+
+.debug_line
+8: 2
+9: 5
+10: 5
+11: 5
+12: 5
+13: 6
+14: 8
+15: 10
+16: 13
+17: 16
+18: 19
+19: 19
+20: 28
+21: 22
+22: 25
+24: 32
+
+.debug_info
+DIE_compilation_unit: {
+DIE_structured_type: {
+    ATTR_size: 2,
+    ATTR_id: 1,
+    ATTR_name: "struct list",
+    ATTR_members: {
+        0: {0: v},
+        1: {2: next},
+    },
+},
+DIE_pointer_type: {
+    ATTR_size: 1,
+    ATTR_type: 1,
+    ATTR_id: 2,
+},
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 35,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 35,
+        DIE_variable: {
+            ATTR_name: l1,
+            ATTR_type: 1,
+            ATTR_location: `BASE_REG_OFFSET -4`,
+        },
+        DIE_variable: {
+            ATTR_name: it,
+            ATTR_type: 2,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        }
+    },
+}
+}
+
+.debug_source
+#include <stdlib.h>
+#include <stdio.h>
+
+struct list {
+    int v;
+    struct list* next;
+};
+
+int main() {
+    struct list l1;
+    struct list l2;
+    struct list l3;
+    l1.v = 5;
+    l1.next = &l2;
+    l1.next->v = 10;
+    l1.next->next = &l3;
+    l1.next->next->v = 15;
+    l1.next->next->next = NULL;
+
+    struct list* it = &l1;
+    while (it != NULL) {
+        printf("%d\n", it->v);
+        it = it->next;
+    }
+}
+)";
+    Run(program);
+    native->WaitForDebugEvent();
+    source.SetSourceSoftwareBreakpoint(*native, 20);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    ExpressionEvaluator ev(*native, source);
+    std::unique_ptr<Expression> ast = std::make_unique<Identifier>("l1");
+    ast->Accept(ev);
+    auto res = ev.YieldResult();
+    std::cerr << TypedValueToString(res) << "\n";
+    ASSERT_TRUE(std::holds_alternative<StructuredValue>(res));
+    auto st = std::get<StructuredValue>(res);
+    EXPECT_TRUE(st.members.contains("v"));
+    EXPECT_TRUE(st.members.contains("next"));
+
+    // Normal dereferences (like (*x).v )
+
+    ast = std::make_unique<MemberAccess>(std::make_unique<Identifier>("l1"), "v");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 5);
+
+    ast = std::make_unique<MemberAccess>(std::make_unique<Identifier>("l1"), "next");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<PointerValue>(res));
+
+    ast = std::make_unique<MemberAccess>(std::make_unique<Dereference>(std::make_unique<Identifier>("it")), "v");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 5);
+
+    ast = std::make_unique<MemberAccess>(
+        std::make_unique<Dereference>(std::make_unique<MemberAccess>(
+            std::make_unique<Dereference>(std::make_unique<Identifier>("it")),
+            "next")),
+        "v");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 10);
+
+    // Member dereferences (like x->v )
+    ast = std::make_unique<MemberDereferenceAccess>(
+        std::make_unique<Identifier>("it"), "v");
+    ast->Accept(ev);
+    res = ev.YieldResult();
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
+    EXPECT_EQ(std::get<IntegerValue>(res).value, 5);
 }

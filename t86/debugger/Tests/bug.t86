@@ -1,0 +1,9 @@
+.text
+1 CALL 4
+2 PUTNUM R0
+3 HALT
+4 MOV R0, 1
+5 MOV R1, [R0]
+6 MOV R0, -1
+7 RET
+8 MOV R1, [R0]

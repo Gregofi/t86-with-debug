@@ -6,6 +6,26 @@
 #include "debugger/Native.h"
 #include "debugger/Source/Die.h"
 
+/// Finds given attribute in a DIE and returns a pointer to it,
+/// if the attribute is not found a nullptr is returned.
+template<typename Attr>
+const Attr* FindDieAttribute(const DIE& die) {
+    for (auto it = die.begin_attr(); it != die.end_attr(); ++it) {
+        auto found = std::visit([](auto&& arg) -> const Attr* {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<Attr, T>) {
+                return &arg;
+            } else {
+                return nullptr;
+            }
+        }, *it);
+        if (found != nullptr) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
 /// Responsible for all source level debugging.
 class Source {
 public:
@@ -90,9 +110,11 @@ public:
     /// wish to use this, otherwise weird behaviour might occur,
     /// like skipping parts of functions etc.
     DebugEvent StepIn(Native& native) const;
-private:
-    std::map<std::string, const DIE*> GetActiveVariables(uint64_t address) const;
+
     std::optional<Type> ReconstructTypeInformation(size_t id) const;
+private:
+    friend class ExpressionEvaluator;
+    std::map<std::string, const DIE*> GetActiveVariables(uint64_t address) const;
 
     template<typename T>
     static const T& UnwrapOptional(const std::optional<T>& opt, const std::string& message) {
@@ -110,4 +132,5 @@ private:
     std::optional<LineMapping> line_mapping;
     std::optional<SourceFile> source_file;
     std::optional<DIE> top_die;
+    mutable std::map<size_t, Type> cached_types;
 };
