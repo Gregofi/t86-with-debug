@@ -52,9 +52,11 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
 }
 
 struct PointerType {
-    // ptr is needed here since the types are recursive.
-    // Can be null if there is no info about the pointed type.
-    std::shared_ptr<Type> to;
+    // Ptr can be recursive with structs, so we just
+    // store the id of the type  it points to.
+    size_t type_idx;
+    // Keep the name of the pointed type for convenience.
+    std::string name;
     uint64_t size;
 };
 
@@ -62,6 +64,9 @@ struct StructuredMember;
 
 struct StructuredType {
     std::string name;
+    // If the size is zero then this is considered forward declaration
+    // TODO: Maybe add separate variable, size zero is forbidden in C
+    // but can be in other languages.
     uint64_t size;
     std::vector<StructuredMember> members;
 };
@@ -76,8 +81,7 @@ inline std::string TypeToString(const Type& type) {
     return std::visit(utils::overloaded {
         [](const PrimitiveType& t) { return FromPrimitiveType(t.type); },
         [](const PointerType& t) {
-            auto pointed = TypeToString(*t.to);
-            return fmt::format("{}*", pointed);
+            return fmt::format("{}*", t.name);
         },
         [](const StructuredType& t) {
             return t.name;

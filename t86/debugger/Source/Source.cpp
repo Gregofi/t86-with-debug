@@ -76,26 +76,6 @@ std::optional<std::string_view> Source::GetLine(size_t line) const {
     return source_file->GetLine(line);
 }
 
-/// Finds given attribute in a DIE and returns a pointer to it,
-/// if the attribute is not found a nullptr is returned.
-template<typename Attr>
-const Attr* FindDieAttribute(const DIE& die) {
-    for (auto it = die.begin_attr(); it != die.end_attr(); ++it) {
-        auto found = std::visit([](auto&& arg) -> const Attr* {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<Attr, T>) {
-                return &arg;
-            } else {
-                return nullptr;
-            }
-        }, *it);
-        if (found != nullptr) {
-            return found;
-        }
-    }
-    return nullptr;
-}
-
 /// Returns DIE with given id or nullptr if not found.
 const DIE* FindDIEById(const DIE& die, size_t id) {
     auto found_id = FindDieAttribute<ATTR_id>(die);
@@ -194,6 +174,9 @@ std::optional<expr::Location> Source::GetVariableLocation(Native& native,
 }
 
 std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
+    if (cached_types.contains(id)) {
+        return cached_types.at(id);
+    }
     auto type_die = FindDIEById(*top_die, id);
     if (type_die == nullptr) {
         return {};
@@ -233,8 +216,11 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
             auto type_info = ReconstructTypeInformation(m.type_id);
             return StructuredMember{m.name, std::move(type_info), m.offset};
         });
-        return StructuredType{.name = name->n, .size = size->size,
-                              .members = std::move(members_vec)};
+        auto result = StructuredType{.name = name->n,
+                                     .size = size->size,
+                                     .members = std::move(members_vec)};
+        cached_types.emplace(id, result);
+        return result;
     } else if (type_die->get_tag() == DIE::TAG::pointer_type) {
         auto pointing_to = FindDieAttribute<ATTR_type>(*type_die);
         if (!pointing_to) {
@@ -247,27 +233,15 @@ std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
             log_info("DIE pointer_type, id {}: Missing either dest or size", id);
             return {};
         }
-        // We can't just recursively call ourselves because that might
-        // lead to infinite recursion, since structs can point to each other.
-        if (pointed_die->get_tag() == DIE::TAG::structured_type) {
-            auto name = FindDieAttribute<ATTR_name>(*pointed_die);
-            if (name) {
-                auto structured_type
-                    = std::make_unique<Type>(StructuredType{.name = name->n});
-                return PointerType{.to = std::move(structured_type),
-                                   .size = size->size};
-            } else {
-                return {};
-            }
-        } else {
-            auto pointed = ReconstructTypeInformation(pointing_to->type_id);
-            if (pointed) {
-                return PointerType{.to = std::make_shared<Type>(std::move(*pointed)),
-                                   .size = size->size};
-            } else {
-                return PointerType{.size = size->size};
-            }
+        auto name = FindDieAttribute<ATTR_name>(*pointed_die);
+        if (!name) {
+            return {};
         }
+        auto ptr = PointerType{.type_idx = pointing_to->type_id,
+                               .name = name->n,
+                               .size = size->size};
+        cached_types.emplace(id, ptr);
+        return ptr;
     } else {
         log_error("Unknown DIE tag describing type");
         UNREACHABLE;

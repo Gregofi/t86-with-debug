@@ -498,7 +498,7 @@ Most often, the correct address will be one below it.)";
                 expr::Add{}}, process);
     }
 
-    ///// Convertsd structured type value to string.
+    /// Converts structured type value to string.
     std::string StructuredTypeVal(const expr::Location& loc, const Type& type,
                                   const StructuredType& t) {
         std::vector<std::string> res;
