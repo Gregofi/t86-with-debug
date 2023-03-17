@@ -24,6 +24,7 @@ public:
         HardwareBreakpoint,
         SingleStep,
         Halt,
+        CpuError,
     };
 
     std::string ReasonToString(BreakReason reason) {
@@ -33,6 +34,7 @@ public:
             case BreakReason::HardwareBreakpoint: return "HW_BKPT";
             case BreakReason::SingleStep: return "SINGLESTEP";
             case BreakReason::Halt: return "HALT";
+            case BreakReason::CpuError: return "CPU_ERROR";
         }
         UNREACHABLE;
     }

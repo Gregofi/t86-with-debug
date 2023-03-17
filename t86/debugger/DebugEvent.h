@@ -9,6 +9,7 @@ enum class StopReason {
     Singlestep,
     ExecutionBegin,
     ExecutionEnd,
+    CpuError,
 };
 
 enum class BPType {
@@ -31,6 +32,10 @@ struct WatchpointTrigger {
     uint64_t address;
 };
 
+struct CpuError {
+    uint64_t address;
+};
+
 struct Singlestep {};
 struct ExecutionBegin {};
 struct ExecutionEnd {};
@@ -38,4 +43,5 @@ using DebugEvent = std::variant<BreakpointHit,
                                 WatchpointTrigger,
                                 Singlestep,
                                 ExecutionBegin,
-                                ExecutionEnd>;
+                                ExecutionEnd,
+                                CpuError>;

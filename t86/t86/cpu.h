@@ -266,11 +266,6 @@ namespace tiny::t86 {
 
         std::optional<InstructionEntry> instructionDecode_;
 
-        ReservationStation reservationStation_; // ReservationStations
-
-        std::unique_ptr<BranchPredictor> branchPredictor_;
-
-
         std::size_t registerCnt_;
         std::size_t floatRegisterCnt_;
         std::size_t physicalRegisterCnt_;
@@ -283,6 +278,10 @@ namespace tiny::t86 {
 
         // Values of registers, indexed by PhysicalRegister
         std::vector<RegisterValue> registers_;
+
+        ReservationStation reservationStation_; // ReservationStations
+
+        std::unique_ptr<BranchPredictor> branchPredictor_;
 
         // Debug registers
         // first four bits indicate whether i-th debug reg is active.

@@ -221,6 +221,8 @@ DebugEvent Native::MapReasonToEvent(StopReason reason) {
         return ExecutionEnd{};
     } else if (reason == StopReason::ExecutionBegin) {
         return ExecutionBegin{};
+    } else if (reason == StopReason::CpuError) {
+        return CpuError{GetIP()};
     }
     UNREACHABLE;
 }

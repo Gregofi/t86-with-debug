@@ -80,6 +80,8 @@ StopReason T86Process::GetReason() {
         return StopReason::Singlestep;
     } else if (r == "HALT") {
         return StopReason::ExecutionEnd;
+    } else if (r == "CPU_ERROR") {
+        return StopReason::CpuError;
     } else {
         UNREACHABLE;
     }
