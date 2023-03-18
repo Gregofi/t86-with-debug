@@ -27,15 +27,23 @@ enum class TokenKind {
     RBRACKET,
     LBRACE, // {
     RBRACE,
+    LPAREN, // (
+    RPAREN,
     END,
     SEMICOLON,
     PLUS,
     TIMES,
+    LESS,
+    GREATER,
     COMMA,
     STRING,
+    ASSIGN,
+    EQ,
+    NEQ,
     FLOAT,
     DOUBLEDOT,
     BACKTICK,
+    ARROW, // ->
 };
 
 struct Token {
@@ -83,11 +91,8 @@ public:
         ignore = on;
     }
 
-    TokenKind ParseNumber() {
-        int neg = lookahead == '-' ? -1 : 1;
-        if (neg == -1) {
-            lookahead = GetChar();
-        }
+    TokenKind ParseNumber(bool negative) {
+        int neg = negative ? -1 : 1;
         bool is_float = false;
         std::string num{lookahead};
         while (true) {
@@ -161,9 +166,28 @@ public:
         } else if (lookahead == '}') {
             GetChar();
             return MakeToken(TokenKind::RBRACE);
+        } else if (lookahead == '(') {
+            GetChar();
+            return MakeToken(TokenKind::LPAREN);
+        } else if (lookahead == ')') {
+            GetChar();
+            return MakeToken(TokenKind::RPAREN);
+        } else if (lookahead == '=') {
+            GetChar();
+            if (lookahead == '=') {
+                GetChar();
+                MakeToken(TokenKind::EQ);
+            }
+            return MakeToken(TokenKind::ASSIGN);
         } else if (lookahead == '+') {
             GetChar();
            return MakeToken(TokenKind::PLUS);
+        } else if (lookahead == '>') {
+            GetChar();
+           return MakeToken(TokenKind::GREATER);
+        } else if (lookahead == '<') {
+            GetChar();
+           return MakeToken(TokenKind::LESS);
         } else if (lookahead == ':') {
             GetChar();
             return MakeToken(TokenKind::DOUBLEDOT);
@@ -180,8 +204,23 @@ public:
             ParseString();
             return MakeToken(TokenKind::STRING);
         } else if (isdigit(lookahead) || lookahead == '-') {
-            // Can be either int or float
-            return MakeToken(ParseNumber());
+            bool negative = false;
+            if (lookahead == '-') {
+                negative = lookahead == '-';
+                GetChar();
+            }
+            if (isdigit(lookahead)) {
+                // Can be either int or float
+                return MakeToken(ParseNumber(negative));
+            } else {
+                if (lookahead == '>') {
+                    GetChar();
+                    return MakeToken(TokenKind::ARROW);
+                } else {
+                    throw ParserError(fmt::format("{}:{}:Expected either number or '>'",
+                                                  row, col));
+                }
+            }
         } else if (isalpha(lookahead) || lookahead == '_') { // identifier
             ParseIdentifier();
             return MakeToken(TokenKind::ID);

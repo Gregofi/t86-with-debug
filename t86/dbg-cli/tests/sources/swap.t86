@@ -74,12 +74,12 @@ DIE_function: {
         DIE_variable: {
             ATTR_name: x,
             ATTR_type: 1,
-            ATTR_location: ``,
+            ATTR_location: [],
         },
         DIE_variable: {
             ATTR_name: y,
             ATTR_type: 1,
-            ATTR_location: ``,
+            ATTR_location: [],
         },
         DIE_variable: {
             ATTR_name: tmp,

@@ -43,7 +43,7 @@ TEST(LocationExpr, RegResult) {
 TEST(LocationExpr, Dereference) {
     std::vector<expr::LocExpr> exprs = {
         Push{Register{"R0"}}, 
-        Dereference{},
+        expr::Dereference{},
     };
     std::map<std::string, int64_t> regs = {
         {"R0", 2},

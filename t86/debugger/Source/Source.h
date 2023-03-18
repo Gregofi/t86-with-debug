@@ -1,5 +1,7 @@
 #pragma once
 #include <algorithm>
+#include "debugger/Source/Expression.h"
+#include "debugger/Source/ExpressionParser.h"
 #include "debugger/Source/LineMapping.h"
 #include "debugger/Source/SourceFile.h"
 #include "debugger/Source/Type.h"
@@ -95,6 +97,8 @@ public:
 
     /// Return names of variables that are currently in scope.
     std::set<std::string> GetScopedVariables(uint64_t address) const;
+
+    TypedValue EvaluateExpression(Native& native, std::string expression);
 
     /// Returns lines from the source file. This function does
     /// not throw if out of bounds, instead it stops.
