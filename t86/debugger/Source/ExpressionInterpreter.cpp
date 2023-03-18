@@ -13,13 +13,13 @@ expr::Location ExpressionInterpreter::Interpret(const std::vector<expr::LocExpr>
     ExpressionInterpreter vm(expr, native, std::move(frame_base_reg_name));
     vm.Interpret();
     if (vm.s.empty()) {
-        throw InterpretError("Empty stack at the end of calculation");
+        throw DebuggerError("Empty stack at the end of location expression evaluation.");
     }
     return vm.s.top();
 }
 
 expr::Location ExpressionInterpreter::AddOperands(const expr::Location& o1,
-                                                 const expr::Location& o2) const {
+                                                  const expr::Location& o2) const {
     return std::visit(utils::overloaded {
         [&](const expr::Offset& i1) {
             return std::visit(utils::overloaded {

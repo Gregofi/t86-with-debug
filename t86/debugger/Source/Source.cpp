@@ -309,6 +309,15 @@ std::map<std::string, const DIE*> Source::GetActiveVariables(uint64_t address) c
     return result;
 }
 
+TypedValue Source::EvaluateExpression(Native& native, std::string expression) {
+    std::istringstream iss(std::move(expression));
+    ExpressionParser parser(iss);
+    auto e = parser.ParseExpression();
+    ExpressionEvaluator eval(native, *this);
+    e->Accept(eval);
+    return eval.YieldResult();
+}
+
 std::set<std::string> Source::GetScopedVariables(uint64_t address) const {
     std::set<std::string> result;
     auto vars = GetActiveVariables(address);

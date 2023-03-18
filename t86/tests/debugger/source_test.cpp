@@ -3,6 +3,7 @@
 #include <sstream>
 #include <variant>
 #include <thread>
+#include "debugger/Source/ExpressionParser.h"
 #include "debugger/Source/Parser.h"
 #include "debugger/Source/LineMapping.h"
 #include "debugger/Source/Source.h"
@@ -1417,4 +1418,241 @@ int main() {
     res = ev.YieldResult();
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
     EXPECT_EQ(std::get<IntegerValue>(res).value, 5);
+}
+
+TEST(ExpressionParser, Parsing) {
+    auto expr = "it";
+    std::istringstream iss(expr);
+    ExpressionParser parser1(iss);
+    auto e = parser1.ParseExpression();
+
+    expr = "*it";
+    iss = std::istringstream(expr);
+    ExpressionParser parser2(iss);
+    EXPECT_NO_THROW({e = parser2.ParseExpression();});
+
+    expr = "it->v";
+    iss = std::istringstream(expr);
+    ExpressionParser parser3(iss);
+    EXPECT_NO_THROW({e = parser3.ParseExpression();});
+
+    expr = "1 + it->v";
+    iss = std::istringstream(expr);
+    ExpressionParser parser4(iss);
+    EXPECT_NO_THROW({e = parser4.ParseExpression();});
+
+    expr = "*a + it->v";
+    iss = std::istringstream(expr);
+    ExpressionParser parser5(iss);
+    EXPECT_NO_THROW({e = parser5.ParseExpression();});
+
+    expr = "*a + it->v + c[1 + a]";
+    iss = std::istringstream(expr);
+    ExpressionParser parser6(iss);
+    EXPECT_NO_THROW({e = parser6.ParseExpression();});
+}
+
+TEST_F(NativeSourceTest, ExpressionWithParsing1) {
+    auto program = R"(
+.text
+0       CALL 2
+1       HALT
+# MAIN:
+2       PUSH    BP
+3       MOV     BP, SP
+4       SUB     SP, 8
+5       MOV     [BP + -4], 5
+6       LEA     R1, [BP + -6]
+7       MOV     [BP + -3], R1
+8       MOV     R1, [BP + -3]
+90      MOV     [R1], 10
+10      MOV     R1, [BP + -3]
+11      LEA     R2, [BP + -8]
+12      MOV     [R1 + 1], R2
+13      MOV     R1, [BP + -3]
+14      MOV     R1, [R1 + 1]
+15      MOV     [R1], 15
+16      MOV     R1, [BP + -3]
+17      MOV     R1, [R1 + 1]
+18      MOV     [R1 + 1], 0
+19      LEA     R1, [BP + -4]
+20      MOV     [BP + -1], R1
+21      JMP     28
+# .L3:
+22      MOV     R1, [BP + -1]
+23      MOV     R1, [R1]
+24      PUTNUM  R1
+25      MOV     R1, [BP + -1]
+26      MOV     R1, [R1 + 1]
+27      MOV     [BP + -1], R1
+# .L2:
+28      MOV     R0, [BP + -1]
+29      CMP     R0, 0
+30      JNE     22
+31      MOV     R0, 0
+32      ADD SP, 8
+33      POP BP
+34      RET
+
+.debug_line
+8: 2
+9: 5
+10: 5
+11: 5
+12: 5
+13: 6
+14: 8
+15: 10
+16: 13
+17: 16
+18: 19
+19: 19
+20: 28
+21: 22
+22: 25
+24: 32
+
+.debug_info
+DIE_compilation_unit: {
+DIE_structured_type: {
+    ATTR_size: 2,
+    ATTR_id: 1,
+    ATTR_name: "struct list",
+    ATTR_members: {
+        0: {0: v},
+        1: {2: next},
+    },
+},
+DIE_pointer_type: {
+    ATTR_size: 1,
+    ATTR_type: 1,
+    ATTR_id: 2,
+},
+DIE_primitive_type: {
+    ATTR_name: signed_int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 35,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 35,
+        DIE_variable: {
+            ATTR_name: l1,
+            ATTR_type: 1,
+            ATTR_location: `BASE_REG_OFFSET -4`,
+        },
+        DIE_variable: {
+            ATTR_name: it,
+            ATTR_type: 2,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        }
+    },
+}
+}
+
+.debug_source
+#include <stdlib.h>
+#include <stdio.h>
+
+struct list {
+    int v;
+    struct list* next;
+};
+
+int main() {
+    struct list l1;
+    struct list l2;
+    struct list l3;
+    l1.v = 5;
+    l1.next = &l2;
+    l1.next->v = 10;
+    l1.next->next = &l3;
+    l1.next->next->v = 15;
+    l1.next->next->next = NULL;
+
+    struct list* it = &l1;
+    while (it != NULL) {
+        printf("%d\n", it->v);
+        it = it->next;
+    }
+}
+)";
+    Run(program);
+    native->WaitForDebugEvent();
+    source.SetSourceSoftwareBreakpoint(*native, 20);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    auto expr = "it->v";
+    auto result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 5);
+
+    expr = "it->v + 1";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 6);
+
+    expr = "it->next";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
+
+    expr = "(*it->next).v";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
+
+    expr = "(it->next)->v";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
+
+    expr = "it->next->v";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
+
+    expr = "it->next->next->v";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 15);
+
+    expr = "it->next->next->next";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
+    ASSERT_EQ(std::get<PointerValue>(result).value, 0);
+
+    expr = "it->next->next->v + (*it->next).v + l1.v";
+    result = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 30);
+
+    expr = "it->next + it";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr);
+    }, DebuggerError);
+
+    expr = "it->next + 3 + it->next";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr);
+    }, DebuggerError);
+
+    expr = "it->next + 3.1";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr);
+    }, DebuggerError);
+
+    expr = "it->asdf";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr);
+    }, DebuggerError);
+
+    expr = "*it->v";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr);
+    }, DebuggerError);
 }

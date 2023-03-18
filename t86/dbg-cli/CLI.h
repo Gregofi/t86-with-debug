@@ -156,6 +156,14 @@ commands:
 - get <var> - Display variable value.
 - scope - List all variables in current scope.
 )";
+    static constexpr const char* PRINT_USAGE =
+R"(print <expression>
+Evaluate a TinyC expression and return corresponding value.
+If you have a variable 'a' and 'b' in scope, you can write
+'a + b' to get their sum. If one of those is a pointer, you
+can do '*a + b', or if struct: 'a.foo + b'. You can do almost
+everything that you can in TinyC.
+)";
 
 public:
     Cli(std::string fname): fname(std::move(fname)) {
@@ -885,6 +893,18 @@ Most often, the correct address will be one below it.)";
         ReportBreak(e);
     }
 
+    void HandlePrint(std::string_view command) {
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        if (command == "") {
+            fmt::print("{}", PRINT_USAGE);
+            return;
+        }
+        auto val = source.EvaluateExpression(process, std::string{command});
+        fmt::print("{}\n", TypedValueToString(val));
+    }
+
     void HandleCommand(std::string_view command) {
         auto main_command_offset = command.find(' ');
         std::string_view main_command;
@@ -936,6 +956,8 @@ Most often, the correct address will be one below it.)";
             HandleStep(command);
         } else if (utils::is_prefix_of(main_command, "frame")) {
             HandleFrame(command);
+        } else if (utils::is_prefix_of(main_command, "print")) {
+            HandlePrint(command);
         } else {
             fmt::print("{}", USAGE);
         }

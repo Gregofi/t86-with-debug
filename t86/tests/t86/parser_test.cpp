@@ -132,7 +132,7 @@ TEST(TokenizerTest, Floats2) {
 }
 
 TEST(TokenizerTest, Ignore) {
-    std::istringstream iss("A B ( % @ A %");
+    std::istringstream iss("A B @ % @ A %");
     Lexer l(iss);
     ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
     ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 2));
