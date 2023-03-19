@@ -115,6 +115,11 @@ public:
     /// like skipping parts of functions etc.
     DebugEvent StepIn(Native& native) const;
 
+    /// Performs a source level step over.
+    /// This works on line information, if it is wrong or missing
+    /// this will behave seemingly awkwardly.
+    DebugEvent StepOver(Native& native) const;
+
     std::optional<Type> ReconstructTypeInformation(size_t id) const;
 private:
     friend class ExpressionEvaluator;

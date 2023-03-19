@@ -109,7 +109,7 @@ DebugEvent Native::PerformSingleStep() {
     }
 }
 
-DebugEvent Native::PerformStepOver() {
+DebugEvent Native::PerformStepOver(bool skip_bp) {
     if (!Arch::SupportHardwareLevelSingleStep()) {
         // Requires instruction emulator.
         throw DebuggerError(
@@ -125,7 +125,9 @@ DebugEvent Native::PerformStepOver() {
                 SetBreakpoint(ip + 1); 
             }
             // To step over a breakpoint on current line.
-            PerformSingleStep();
+            if (skip_bp) {
+                PerformSingleStep();
+            }
             ContinueExecution();
             auto e = WaitForDebugEvent();
             if (!bp_exists) {
@@ -138,7 +140,11 @@ DebugEvent Native::PerformStepOver() {
                 return Singlestep{};
             }
         } else {
-            return PerformSingleStep();
+            if (skip_bp) {
+                return PerformSingleStep();
+            } else {
+                return DoRawSingleStep();
+            }
         }
     }
 }

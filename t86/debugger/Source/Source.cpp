@@ -279,6 +279,17 @@ DebugEvent Source::StepIn(Native& native) const {
     return e;
 }
 
+DebugEvent Source::StepOver(Native& native) const {
+    // Very similar to StepIn, but the PerformStepOver itself offers
+    // functionality to step over breakpoints or not.
+    auto e = native.PerformStepOver();
+    while (std::holds_alternative<Singlestep>(e)
+            && !AddrToLine(native.GetIP())) {
+        e = native.PerformStepOver(false);
+    }
+    return e;
+}
+
 void FindVariables(uint64_t address, const DIE& die, std::map<std::string, const DIE*>& result) {
     if (die.get_tag() == DIE::TAG::variable) {
         auto name = FindDieAttribute<ATTR_name>(die);
