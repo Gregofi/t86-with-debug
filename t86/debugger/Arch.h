@@ -4,6 +4,7 @@
 #include "helpers.h"
 #include <cassert>
 #include <cmath>
+#include <set>
 #include <string>
 #include <map>
 
@@ -108,9 +109,16 @@ public:
             auto idx_masked = (control_reg & 0xFF00) >> 8;
             auto idx = static_cast<int>(std::log2(idx_masked));
             return idx;
-        } else {
-            UNREACHABLE;
         }
+        throw DebuggerError("Unsupported for current architecture");
+    }
+
+    static std::set<std::string> GetCallInstructions() {
+        auto &ins = GetInstance();
+        if (ins.current_machine == Machine::T86) {
+            return {"CALL"};
+        }
+        throw DebuggerError("Unsupported for current architecture");
     }
 
     Arch(const Arch&) = delete;
