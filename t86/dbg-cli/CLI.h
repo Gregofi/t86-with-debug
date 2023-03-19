@@ -965,8 +965,9 @@ Most often, the correct address will be one below it.)";
             fmt::print("{}", EXPRESSION_USAGE);
             return;
         }
-        auto val = source.EvaluateExpression(process, std::string{command});
-        fmt::print("({}) {}\n", TypedValueTypeToString(val), TypedValueToString(val));
+        auto [val, idx] = source.EvaluateExpression(process, std::string{command});
+        fmt::print("({}) ${} = {}\n", TypedValueTypeToString(val), idx,
+                                      TypedValueToString(val));
     }
 
     void HandleCommand(std::string_view command) {
@@ -1024,9 +1025,8 @@ Most often, the correct address will be one below it.)";
             HandleStep(command);
         } else if (utils::is_prefix_of(main_command, "frame")) {
             HandleFrame(command);
-        } else if (utils::is_prefix_of(main_command, "print")) {
-            fmt::print("There is no 'print' command, did you mean 'expression'?\n");
-        } else if (utils::is_prefix_of(main_command, "expression")) {
+        } else if (utils::is_prefix_of(main_command, "expression")
+                || utils::is_prefix_of(main_command, "print")) {
             HandleExpression(command);
         } else {
             fmt::print("{}", USAGE);

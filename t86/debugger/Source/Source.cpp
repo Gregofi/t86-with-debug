@@ -320,13 +320,15 @@ std::map<std::string, const DIE*> Source::GetActiveVariables(uint64_t address) c
     return result;
 }
 
-TypedValue Source::EvaluateExpression(Native& native, std::string expression) {
+std::pair<TypedValue, size_t>
+Source::EvaluateExpression(Native& native, std::string expression) {
     std::istringstream iss(std::move(expression));
     ExpressionParser parser(iss);
     auto e = parser.ParseExpression();
-    ExpressionEvaluator eval(native, *this);
+    ExpressionEvaluator eval(native, *this, evaluated_expressions);
     e->Accept(eval);
-    return eval.YieldResult();
+    evaluated_expressions.emplace_back(eval.YieldResult());
+    return {evaluated_expressions.back(), evaluated_expressions.size() - 1};
 }
 
 std::set<std::string> Source::GetScopedVariables(uint64_t address) const {

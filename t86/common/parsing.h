@@ -35,6 +35,7 @@ enum class TokenKind {
     MINUS,
     TIMES,
     LESS,
+    DOLLAR,
     GREATER,
     COMMA,
     STRING,
@@ -204,6 +205,9 @@ public:
         } else if (lookahead == '`') {
             GetChar();
             return MakeToken(TokenKind::BACKTICK);
+        } else if (lookahead == '$') {
+            GetChar();
+            return MakeToken(TokenKind::DOLLAR);
         } else if (lookahead == '.') {
             GetChar();
             return MakeToken(TokenKind::DOT);

@@ -98,7 +98,12 @@ public:
     /// Return names of variables that are currently in scope.
     std::set<std::string> GetScopedVariables(uint64_t address) const;
 
-    TypedValue EvaluateExpression(Native& native, std::string expression);
+    /// Parses and evaluates the expression. Returns the value of
+    /// the expression and the number of evaluated expressions
+    /// that is currently stored, in other words the index
+    /// of this new expression in the expression vector.
+    std::pair<TypedValue, size_t>
+    EvaluateExpression(Native& native, std::string expression);
 
     /// Returns lines from the source file. This function does
     /// not throw if out of bounds, instead it stops.
@@ -142,4 +147,5 @@ private:
     std::optional<SourceFile> source_file;
     std::optional<DIE> top_die;
     mutable std::map<size_t, Type> cached_types;
+    std::vector<TypedValue> evaluated_expressions;
 };

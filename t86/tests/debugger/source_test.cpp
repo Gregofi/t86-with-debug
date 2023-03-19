@@ -1588,71 +1588,76 @@ int main() {
     native->WaitForDebugEvent();
 
     auto expr = "it->v";
-    auto result = source.EvaluateExpression(*native, expr);
+    auto [result, _] = source.EvaluateExpression(*native, expr);
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 5);
 
     expr = "it->v + 1";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 6);
 
+    expr = "$0 + $1";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 11);
+
     expr = "it->next";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
 
     expr = "(*it->next).v";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
 
     expr = "(it->next)->v";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
 
     expr = "it->next->v";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
 
     expr = "it->next->next->v";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 15);
 
     expr = "it->next->next->next";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
     ASSERT_EQ(std::get<PointerValue>(result).value, 0);
 
     expr = "it->next->next->v + (*it->next).v + l1.v";
-    result = source.EvaluateExpression(*native, expr);
+    result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 30);
 
     expr = "it->next + it";
     ASSERT_THROW({
-        result = source.EvaluateExpression(*native, expr);
+        result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 
     expr = "it->next + 3 + it->next";
     ASSERT_THROW({
-        result = source.EvaluateExpression(*native, expr);
+        result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 
     expr = "it->next + 3.1";
     ASSERT_THROW({
-        result = source.EvaluateExpression(*native, expr);
+        result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 
     expr = "it->asdf";
     ASSERT_THROW({
-        result = source.EvaluateExpression(*native, expr);
+        result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 
     expr = "*it->v";
     ASSERT_THROW({
-        result = source.EvaluateExpression(*native, expr);
+        result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 }
