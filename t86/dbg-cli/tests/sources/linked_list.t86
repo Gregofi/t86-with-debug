@@ -5,32 +5,32 @@
 2       PUSH    BP
 3       MOV     BP, SP
 4       SUB     SP, 8
-5       MOV     [BP + -4], 5
-6       LEA     R1, [BP + -6]
-7       MOV     [BP + -3], R1
-8       MOV     R1, [BP + -3]
+5       MOV     [BP - 4], 5
+6       LEA     R1, [BP - 6]
+7       MOV     [BP - 3], R1
+8       MOV     R1, [BP - 3]
 90      MOV     [R1], 10
-10      MOV     R1, [BP + -3]
-11      LEA     R2, [BP + -8]
+10      MOV     R1, [BP - 3]
+11      LEA     R2, [BP - 8]
 12      MOV     [R1 + 1], R2
-13      MOV     R1, [BP + -3]
+13      MOV     R1, [BP - 3]
 14      MOV     R1, [R1 + 1]
 15      MOV     [R1], 15
-16      MOV     R1, [BP + -3]
+16      MOV     R1, [BP - 3]
 17      MOV     R1, [R1 + 1]
 18      MOV     [R1 + 1], 0
-19      LEA     R1, [BP + -4]
-20      MOV     [BP + -1], R1
+19      LEA     R1, [BP - 4]
+20      MOV     [BP - 1], R1
 21      JMP     28
 # .L3:
-22      MOV     R1, [BP + -1]
+22      MOV     R1, [BP - 1]
 23      MOV     R1, [R1]
 24      PUTNUM  R1
-25      MOV     R1, [BP + -1]
+25      MOV     R1, [BP - 1]
 26      MOV     R1, [R1 + 1]
-27      MOV     [BP + -1], R1
+27      MOV     [BP - 1], R1
 # .L2:
-28      MOV     R0, [BP + -1]
+28      MOV     R0, [BP - 1]
 29      CMP     R0, 0
 30      JNE     22
 31      MOV     R0, 0

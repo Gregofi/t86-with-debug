@@ -210,25 +210,25 @@ TEST_F(NativeTest, MultipleBreakpointHits) {
 0 NOP
 1 MOV BP, SP
 2 SUB SP, 1
-3 MOV [BP + -1], 0
+3 MOV [BP - 1], 0
 4 JMP 14
 
 # Check if iter variable is odd and print if so
-5 MOV R0, [BP + -1]
+5 MOV R0, [BP - 1]
 6 AND R0, 1
 7 CMP R0, 1
 8 JNE 11
 
-9 MOV R0, [BP + -1]
+9 MOV R0, [BP - 1]
 10 ADD R1, R0
 
 # Increment iteration variable
-11 MOV R0, [BP + -1]
+11 MOV R0, [BP - 1]
 12 ADD R0, 1
-13 MOV [BP + -1], R0
+13 MOV [BP - 1], R0
 
 # Condition check
-14 MOV R0, [BP + -1]
+14 MOV R0, [BP - 1]
 15 CMP R0, 9
 16 JLE 5
 
@@ -268,20 +268,20 @@ TEST_F(NativeTest, EnableDisableBreakpoints) {
 0 NOP
 1 MOV BP, SP
 2 SUB SP, 1
-3 MOV [BP + -1], 0
+3 MOV [BP - 1], 0
 4 JMP 14
 
 # Check if iter variable is odd and print if so
-5 MOV R0, [BP + -1]
+5 MOV R0, [BP - 1]
 6 AND R0, 1
 7 CMP R0, 1
 8 JNE 11
 
-9 MOV R0, [BP + -1]
+9 MOV R0, [BP - 1]
 10 ADD R1, R0
 
 # Increment iteration variable
-11 MOV R0, [BP + -1]
+11 MOV R0, [BP - 1]
 12 ADD R0, 1
 13 MOV [BP + -1], R0
 

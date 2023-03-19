@@ -75,8 +75,13 @@ tiny::t86::FloatRegister Parser::FloatRegister() {
 
 /// Allows only immediate as operand
 int64_t Parser::Imm() {
-    if (curtok.kind == TokenKind::NUM) {
-        auto val = lex.getNumber();
+    if (IsNumber(curtok) || curtok.kind == TokenKind::MINUS) {
+        int neg = 1;
+        if (curtok.kind == TokenKind::MINUS) {
+            neg = -1;
+            GetNext();
+        }
+        auto val = neg * lex.getNumber();
         GetNext();
         return val;
     } else {
@@ -108,22 +113,32 @@ tiny::t86::Operand Parser::FloatImmOrRegister() {
 tiny::t86::Operand Parser::ImmOrRegister() {
     if (curtok.kind == TokenKind::ID) {
         return Register();
-    } else if (curtok.kind == TokenKind::NUM) {
+    } else if (IsNumber(curtok)) {
         return Imm();
+    } else if (curtok.kind == TokenKind::MINUS) {
+        if (GetNext() == TokenKind::NUM) {
+            return -Imm();
+        } else {
+            throw CreateError("Expected either i or R");
+        }
     } else {
         throw CreateError("Expected either i or R");
     }
 }
 
-/// Allows R or R + i
+/// Allows R or R [+-] i
 tiny::t86::Operand Parser::ImmOrRegisterOrRegisterPlusImm() {
-    if (curtok.kind == TokenKind::NUM) {
+    if (IsNumber(curtok)) {
         return Imm();
     } else if (curtok.kind == TokenKind::ID) {
         auto reg = Register();
         if (curtok.kind == TokenKind::PLUS) {
             GetNext();
             auto imm = Imm();
+            return reg + imm;
+        } else if (curtok.kind == TokenKind::MINUS) {
+            GetNext();
+            auto imm = -Imm();
             return reg + imm;
         }
         return reg;
@@ -138,9 +153,13 @@ tiny::t86::Operand Parser::SimpleMemory() {
         GetNext(); 
         if (curtok.kind == TokenKind::ID) {
             tiny::t86::Register inner = Register();
-            if (curtok.kind == TokenKind::PLUS) {
+            if (curtok.kind == TokenKind::PLUS || curtok.kind == TokenKind::MINUS) {
+                bool minus = curtok.kind == TokenKind::MINUS;
                 GetNext();
                 auto imm = Imm();
+                if (minus) {
+                    imm = -imm;
+                }
                 if (curtok.kind != TokenKind::RBRACKET) {
                     throw CreateError("Expected end of ']'");
                 }
@@ -178,7 +197,7 @@ tiny::t86::Operand Parser::RegisterOrSimpleMemory() {
 
 /// Allows R, i, [i], [R], [R + i]
 tiny::t86::Operand Parser::ImmOrRegisterOrSimpleMemory() {
-    if (curtok.kind == TokenKind::ID || curtok.kind == TokenKind::NUM) {
+    if (curtok.kind == TokenKind::ID || IsNumber(curtok)) {
         return ImmOrRegister();
     } else if (curtok.kind == TokenKind::LBRACKET) {
         return SimpleMemory();
@@ -190,7 +209,7 @@ tiny::t86::Operand Parser::ImmOrRegisterOrSimpleMemory() {
 
 /// Allows R, i, R + i, [i], [R], [R + i]
 tiny::t86::Operand Parser::ImmOrRegisterPlusImmOrSimpleMemory() {
-    if (curtok.kind == TokenKind::ID || curtok.kind == TokenKind::NUM) {
+    if (curtok.kind == TokenKind::ID || IsNumber(curtok)) {
         return ImmOrRegisterOrRegisterPlusImm();
     } else if (curtok.kind == TokenKind::LBRACKET) {
         return SimpleMemory();
@@ -207,7 +226,7 @@ tiny::t86::Operand Parser::Memory() {
     if (curtok.kind == TokenKind::LBRACKET) {
         GetNext();
         // Must be [i]
-        if (curtok.kind == TokenKind::NUM) {
+        if (IsNumber(curtok)) {
             auto imm = lex.getNumber();
             GetNext();
             result = Mem(imm);
@@ -215,12 +234,15 @@ tiny::t86::Operand Parser::Memory() {
             auto regname1 = lex.getId();
             auto reg1 = getRegister(regname1);
             GetNext();
-            if (curtok.kind == TokenKind::PLUS) {
+            if (curtok.kind == TokenKind::PLUS || curtok.kind == TokenKind::MINUS) {
+                bool minus = curtok.kind == TokenKind::MINUS;
                 GetNext();
                 // Can be [R + i], [R + i + R] or [R + i + R * i]
-                if (curtok.kind == TokenKind::NUM) {
-                    auto imm1 = lex.getNumber();
-                    GetNext();
+                if (IsNumber(curtok)) {
+                    auto imm1 = Imm();
+                    if (minus) {
+                        imm1 = -imm1;
+                    }
                     // Can be either [R + i + R] or [R + i + R * i]
                     if (curtok.kind == TokenKind::PLUS) {
                         GetNext();
@@ -231,8 +253,7 @@ tiny::t86::Operand Parser::Memory() {
                             // Must be [R + i + R * i]
                             if (curtok.kind == TokenKind::TIMES) {
                                 GetNext();
-                                auto imm2 = lex.getNumber();
-                                GetNext();
+                                auto imm2 = Imm();
                                 result = Mem(reg1 + imm1 + reg2 * imm2);
                             // Must be [R + i + R]
                             } else {
@@ -249,12 +270,11 @@ tiny::t86::Operand Parser::Memory() {
                     auto regname2 = lex.getId();
                     auto reg2 = getRegister(regname2);
                     GetNext();
-                    // Must be [R + R + i]
+                    // Must be [R + R * i]
                     if (curtok.kind == TokenKind::TIMES) {
                         GetNext();
-                        if (curtok.kind == TokenKind::NUM) {
-                            auto imm = lex.getNumber();
-                            GetNext();
+                        if (IsNumber(curtok)) {
+                            auto imm = Imm();
                             result = Mem(reg1 + reg2 * imm);
                         }
                     // Must be [R + R]
@@ -267,9 +287,8 @@ tiny::t86::Operand Parser::Memory() {
             // Must be [R * i]
             } else if (curtok.kind == TokenKind::TIMES) {
                 GetNext();
-                if (curtok.kind == TokenKind::NUM) {
-                    auto imm = lex.getNumber();
-                    GetNext();
+                if (IsNumber(curtok)) {
+                    auto imm = Imm();
                     result = Mem(reg1 * imm);
                 } else {
                     throw CreateError("Expected 'i'");
@@ -303,7 +322,7 @@ tiny::t86::Operand Parser::Operand() {
         } else {
             return Register();
         }
-    } else if (curtok.kind == TokenKind::NUM) {
+    } else if (IsNumber(curtok)) {
         return Imm();
     } else if (curtok.kind == TokenKind::FLOAT) {
         return FloatImm();
@@ -375,7 +394,7 @@ std::unique_ptr<tiny::t86::MOV> Parser::ParseMOV() {
 
 std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
     // Address at the beginning is optional
-    if (curtok.kind == TokenKind::NUM) {
+    if (IsNumber(curtok)) {
         GetNext();
     }
 
@@ -387,8 +406,7 @@ std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
 
     // MOV is a special snowflake in a sense that it allows
     // very big range of operands, but they have very restrictive
-    // relationships. So we just allow everything and hope
-    // it won't explode.
+    // relationships.
     if (ins_name == "MOV") {
         return ParseMOV();
     }
@@ -478,24 +496,24 @@ std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
 #undef PARSE_NULLARY
 
 void Parser::Text() {
-    while (curtok.kind == TokenKind::NUM || curtok.kind == TokenKind::ID) {
+    while (IsNumber(curtok) || curtok.kind == TokenKind::ID) {
         auto ins = Instruction();
         program.push_back(std::move(ins));
     }
 }
 
 void Parser::Data() {
-    while (curtok.kind == TokenKind::STRING || curtok.kind == TokenKind::NUM) {
+    while (curtok.kind == TokenKind::STRING || IsNumber(curtok)) {
         if (curtok.kind == TokenKind::STRING) {
             auto string = lex.getStr();
             std::transform(string.begin(), string.end(),
                            std::back_inserter(data),
                            [](auto &&c) { return c; });
             data.push_back(0);
-        } else if (curtok.kind == TokenKind::NUM) {
-            data.emplace_back(lex.getNumber());
+            GetNext();
+        } else if (IsNumber(curtok)) {
+            data.emplace_back(Imm());
         }
-        GetNext();
     }
 }
 

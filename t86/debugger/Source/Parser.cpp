@@ -84,11 +84,24 @@ DIE::TAG Parser::ParseDIETag(std::string_view v) const {
     }
 }
 
-expr::Location Parser::ParseOperand() {
+expr::Offset Parser::ParseOffset() {
+    int neg = 1;
+    if (curtok.kind == TokenKind::MINUS) {
+        neg = -1;
+        GetNext();
+    }
     if (curtok.kind == TokenKind::NUM) {
-        auto num = lex.getNumber();
+        auto num = neg * lex.getNumber();
         GetNext();
         return expr::Offset{num};
+    } else {
+        throw CreateError("Expected number possibly beginning with '-'.");
+    }
+}
+
+expr::Location Parser::ParseOperand() {
+    if (curtok.kind == TokenKind::NUM || curtok.kind == TokenKind::MINUS) {
+        return ParseOffset();
     } else if (curtok.kind == TokenKind::ID) {
         // Do not sanitize register names here
         // because this information should be
@@ -106,13 +119,8 @@ expr::LocExpr Parser::ParseOneExprLoc() {
         auto id = lex.getId();
         GetNext();
         if (id == "BASE_REG_OFFSET") {
-            if (curtok.kind == TokenKind::NUM) {
-                auto num = lex.getNumber();
-                GetNext();
-                return expr::FrameBaseRegisterOffset{num};
-            } else {
-                throw CreateError("BASE_REG_OFFSET instruction can only have number as its operand");
-            }
+            auto num = ParseOffset();
+            return expr::FrameBaseRegisterOffset{num.value};
         } else if (id == "PUSH") {
             auto operand = ParseOperand(); 
             return expr::Push{std::move(operand)};

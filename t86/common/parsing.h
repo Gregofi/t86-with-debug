@@ -32,6 +32,7 @@ enum class TokenKind {
     END,
     SEMICOLON,
     PLUS,
+    MINUS,
     TIMES,
     LESS,
     GREATER,
@@ -91,8 +92,7 @@ public:
         ignore = on;
     }
 
-    TokenKind ParseNumber(bool negative) {
-        int neg = negative ? -1 : 1;
+    TokenKind ParseNumber() {
         bool is_float = false;
         std::string num{lookahead};
         while (true) {
@@ -106,10 +106,10 @@ public:
             num += lookahead;
         }
         if (is_float) {
-            float_number = neg * std::stod(num);
+            float_number = std::stod(num);
             return TokenKind::FLOAT;
         } else {
-            number = neg * std::stoi(num);
+            number = std::stoi(num);
             return TokenKind::NUM;
         }
     }
@@ -182,6 +182,13 @@ public:
         } else if (lookahead == '+') {
             GetChar();
            return MakeToken(TokenKind::PLUS);
+        } else if (lookahead == '-') {
+            GetChar();
+            if (lookahead == '>') {
+                GetChar();
+                return MakeToken(TokenKind::ARROW);
+            }
+           return MakeToken(TokenKind::MINUS);
         } else if (lookahead == '>') {
             GetChar();
            return MakeToken(TokenKind::GREATER);
@@ -203,24 +210,8 @@ public:
         } else if (lookahead == '"') {
             ParseString();
             return MakeToken(TokenKind::STRING);
-        } else if (isdigit(lookahead) || lookahead == '-') {
-            bool negative = false;
-            if (lookahead == '-') {
-                negative = lookahead == '-';
-                GetChar();
-            }
-            if (isdigit(lookahead)) {
-                // Can be either int or float
-                return MakeToken(ParseNumber(negative));
-            } else {
-                if (lookahead == '>') {
-                    GetChar();
-                    return MakeToken(TokenKind::ARROW);
-                } else {
-                    throw ParserError(fmt::format("{}:{}:Expected either number or '>'",
-                                                  row, col));
-                }
-            }
+        } else if (isdigit(lookahead)) {
+            return MakeToken(ParseNumber());
         } else if (isalpha(lookahead) || lookahead == '_') { // identifier
             ParseIdentifier();
             return MakeToken(TokenKind::ID);
