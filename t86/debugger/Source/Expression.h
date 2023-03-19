@@ -38,6 +38,7 @@ std::string TypedValueTypeToString(const TypedValue& v);
 std::string TypedValueToString(const TypedValue& v);
 
 class Identifier;
+class EvaluatedExpr;
 class Dereference;
 class ArrayAccess;
 class Plus;
@@ -49,6 +50,7 @@ class Integer;
 class ExpressionVisitor {
 public:
     virtual void Visit(const Identifier&) = 0;
+    virtual void Visit(const EvaluatedExpr&) = 0;
     virtual void Visit(const Dereference&) = 0;
     virtual void Visit(const ArrayAccess&) = 0;
     virtual void Visit(const Plus&) = 0;
@@ -60,8 +62,10 @@ public:
 
 class ExpressionEvaluator: public ExpressionVisitor {
 public:
-    ExpressionEvaluator(Native& native, Source& source);
+    ExpressionEvaluator(Native& native, Source& source,
+                        const std::vector<TypedValue>& evaluated_expressions = {});
     void Visit(const Identifier& id) override;
+    void Visit(const EvaluatedExpr& id) override;
     void Visit(const Dereference& id) override;
     void Visit(const ArrayAccess& id) override;
     void Visit(const Plus& id) override;
@@ -77,6 +81,7 @@ private:
     std::map<std::string, const DIE*> variables;
     Native& native;
     Source& source;
+    const std::vector<TypedValue>& evaluated_expressions;
     // Serves as a result since  the visit methods can't have return type.
     TypedValue visitor_value;
 };
@@ -87,6 +92,15 @@ class Expression {
 public:
     virtual ~Expression() = default;
     virtual void Accept(ExpressionVisitor& vis) const = 0;
+};
+
+class EvaluatedExpr: public Expression {
+public:
+    EvaluatedExpr(size_t idx): idx(idx) { }
+    virtual void Accept(ExpressionVisitor& v) const override {
+        v.Visit(*this);
+    }
+    size_t idx;
 };
 
 class Identifier: public Expression {

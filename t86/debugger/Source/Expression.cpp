@@ -56,10 +56,12 @@ std::string TypedValueToString(const TypedValue& v) {
     }, v);
 }
 
-ExpressionEvaluator::ExpressionEvaluator(Native& native, Source& source)
+ExpressionEvaluator::ExpressionEvaluator(Native& native, Source& source,
+                        const std::vector<TypedValue>& evaluated_expressions)
     : variables(source.GetActiveVariables(native.GetIP())), 
       native(native),
-      source(source) {}
+      source(source),
+      evaluated_expressions(evaluated_expressions) {}
  
 TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& loc,
                                                         const Type& type) {
@@ -116,11 +118,18 @@ void ExpressionEvaluator::Visit(const Identifier& id) {
     visitor_value = EvaluateTypeAndLocation(interpreted_loc, *type);
 }
 
+void ExpressionEvaluator::Visit(const EvaluatedExpr& e) {
+    if (e.idx >= evaluated_expressions.size()) {
+        throw DebuggerError(fmt::format("No expression ${}", e.idx));
+    }
+    visitor_value = evaluated_expressions[e.idx];
+}
+
 TypedValue ExpressionEvaluator::Dereference(TypedValue&& val) {
     if (!std::holds_alternative<PointerValue>(val)) {
         throw DebuggerError("Can only dereference pointers");
     }
-    auto ptr = std::get<PointerValue>(val);
+    auto ptr = std::get<PointerValue>(std::move(val));
     auto points_to_type = source.ReconstructTypeInformation(ptr.type.type_idx);
     log_info("Pointer value: {}", ptr.value);
     auto loc = expr::Offset{static_cast<int64_t>(ptr.value)};

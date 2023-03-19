@@ -41,6 +41,7 @@ private:
     std::unique_ptr<Expression> unary();
     std::unique_ptr<Expression> postfix();
     std::unique_ptr<Expression> primary();
+
     TokenKind GetNext() {
         return (curtok = lex.getNext()).kind;
     }

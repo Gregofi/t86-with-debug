@@ -109,6 +109,13 @@ std::unique_ptr<Expression> ExpressionParser::primary() {
         }
         GetNext();
         return e;
+    } else if (curtok.kind == TokenKind::DOLLAR) {
+        if (GetNext() != TokenKind::NUM) {
+            throw CreateError("Expected an index for $");
+        }
+        auto num = lex.getNumber();
+        GetNext();
+        return std::make_unique<EvaluatedExpr>(num);
     } else {
         throw CreateError("Expected either identifier, int or float");
     }
