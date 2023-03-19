@@ -94,7 +94,14 @@ Without any subcommands (just inext) = Performs instruction level step over.
 R"(step <subcommands> [parameter [parameter...]]
 Source level step in.
 
-Without any subcommands (just `step`) performs source level single step.
+Without any subcommands (just `step`) performs source level step in.
+- help = Print this.
+)";
+    static constexpr const char* NEXT_USAGE =
+R"(next <subcommands> [parameter [parameter...]]
+Source level step over.
+
+Without any subcommands (just `next`) performs source level step over.
 - help = Print this.
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
@@ -657,6 +664,27 @@ Most often, the correct address will be one below it.)";
         }
     }
 
+    void SourceLevelStep(bool step_over = false) {
+        DebugEvent e;
+        if (step_over) {
+            e = source.StepOver(process);
+        } else {
+            e = source.StepIn(process);
+        }
+        if (!std::holds_alternative<Singlestep>(e)) {
+            ReportDebugEvent(e);
+        }
+        if (std::holds_alternative<ExecutionEnd>(e)) {
+            is_running = false;
+        } else {
+            auto ip = process.GetIP();
+            auto line = source.AddrToLine(ip);
+            // The line must be valid here since we did a source level singlestep.
+            assert(line);
+            PrettyPrintCode(*line);
+        }
+    }
+
     void HandleStep(std::string_view command) {
         if (!process.Active()) {
             Error("No active process.");
@@ -665,21 +693,23 @@ Most often, the correct address will be one below it.)";
             Error("Process finished executing, it's not possible to continue.");
         }
         if (command == "") {
-            auto e = source.StepIn(process);
-            if (!std::holds_alternative<Singlestep>(e)) {
-                ReportDebugEvent(e);
-            }
-            if (std::holds_alternative<ExecutionEnd>(e)) {
-                is_running = false;
-            } else {
-                auto ip = process.GetIP();
-                auto line = source.AddrToLine(ip);
-                // The line must be valid here since we did a source level singlestep.
-                assert(line);
-                PrettyPrintCode(*line);
-            }
+            SourceLevelStep();
         } else {
             fmt::print("{}", STEP_USAGE);
+        }
+    }
+
+    void HandleNext(std::string_view command) {
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        if (!is_running) {
+            Error("Process finished executing, it's not possible to continue.");
+        }
+        if (command == "") {
+            SourceLevelStep(true);
+        } else {
+            fmt::print("{}", NEXT_USAGE);
         }
     }
 
@@ -986,6 +1016,8 @@ Most often, the correct address will be one below it.)";
             HandleVariable(command);
         } else if (utils::is_prefix_of(main_command, "watchpoint")) {
             HandleWatchpoint(command);
+        } else if (utils::is_prefix_of(main_command, "next")) {
+            HandleNext(command);
         } else if (utils::is_prefix_of(main_command, "step")) {
             HandleStep(command);
         } else if (utils::is_prefix_of(main_command, "frame")) {

@@ -111,7 +111,10 @@ public:
 
     bool Active() const;
 
-    DebugEvent PerformStepOver();
+    /// Performs step over, skipping any call instruction.
+    /// If skip_bp is set then all breakpoints will be
+    /// jumped over (the default behavior).
+    DebugEvent PerformStepOver(bool skip_bp = true);
 
     /// Does singlestep, does not check for breakpoints.
     DebugEvent DoRawSingleStep();
