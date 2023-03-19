@@ -966,7 +966,7 @@ Most often, the correct address will be one below it.)";
             return;
         }
         auto val = source.EvaluateExpression(process, std::string{command});
-        fmt::print("{}\n", TypedValueToString(val));
+        fmt::print("({}) {}\n", TypedValueTypeToString(val), TypedValueToString(val));
     }
 
     void HandleCommand(std::string_view command) {

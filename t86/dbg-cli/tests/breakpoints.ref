@@ -18,6 +18,7 @@ commands:
 - run = Run the program, has no subcommands.
 - attach <port> = Attach to an already running VM, has no subcommands.
 - frame = Print information about current function and variables, has no subcommads.
+- expression = Evaluate the source language expression and print result.
 Use the `run` or `attach` command to run a process first.
 Started process 'tests/sources/swap.t86'
 Breakpoint set on address 2: 'MOV R0, [R2]'
