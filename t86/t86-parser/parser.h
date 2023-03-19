@@ -67,6 +67,15 @@ public:
 
     std::unique_ptr<tiny::t86::Instruction> Instruction();
 
+    /// Returns true if the current token represents a number.
+    /// In a normal world where expression are arbitrary, the 
+    /// parse would be covered by an unary operator expression.
+    /// The T86 however places strict conditions on the expressions,
+    /// and so we have to check the lookahead like this.
+    bool IsNumber(Token tk) {
+        return tk.kind == TokenKind::NUM || tk.kind == TokenKind::MINUS;
+    }
+
     void Text();
 
     void Data();

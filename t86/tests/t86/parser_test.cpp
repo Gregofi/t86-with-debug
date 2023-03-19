@@ -56,8 +56,9 @@ TEST(TokenizerTest, Minus) {
     Lexer l(iss);
     ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
     ASSERT_EQ(l.getNext(), _T(TokenKind::LBRACKET, 0, 4));
-    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 5));
-    ASSERT_EQ(l.getNumber(), -1);
+    ASSERT_EQ(l.getNext(), _T(TokenKind::MINUS, 0, 5));
+    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 6));
+    ASSERT_EQ(l.getNumber(), 1);
     ASSERT_EQ(l.getNext(), _T(TokenKind::RBRACKET, 0, 7));
     ASSERT_EQ(l.getNext(), _T(TokenKind::COMMA, 0, 8));
     ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 10));

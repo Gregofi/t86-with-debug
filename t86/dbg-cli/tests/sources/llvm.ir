@@ -5,13 +5,13 @@
 # main:
 2       PUSH    BP
 3       MOV     BP, SP
-4       MOV     [BP + -1], 0
-5       MOV     [BP + -2], 5
+4       MOV     [BP - 1], 0
+5       MOV     [BP - 2], 5
 6       LEA     R0, [BP + -2]
-7       MOV     [BP + -4], R0
+7       MOV     [BP - 4], R0
 8       MOV     R0, [BP + -4]
 9       MOV     [R0], 10
-10      MOV     R0, [BP + -4]
+10      MOV     R0, [BP - 4]
 11      MOV     R1, [R0]
 12      ADD     R1, [BP + -2]
 13      POP     BP

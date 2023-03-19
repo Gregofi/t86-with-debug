@@ -31,6 +31,7 @@ private:
     DIE ParseDIE(std::string name);
     ATTR_members StructuredMembers();
     DIE::TAG ParseDIETag(std::string_view v) const;
+    expr::Offset ParseOffset();
     DIE_ATTR ParseATTR(std::string_view v);
     std::vector<expr::LocExpr> ParseExprLoc();
     expr::Location ParseOperand();
