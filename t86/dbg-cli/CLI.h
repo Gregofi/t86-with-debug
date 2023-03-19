@@ -58,6 +58,7 @@ commands:
 - run = Run the program, has no subcommands.
 - attach <port> = Attach to an already running VM, has no subcommands.
 - frame = Print information about current function and variables, has no subcommads.
+- expression = Evaluate the source language expression and print result.
 )";
 // Do not append anything other than commands here because
 // the Cli class will add its own command after this string
@@ -171,13 +172,14 @@ commands:
 - get <var> - Display variable value.
 - scope - List all variables in current scope.
 )";
-    static constexpr const char* PRINT_USAGE =
-R"(print <expression>
-Evaluate a TinyC expression and return corresponding value.
+    static constexpr const char* EXPRESSION_USAGE =
+R"(expression <expression>
+Evaluate a TinyC expression and print corresponding value.
 If you have a variable 'a' and 'b' in scope, you can write
 'a + b' to get their sum. If one of those is a pointer, you
 can do '*a + b', or if struct: 'a.foo + b'. You can do almost
-everything that you can in TinyC.
+everything that you can in TinyC. The expression however as of
+now doesn't support assignment and function calls.
 )";
 
 public:
@@ -955,12 +957,12 @@ Most often, the correct address will be one below it.)";
         ReportBreak(e);
     }
 
-    void HandlePrint(std::string_view command) {
+    void HandleExpression(std::string_view command) {
         if (!process.Active()) {
             Error("No active process.");
         }
         if (command == "") {
-            fmt::print("{}", PRINT_USAGE);
+            fmt::print("{}", EXPRESSION_USAGE);
             return;
         }
         auto val = source.EvaluateExpression(process, std::string{command});
@@ -1023,7 +1025,9 @@ Most often, the correct address will be one below it.)";
         } else if (utils::is_prefix_of(main_command, "frame")) {
             HandleFrame(command);
         } else if (utils::is_prefix_of(main_command, "print")) {
-            HandlePrint(command);
+            fmt::print("There is no 'print' command, did you mean 'expression'?\n");
+        } else if (utils::is_prefix_of(main_command, "expression")) {
+            HandleExpression(command);
         } else {
             fmt::print("{}", USAGE);
         }
