@@ -111,6 +111,8 @@ public:
 
     bool Active() const;
 
+    DebugEvent PerformStepOver();
+
     /// Does singlestep, does not check for breakpoints.
     DebugEvent DoRawSingleStep();
 protected:

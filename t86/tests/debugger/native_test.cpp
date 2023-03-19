@@ -711,3 +711,56 @@ TEST_F(NativeTest, ErrorInCPU) {
     auto e = native->WaitForDebugEvent();
     ASSERT_TRUE(std::holds_alternative<CpuError>(e));
 }
+
+TEST_F(NativeTest, StepOver) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV R1, 2
+2 CALL 5
+3 ADD R1, R0
+4 HALT
+5 MOV R0, 3
+6 MOV R1, 4
+7 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    auto e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e)); 
+    e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e)); 
+    e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e)); 
+    ASSERT_EQ(native->GetIP(), 3);
+    e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e)); 
+    e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(e)); 
+}
+
+TEST_F(NativeTest, StepOverWithBreakpoints) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV R1, 2
+2 CALL 5
+3 ADD R1, R0
+4 HALT
+5 MOV R0, 3
+6 MOV R1, 4
+7 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(2);
+    native->SetBreakpoint(6);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    auto e = native->PerformStepOver();
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e)); 
+    ASSERT_EQ(native->GetIP(), 6);
+}

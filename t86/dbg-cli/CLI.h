@@ -77,14 +77,22 @@ address 1 you would use `breakpoint iset 1` or just `br is 1`.
 )";
     static constexpr const char* STEPI_USAGE =
 R"(istep <subcommands> [parameter [parameter...]]
-Used for instruction level single stepping
+Assembly level step in.
 
 Without any subcommands (just istep) = Performs instruction level single step.
 - help = Print this.
 )";
+    static constexpr const char* INEXT_USAGE =
+R"(istep <subcommands> [parameter [parameter...]]
+Assembly level step over.
+
+Without any subcommands (just inext) = Performs instruction level step over.
+- help = Print this.
+)";
+
     static constexpr const char* STEP_USAGE =
 R"(step <subcommands> [parameter [parameter...]]
-Used for source level stepping.
+Source level step in.
 
 Without any subcommands (just `step`) performs source level single step.
 - help = Print this.
@@ -675,6 +683,27 @@ Most often, the correct address will be one below it.)";
         }
     }
 
+    void NativeLevelStep(bool step_over = false) {
+        DebugEvent e;
+        if (step_over) {
+            e = process.PerformStepOver();
+        } else {
+            e = process.PerformSingleStep();
+        }
+        if (!std::holds_alternative<Singlestep>(e)) {
+            ReportDebugEvent(e);
+        }
+        if (std::holds_alternative<ExecutionEnd>(e)) {
+            is_running = false;
+        } else {
+            // Instruction level stepping should always
+            // display the instructions even if they
+            // have source line mapping.
+            auto ip = process.GetIP();
+            PrettyPrintText(ip);
+        }
+    }
+
     void HandleStepi(std::string_view command) {
         if (!process.Active()) {
             Error("No active process.");
@@ -683,23 +712,26 @@ Most often, the correct address will be one below it.)";
             Error("Process finished executing, it's not possible to continue.");
         }
         if (command == "") {
-            auto e = process.PerformSingleStep();
-            if (!std::holds_alternative<Singlestep>(e)) {
-                ReportDebugEvent(e);
-            }
-            if (std::holds_alternative<ExecutionEnd>(e)) {
-                is_running = false;
-            } else {
-                // Instruction level stepping should always
-                // display the instructions even if they
-                // have source line mapping.
-                auto ip = process.GetIP();
-                PrettyPrintText(ip);
-            }
+            NativeLevelStep();
         } else if (utils::is_prefix_of(command, "help")) {
             fmt::print("{}", STEPI_USAGE);
         } else {
             fmt::print("{}", STEPI_USAGE);
+        }
+    }
+
+    void HandleINext(std::string_view command) {
+        // TODO: Think about if inext and istep couldn't be unified.
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        if (!is_running) {
+            Error("Process finished executing, it's not possible to continue.");
+        }
+        if (command == "") {
+            NativeLevelStep(true);
+        } else {
+            fmt::print("{}", INEXT_USAGE);
         }
     }
 
@@ -938,6 +970,8 @@ Most often, the correct address will be one below it.)";
             HandleBreakpoint(command); 
         } else if (utils::is_prefix_of(main_command, "istep")) {
             HandleStepi(command);
+        } else if (utils::is_prefix_of(main_command, "inext")) {
+            HandleINext(command);
         } else if (utils::is_prefix_of(main_command, "disassemble")) {
             HandleDisassemble(command);
         } else if (utils::is_prefix_of(main_command, "assemble")) {

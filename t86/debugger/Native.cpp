@@ -109,6 +109,40 @@ DebugEvent Native::PerformSingleStep() {
     }
 }
 
+DebugEvent Native::PerformStepOver() {
+    if (!Arch::SupportHardwareLevelSingleStep()) {
+        // Requires instruction emulator.
+        throw DebuggerError(
+            "Singlestep is not supported for current architecture");
+    } else {
+        auto ip = GetIP();
+        auto text = ReadText(ip, 1)[0];
+        auto calls = Arch::GetCallInstructions();
+        auto is_call = std::ranges::find_if(calls, [&text](auto&& ins) { return text.starts_with(ins); });
+        if (is_call != calls.end()) {
+            bool bp_exists = software_breakpoints.contains(ip + 1);
+            if (!bp_exists) {
+                SetBreakpoint(ip + 1); 
+            }
+            // To step over a breakpoint on current line.
+            PerformSingleStep();
+            ContinueExecution();
+            auto e = WaitForDebugEvent();
+            if (!bp_exists) {
+                UnsetBreakpoint(ip + 1);
+            }
+            // We probably hit some other breakpoint in the call.
+            if (GetIP() != ip + 1) {
+                return e;
+            } else {
+                return Singlestep{};
+            }
+        } else {
+            return PerformSingleStep();
+        }
+    }
+}
+
 size_t Native::TextSize() {
     return process->TextSize();
 }
