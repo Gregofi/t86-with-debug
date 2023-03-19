@@ -13,6 +13,49 @@ uint64_t GetRawValue(Native& native, const expr::Location& loc) {
     }, loc);
 }
 
+std::string TypedValueTypeToString(const TypedValue& v) {
+    using std::string_literals::operator""s;
+    return std::visit(utils::overloaded {
+        [](const PointerValue& t) {
+            return fmt::format("{}", TypeToString(t.type));
+        },
+        [](const IntegerValue& v) {
+            return "int"s;
+        },
+        [](const FloatValue& v) {
+            return "float"s;
+        },
+        [](const StructuredValue& v) {
+            return v.name;
+        }
+    }, v);
+}
+
+std::string TypedValueToString(const TypedValue& v) {
+    return std::visit(utils::overloaded {
+        [](const PointerValue& t) {
+            return fmt::format("{}", t.value);
+        },
+        [](const IntegerValue& v) {
+            return std::to_string(v.value);
+        },
+        [](const FloatValue& v) {
+            return std::to_string(v.value);
+        },
+        [](const StructuredValue& v) {
+            std::vector<std::string> members;
+            for (auto&& member: v.members) {
+                members.emplace_back(fmt::format(
+                    "{}: {} = {}", member.first,
+                    TypedValueTypeToString(member.second),
+                    TypedValueToString(member.second)));
+            }
+            auto res = utils::join(members.begin(), members.end(), ", ");
+            return fmt::format("{{ {} }}", res);
+        }
+    }, v);
+}
+
 ExpressionEvaluator::ExpressionEvaluator(Native& native, Source& source)
     : variables(source.GetActiveVariables(native.GetIP())), 
       native(native),

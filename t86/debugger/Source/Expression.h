@@ -33,28 +33,9 @@ struct StructuredValue {
     std::map<std::string, TypedValue> members;
 };
 
-inline std::string TypedValueToString(const TypedValue& v) {
-    return std::visit(utils::overloaded {
-        [](const PointerValue& t) {
-            return fmt::format("{} = {}", TypeToString(t.type), t.value);
-        },
-        [](const IntegerValue& v) {
-            return std::to_string(v.value);
-        },
-        [](const FloatValue& v) {
-            return std::to_string(v.value);
-        },
-        [](const StructuredValue& v) {
-            std::vector<std::string> members;
-            for (auto&& member: v.members) {
-                members.emplace_back(fmt::format(
-                    "{}: {}", member.first, TypedValueToString(member.second)));
-            }
-            auto res = utils::join(members.begin(), members.end(), ", ");
-            return fmt::format("{} = {{ {} }}", v.name, res);
-        }
-    }, v);
-}
+std::string TypedValueTypeToString(const TypedValue& v);
+
+std::string TypedValueToString(const TypedValue& v);
 
 class Identifier;
 class Dereference;
