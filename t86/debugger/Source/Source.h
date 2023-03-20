@@ -105,12 +105,15 @@ public:
     std::pair<TypedValue, size_t>
     EvaluateExpression(Native& native, std::string expression);
 
+    /// Returns vector representing lines in the source.
+    const std::vector<std::string>& GetLines() const;
+
     /// Returns lines from the source file. This function does
     /// not throw if out of bounds, instead it stops.
     /// For example if the program has two lines,
     /// and idx=1, amount=3, it would return the second line only.
     /// Returns empty vector if no debugging info is provided.
-    std::vector<std::string_view> GetLines(size_t idx, size_t amount) const;
+    std::vector<std::string_view> GetLinesRange(size_t idx, size_t amount) const;
 
     std::optional<std::string_view> GetLine(size_t line) const;
 

@@ -21,6 +21,7 @@ public:
     }
     std::vector<std::string> GetRange(size_t begin, size_t amount);
     std::optional<std::string_view> GetLine(size_t idx) const;
+    const std::vector<std::string>& GetLines() const { return lines; }
 private:
     std::vector<std::string> lines;
 };
