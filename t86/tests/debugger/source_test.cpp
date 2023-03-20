@@ -126,9 +126,9 @@ int main(void) {
     ASSERT_TRUE(source.AddrToLine(8));
     EXPECT_EQ(source.AddrToLine(8), 6);
 
-    ASSERT_THAT(source.GetLines(0, 3), testing::IsEmpty());
+    ASSERT_THAT(source.GetLinesRange(0, 3), testing::IsEmpty());
     source.RegisterSourceFile(*info.source_code);
-    auto source_program = source.GetLines(0, 10);
+    auto source_program = source.GetLinesRange(0, 10);
     ASSERT_EQ(source_program.size(), 7);
     EXPECT_EQ(source_program.at(0), "int main(void) {");
     EXPECT_EQ(source_program.at(1), "    int i = 5;");

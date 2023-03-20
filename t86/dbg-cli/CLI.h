@@ -59,6 +59,7 @@ commands:
 - attach <port> = Attach to an already running VM, has no subcommands.
 - frame = Print information about current function and variables, has no subcommads.
 - expression = Evaluate the source language expression and print result.
+- source = Print the source code that is being debugged.
 )";
 // Do not append anything other than commands here because
 // the Cli class will add its own command after this string
@@ -171,6 +172,17 @@ commands:
 - set <var> <value> - Set a variable <var> to <val>.
 - get <var> - Display variable value.
 - scope - List all variables in current scope.
+)";
+    static constexpr const char* SOURCE_USAGE =
+R"(source <subcommands> [parameter [parameter...]]
+Print the debugged source code if enough debugging information
+is available.
+
+commands:
+- from <line> [<amount>] - Print source code from given line, if
+                           amount is not specified then it prints
+                           the rest of the source.
+- without subcommands - Print the current line and few lines around.
 )";
     static constexpr const char* EXPRESSION_USAGE =
 R"(expression <expression>
@@ -442,10 +454,10 @@ Most often, the correct address will be one below it.)";
             process.SetBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
-            auto source_line = source.GetLines(*line, 1);
+            auto source_line = source.GetLine(*line);
             fmt::print("Breakpoint set on line {} (addr {})", *line, addr);
-            if (source_line.size() > 0) {
-                fmt::print(": {}\n", source_line[0]);
+            if (source_line) {
+                fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
@@ -454,10 +466,10 @@ Most often, the correct address will be one below it.)";
             process.UnsetBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
-            auto source_line = source.GetLines(*line, 1);
+            auto source_line = source.GetLine(*line);
             fmt::print("Breakpoint removed from line {} (addr {})", *line, addr);
-            if (source_line.size() > 0) {
-                fmt::print(": {}\n", source_line[0]);
+            if (source_line) {
+                fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
@@ -466,10 +478,10 @@ Most often, the correct address will be one below it.)";
             process.EnableSoftwareBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
-            auto source_line = source.GetLines(*line, 1);
+            auto source_line = source.GetLine(*line);
             fmt::print("Breakpoint enabled on line {} (addr {})", *line, addr);
-            if (source_line.size() > 0) {
-                fmt::print(": {}\n", source_line[0]);
+            if (source_line) {
+                fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
@@ -478,10 +490,10 @@ Most often, the correct address will be one below it.)";
             process.DisableSoftwareBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
-            auto source_line = source.GetLines(*line, 1);
+            auto source_line = source.GetLine(*line);
             fmt::print("Breakpoint disabled on line {} (addr {})", *line, addr);
-            if (source_line.size() > 0) {
-                fmt::print(": {}\n", source_line[0]);
+            if (source_line) {
+                fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
@@ -800,6 +812,31 @@ Most often, the correct address will be one below it.)";
         }
     }
 
+    void HandleSource(std::string_view command) {
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        auto subcommands = utils::split_v(command);
+        if (subcommands.size() == 0) {
+            auto ip = process.GetIP();
+            std::optional<ssize_t> line = source.AddrToLine(ip);
+            if (!line) {
+                Error("Cannot map current address ({}) to line", ip);
+            }
+            auto begin = std::max(*line - 2, 0l);
+            auto end = *line + 2 + 1;
+            PrintCode(begin, end);
+        } else if (check_command(subcommands, "from", 2)) {
+            auto from_line = ParseAddress(subcommands.at(1));
+            auto amount = subcommands.size() >= 3
+                            ? ParseAddress(subcommands.at(2))
+                            : source.GetLines().size() - from_line;
+            PrintCode(from_line, from_line + amount);
+        } else {
+            fmt::print("{}", SOURCE_USAGE);
+        }
+    }
+
     void InteractiveAssemble(size_t address) {
         char* line_raw;
         // TODO: Save and rollback linenoise history
@@ -1025,6 +1062,8 @@ Most often, the correct address will be one below it.)";
             HandleStep(command);
         } else if (utils::is_prefix_of(main_command, "frame")) {
             HandleFrame(command);
+        } else if (utils::is_prefix_of(main_command, "source")) {
+            HandleSource(command);
         } else if (utils::is_prefix_of(main_command, "expression")
                 || utils::is_prefix_of(main_command, "print")) {
             HandleExpression(command);

@@ -38,6 +38,10 @@ uint64_t Source::DisableSourceSoftwareBreakpoint(Native& native, size_t line) co
     return addr;
 }
 
+const std::vector<std::string>& Source::GetLines() const {
+    return source_file->GetLines();
+}
+
 std::optional<size_t> Source::AddrToLine(size_t addr) const {
     if (!line_mapping) {
         return {};
@@ -57,7 +61,7 @@ std::optional<size_t> Source::LineToAddr(size_t addr) const {
     return line_mapping->GetAddress(addr);
 }
 
-std::vector<std::string_view> Source::GetLines(size_t idx, size_t amount) const {
+std::vector<std::string_view> Source::GetLinesRange(size_t idx, size_t amount) const {
     if (!source_file) {
         return {};
     }
