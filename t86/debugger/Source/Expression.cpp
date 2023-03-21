@@ -13,24 +13,6 @@ uint64_t GetRawValue(Native& native, const expr::Location& loc) {
     }, loc);
 }
 
-std::string TypedValueTypeToString(const TypedValue& v) {
-    using std::string_literals::operator""s;
-    return std::visit(utils::overloaded {
-        [](const PointerValue& t) {
-            return fmt::format("{}", TypeToString(t.type));
-        },
-        [](const IntegerValue& v) {
-            return "int"s;
-        },
-        [](const FloatValue& v) {
-            return "float"s;
-        },
-        [](const StructuredValue& v) {
-            return v.name;
-        }
-    }, v);
-}
-
 std::string TypedValueToString(const TypedValue& v) {
     return std::visit(utils::overloaded {
         [](const PointerValue& t) {
@@ -46,8 +28,7 @@ std::string TypedValueToString(const TypedValue& v) {
             std::vector<std::string> members;
             for (auto&& member: v.members) {
                 members.emplace_back(fmt::format(
-                    "{}: {} = {}", member.first,
-                    TypedValueTypeToString(member.second),
+                    "{} = {}", member.first,
                     TypedValueToString(member.second)));
             }
             auto res = utils::join(members.begin(), members.end(), ", ");
@@ -83,14 +64,15 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
         [&](const StructuredType& t) -> TypedValue {
             std::map<std::string, TypedValue> members; 
             for (auto&& member: t.members) {
-                if (!member.type) {
-                    throw DebuggerError("Not enough debug information");
-                }
                 auto member_loc = ExpressionInterpreter::Interpret({
                         expr::Push{loc},
                         expr::Push{expr::Offset{member.offset}},
                         expr::Add{}}, native);
-                auto member_value = EvaluateTypeAndLocation(member_loc, *member.type);
+                auto member_type = source.GetType(member.type_id);
+                if (member_type == nullptr) {
+                    throw DebuggerError("Not enough debug information");
+                }
+                auto member_value = EvaluateTypeAndLocation(member_loc, *member_type);
                 members.emplace(member.name, member_value);
             }
             return StructuredValue{t.name, t.size, std::move(members)};
@@ -100,22 +82,12 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
 }
 
 void ExpressionEvaluator::Visit(const Identifier& id) {
-    if (!variables.contains(id.id)) {
-        throw DebuggerError("Not enough debug information");
+    auto type = source.GetVariableTypeInformation(native, id.id);
+    auto loc = source.GetVariableLocation(native, id.id);
+    if (!loc || !type) {
+        throw DebuggerError(fmt::format("Not enough type info about variable '{}'", id.id));
     }
-    auto die = variables.at(id.id);
-    auto loc = FindDieAttribute<ATTR_location_expr>(*die);
-    auto type_die = FindDieAttribute<ATTR_type>(*die);
-    if (!loc || !type_die) {
-        throw DebuggerError("Not enough debug information");
-    }
-    
-    auto interpreted_loc = ExpressionInterpreter::Interpret(loc->locs, native);
-    auto type = source.ReconstructTypeInformation(type_die->type_id);
-    if (!type) {
-        throw DebuggerError("Not enough debug information");
-    }
-    visitor_value = EvaluateTypeAndLocation(interpreted_loc, *type);
+    visitor_value = EvaluateTypeAndLocation(*loc, *type);
 }
 
 void ExpressionEvaluator::Visit(const EvaluatedExpr& e) {
@@ -130,7 +102,10 @@ TypedValue ExpressionEvaluator::Dereference(TypedValue&& val) {
         throw DebuggerError("Can only dereference pointers");
     }
     auto ptr = std::get<PointerValue>(std::move(val));
-    auto points_to_type = source.ReconstructTypeInformation(ptr.type.type_idx);
+    auto* points_to_type = source.GetType(ptr.type.type_id);
+    if (points_to_type == nullptr) {
+        throw DebuggerError("Not enough type information");
+    }
     log_info("Pointer value: {}", ptr.value);
     auto loc = expr::Offset{static_cast<int64_t>(ptr.value)};
     return EvaluateTypeAndLocation(loc, *points_to_type);

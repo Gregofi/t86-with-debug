@@ -167,10 +167,10 @@ commands:
     static constexpr const char* VARIABLE_USAGE =
 R"(variable <subcommands> [parameter [parameter...]]
 Manipulate with source variables.
+To print variable values, use the `expression` command.
 
 commands:
 - set <var> <value> - Set a variable <var> to <val>.
-- get <var> - Display variable value.
 - scope - List all variables in current scope.
 )";
     static constexpr const char* SOURCE_USAGE =
@@ -261,7 +261,14 @@ public:
         if (var_detailed) {
             for (auto&& varname: vars) {
                 try {
-                    PrintVariableValue(varname);
+                    auto [val, idx] = source.EvaluateExpression(process, std::string{varname}, false);
+                    auto value_str = TypedValueToString(val);
+                    auto type = source.GetVariableTypeInformation(process, varname);
+                    if (!type) {
+                        continue;
+                    }
+                    auto type_str = source.TypeToString(*type);
+                    fmt::print("({}) {} = {}\n", type_str, varname, value_str);
                 } catch (const DebuggerError& e) {
                     // If debug info is missing about some var we
                     // will silently ignore it.
@@ -535,65 +542,6 @@ Most often, the correct address will be one below it.)";
                 expr::Add{}}, process);
     }
 
-    /// Converts structured type value to string.
-    std::string StructuredTypeVal(const expr::Location& loc, const Type& type,
-                                  const StructuredType& t) {
-        std::vector<std::string> res;
-        std::ranges::transform(t.members, std::back_inserter(res),
-                [&](auto&& m) {
-            std::string type = "unknown type";
-            std::string value = "?";
-            if (m.type) {
-                type = fmt::format("{}", fmt::styled(TypeToString(*m.type),
-                        fmt::fg(fmt::color::dark_blue)));
-                auto true_location = OffsetLocation(loc, m.offset);
-                value = TypedVarToStringT86(true_location, *m.type);
-            }
-            return fmt::format("{}: {} = {}", m.name, type, value);
-        });
-        return fmt::format("{{{}}}", utils::join(res.begin(), res.end(), ", "));
-    }
-
-    /// Special function to print typed variables for T86 because its memory
-    /// has 64-bit cells. Ie. if type is of size 1 it actually has 64-bits.
-    std::string TypedVarToStringT86(const expr::Location& loc,
-                                    const Type& type) {
-        auto var_val = std::visit(utils::overloaded {
-            [&](const PrimitiveType& t) {
-                if (t.size != 1) {
-                    Error("Only primitive types with size one are supported");
-                }
-                auto raw_value = FetchRawValue(loc);
-                if (t.type == PrimitiveType::Type::FLOAT) {
-                    return fmt::format("{}", static_cast<double>(raw_value));
-                } else if (t.type == PrimitiveType::Type::SIGNED) {
-                    return fmt::format("{}", static_cast<int64_t>(raw_value));
-                } else if (t.type == PrimitiveType::Type::UNSIGNED) {
-                    return fmt::format("{}", raw_value);
-                } else if (t.type == PrimitiveType::Type::BOOL) {
-                    return fmt::format("{}", raw_value > 0 ? "true" : "false");
-                } else {
-                    UNREACHABLE;
-                }
-            },
-            [&](const PointerType& t) {
-                if (t.size != 1) {
-                    Error("Only pointers with size one are supported");
-                }
-                auto raw_value = FetchRawValue(loc);
-                return fmt::format("{}", raw_value);
-            },
-            [&](const StructuredType& t) {
-                return StructuredTypeVal(loc, type, t);
-            },
-            [](auto&&) -> std::string {
-                Error("unknown type");
-                UNREACHABLE;
-            },
-        }, type);
-        return var_val;
-    }
-
     void SetVariableT86(const expr::Location& location, int64_t value) {
         std::visit(utils::overloaded {
             [&](const expr::Register& r) {
@@ -603,26 +551,6 @@ Most often, the correct address will be one below it.)";
                 process.SetMemory(m.value, {value});
             },
         }, location);
-    }
-
-    void PrintVariableValue(std::string_view name) {
-        auto location = source.GetVariableLocation(process, name);
-        if (!location) {
-            Error("Variable '{}' is not in scope or missing debug info", name);
-        }
-        auto type_info = source.GetVariableTypeInformation(process, name);
-        if (!type_info) {
-            fmt::print("No type information about variable '{}'.\n", name);
-            auto raw_value = FetchRawValue(*location);
-            fmt::print("Raw byte value: ({}) {} = {}\n",
-                    LocationToStr(*location), name, raw_value);
-        } else if (Arch::GetMachine() == Arch::Machine::T86) {
-            auto var_val = TypedVarToStringT86(*location, *type_info);
-            fmt::print("({}; {}) {} = {}\n", expr::LocationToStr(*location),
-                    TypeToString(*type_info), name, var_val);
-        } else {
-            Error("Printing typed variables is not supported in current architecture");
-        }
     }
 
     void SetVariableValue(std::string_view name, int64_t value_raw) {
@@ -637,10 +565,7 @@ Most often, the correct address will be one below it.)";
 
     void HandleVariable(std::string_view command) {
         auto subcommands = utils::split_v(command);
-        if (check_command(subcommands, "get", 2)) {
-            auto var_name = subcommands.at(1);
-            PrintVariableValue(var_name);
-        } else if (check_command(subcommands, "set", 3)) {
+        if (check_command(subcommands, "set", 3)) {
             auto var_name = subcommands.at(1);
             // TODO: Should, at the very least, handle other primitive types.
             auto value = utils::svtonum<int64_t>(subcommands.at(2));
@@ -1003,8 +928,8 @@ Most often, the correct address will be one below it.)";
             return;
         }
         auto [val, idx] = source.EvaluateExpression(process, std::string{command});
-        fmt::print("({}) ${} = {}\n", TypedValueTypeToString(val), idx,
-                                      TypedValueToString(val));
+        fmt::print("({}) ${} = {}\n", source.TypedValueTypeToString(val),
+                                      idx, TypedValueToString(val));
     }
 
     void HandleCommand(std::string_view command) {

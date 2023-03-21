@@ -741,7 +741,7 @@ int main() {
     ASSERT_TRUE(std::holds_alternative<PointerType>(*type));
     const auto& ptr_type = std::get<PointerType>(*type);
     ASSERT_EQ(ptr_type.size, 1);
-    ASSERT_EQ(ptr_type.type_idx, 0);
+    ASSERT_EQ(ptr_type.type_id, 0);
 
     loc = source.GetVariableLocation(*native, "y");
     ASSERT_FALSE(loc);
@@ -845,15 +845,18 @@ int main() {
     EXPECT_EQ(struc.size, 2);
     ASSERT_EQ(struc.members.size(), 2);
 
-    auto subtype = struc.members[0];
-    ASSERT_EQ(subtype.offset, 0);
-    ASSERT_TRUE(subtype.type);
-    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.type));
+    auto member = struc.members[0];
+    ASSERT_EQ(member.offset, 0);
 
-    subtype = struc.members[1];
-    ASSERT_EQ(subtype.offset, 1);
-    ASSERT_TRUE(subtype.type);
-    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype.type));
+    auto subtype = source.GetType(member.type_id);
+    ASSERT_NE(subtype, nullptr);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype));
+
+    member = struc.members[1];
+    subtype = source.GetType(member.type_id);
+    ASSERT_EQ(member.offset, 1);
+    ASSERT_TRUE(subtype);
+    ASSERT_TRUE(std::holds_alternative<PrimitiveType>(*subtype));
 }
 
 TEST_F(NativeSourceTest, TestMappingScopes) {

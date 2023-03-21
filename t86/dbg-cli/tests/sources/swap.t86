@@ -43,6 +43,7 @@ DIE_primitive_type: {
 },
 DIE_pointer_type: {
     ATTR_type: 1,
+    ATTR_size: 1,
     ATTR_id: 1,
 },
 DIE_function: {
