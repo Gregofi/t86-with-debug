@@ -54,9 +54,7 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
 struct PointerType {
     // Ptr can be recursive with structs, so we just
     // store the id of the type  it points to.
-    size_t type_idx;
-    // Keep the name of the pointed type for convenience.
-    std::string name;
+    size_t type_id;
     uint64_t size;
 };
 
@@ -73,18 +71,6 @@ struct StructuredType {
 
 struct StructuredMember {
     std::string name;
-    std::optional<Type> type;
+    size_t type_id;
     int64_t offset;
 };
-
-inline std::string TypeToString(const Type& type) {
-    return std::visit(utils::overloaded {
-        [](const PrimitiveType& t) { return FromPrimitiveType(t.type); },
-        [](const PointerType& t) {
-            return fmt::format("{}*", t.name);
-        },
-        [](const StructuredType& t) {
-            return t.name;
-        }
-    }, type);
-}

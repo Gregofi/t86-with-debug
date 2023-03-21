@@ -7,14 +7,14 @@ function main at 2-35; active variables: it, l1
 @->  19:    struct list* it = &l1;
      20:    while (it != NULL) {
      21:        printf("%d\n", it->v);
-([1018]; struct list) l1 = {v: int = 5, next: struct list* = 1016}
+(struct list) $0 = { next = 1016, v = 5 }
 function main at 2-35; active variables: it, l1
      18:
 @    19:    struct list* it = &l1;
  ->  20:    while (it != NULL) {
      21:        printf("%d\n", it->v);
      22:        it = it->next;
-([1021]; struct list*) it = 1018
+(struct list*) $1 = 1018
 1016:10
 1017:1014
 5

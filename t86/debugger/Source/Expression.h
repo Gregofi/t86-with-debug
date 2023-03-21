@@ -33,8 +33,6 @@ struct StructuredValue {
     std::map<std::string, TypedValue> members;
 };
 
-std::string TypedValueTypeToString(const TypedValue& v);
-
 std::string TypedValueToString(const TypedValue& v);
 
 class Identifier;

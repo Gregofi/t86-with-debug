@@ -177,84 +177,69 @@ std::optional<expr::Location> Source::GetVariableLocation(Native& native,
     return loc;
 }
 
-std::optional<Type> Source::ReconstructTypeInformation(size_t id) const {
-    if (cached_types.contains(id)) {
-        return cached_types.at(id);
+void Source::ReconstructTypeInformation() {
+    if (!top_die) {
+        return;
     }
-    auto type_die = FindDIEById(*top_die, id);
-    if (type_die == nullptr) {
-        return {};
+    for (auto&& die: *top_die) {
+        // Every type must have an ID.
+        auto id = FindDieAttribute<ATTR_id>(die);
+        if (!id) {
+            continue;
+        }
+        if (die.get_tag() == DIE::TAG::primitive_type) {
+            auto id = FindDieAttribute<ATTR_id>(die);
+            if (!id) {
+                continue;
+            }
+            auto name = FindDieAttribute<ATTR_name>(die);
+            if (!name) {
+                continue;
+            }
+            auto primitive_type = ToPrimitiveType(name->n);
+            if (!primitive_type) {
+                log_error("Unsupported primitive type '{}'", name->n);
+                continue;
+            }
+            auto size = FindDieAttribute<ATTR_size>(die);
+            if (!size) {
+                log_error("Size not found");
+                continue;
+            }
+            types[id->id] = PrimitiveType{.type = *primitive_type, .size = size->size};
+        } else if (die.get_tag() == DIE::TAG::structured_type) {
+            auto name = FindDieAttribute<ATTR_name>(die);
+            auto size = FindDieAttribute<ATTR_size>(die);
+            auto members = FindDieAttribute<ATTR_members>(die);
+            std::vector<StructuredMember> members_vec;
+            std::ranges::transform(members->m, std::back_inserter(members_vec),
+                    [](auto &&m) {
+                return StructuredMember{m.name, m.type_id, m.offset};
+            });
+            auto result = StructuredType{.name = name->n,
+                                         .size = size->size,
+                                         .members = std::move(members_vec)};
+            types[id->id] = result;
+        } else if (die.get_tag() == DIE::TAG::pointer_type) {
+            auto pointing_to = FindDieAttribute<ATTR_type>(die);
+            if (!pointing_to) {
+                log_error("DIE pointer type, missing pointing attr");
+                continue;
+            }
+            auto size = FindDieAttribute<ATTR_size>(die);
+            if (!size) {
+                log_error("DIE pointer_type: Missing size");
+                continue;
+            }
+            auto ptr = PointerType{.type_id = pointing_to->type_id,
+                                   .size = size->size};
+            types[id->id] = ptr;
+        }
+        // Else not a type die.
     }
-    if (type_die->get_tag() == DIE::TAG::primitive_type) {
-        auto name = FindDieAttribute<ATTR_name>(*type_die);
-        if (!name) {
-            return {};
-        }
-        auto primitive_type = ToPrimitiveType(name->n);
-        if (!primitive_type) {
-            log_info("DIE id {}: Unsupported primitive type '{}'", id, name->n);
-            return {};
-        }
-        auto size = FindDieAttribute<ATTR_size>(*type_die);
-        if (!size) {
-            log_info("DIE id {}: Size not found", id);
-            return {};
-        }
-        return PrimitiveType{.type = *primitive_type, .size = size->size};
-    } else if (type_die->get_tag() == DIE::TAG::structured_type) {
-        auto name = FindDieAttribute<ATTR_name>(*type_die);
-        if (!name) {
-            return {};
-        }
-        auto size = FindDieAttribute<ATTR_size>(*type_die);
-        if (!size) {
-            return StructuredType{.name = name->n, .size = 0};
-        }
-        auto members = FindDieAttribute<ATTR_members>(*type_die);
-        if (!members) {
-            return StructuredType{.name = name->n, .size = size->size};
-        }
-        std::vector<StructuredMember> members_vec;
-        std::ranges::transform(members->m, std::back_inserter(members_vec),
-                [this](auto &&m) {
-            auto type_info = ReconstructTypeInformation(m.type_id);
-            return StructuredMember{m.name, std::move(type_info), m.offset};
-        });
-        auto result = StructuredType{.name = name->n,
-                                     .size = size->size,
-                                     .members = std::move(members_vec)};
-        cached_types.emplace(id, result);
-        return result;
-    } else if (type_die->get_tag() == DIE::TAG::pointer_type) {
-        auto pointing_to = FindDieAttribute<ATTR_type>(*type_die);
-        if (!pointing_to) {
-            log_info("DIE pointer type, missing pointing attr");
-            return {};
-        }
-        auto size = FindDieAttribute<ATTR_size>(*type_die);
-        auto pointed_die = FindDIEById(*top_die, pointing_to->type_id);
-        if (!pointing_to || !size || !pointed_die) {
-            log_info("DIE pointer_type, id {}: Missing either dest or size", id);
-            return {};
-        }
-        auto name = FindDieAttribute<ATTR_name>(*pointed_die);
-        if (!name) {
-            return {};
-        }
-        auto ptr = PointerType{.type_idx = pointing_to->type_id,
-                               .name = name->n,
-                               .size = size->size};
-        cached_types.emplace(id, ptr);
-        return ptr;
-    } else {
-        log_error("Unknown DIE tag describing type");
-        UNREACHABLE;
-    }
-    UNREACHABLE;
 }
 
-std::optional<Type> Source::GetVariableTypeInformation(Native& native,
-                                                       std::string_view name) const {
+std::optional<Type> Source::GetVariableTypeInformation(Native& native, std::string_view name) const {
     if (!top_die) {
         return {};
     }
@@ -266,8 +251,12 @@ std::optional<Type> Source::GetVariableTypeInformation(Native& native,
     if (type == nullptr) {
         return {};
     }
-    
-    return ReconstructTypeInformation(type->type_id);
+
+    auto it = types.find(type->type_id);
+    if (it == types.end()) {
+        return {};
+    }
+    return types.at(type->type_id);
 }
 
 DebugEvent Source::StepIn(Native& native) const {
@@ -325,14 +314,17 @@ std::map<std::string, const DIE*> Source::GetActiveVariables(uint64_t address) c
 }
 
 std::pair<TypedValue, size_t>
-Source::EvaluateExpression(Native& native, std::string expression) {
+Source::EvaluateExpression(Native& native, std::string expression, bool cache) {
     std::istringstream iss(std::move(expression));
     ExpressionParser parser(iss);
     auto e = parser.ParseExpression();
     ExpressionEvaluator eval(native, *this, evaluated_expressions);
     e->Accept(eval);
-    evaluated_expressions.emplace_back(eval.YieldResult());
-    return {evaluated_expressions.back(), evaluated_expressions.size() - 1};
+    if (cache) {
+        evaluated_expressions.emplace_back(eval.YieldResult());
+        return {evaluated_expressions.back(), evaluated_expressions.size() - 1};
+    }
+    return {eval.YieldResult(), 0};
 }
 
 std::set<std::string> Source::GetScopedVariables(uint64_t address) const {

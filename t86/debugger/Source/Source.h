@@ -41,6 +41,7 @@ public:
 
     void RegisterDebuggingInformation(DIE topmost_die) {
         top_die = std::move(topmost_die);
+        ReconstructTypeInformation();
     }
 
     // Those four guys are currently unused but are left here
@@ -102,8 +103,10 @@ public:
     /// the expression and the number of evaluated expressions
     /// that is currently stored, in other words the index
     /// of this new expression in the expression vector.
+    /// If the cache arg is false then the index is undefined and
+    /// the expression is not stored.
     std::pair<TypedValue, size_t>
-    EvaluateExpression(Native& native, std::string expression);
+    EvaluateExpression(Native& native, std::string expression, bool cache = true);
 
     /// Returns vector representing lines in the source.
     const std::vector<std::string>& GetLines() const;
@@ -128,9 +131,55 @@ public:
     /// this will behave seemingly awkwardly.
     DebugEvent StepOver(Native& native) const;
 
-    std::optional<Type> ReconstructTypeInformation(size_t id) const;
+    /// Returns type for given ID, or nullptr if not found.
+    const Type* GetType(size_t id) const {
+        auto it = types.find(id);
+        if (it == types.end()) {
+            return nullptr;
+        }
+        return &it->second;
+    }
+
+    std::string TypeToString(const Type& type) const {
+        return std::visit(utils::overloaded {
+            [this](const PointerType& t) {
+                if (!types.contains(t.type_id)) {
+                    return fmt::format("<unknown>*");
+                }
+                return fmt::format("{}*", TypeToString(types.at(t.type_id))); 
+            },
+            [](const StructuredType& t) {
+                return fmt::format("{}", t.name);
+            },
+            [](const PrimitiveType& t) {
+                return FromPrimitiveType(t.type);
+            },
+        }, type);
+    }
+
+    std::string TypedValueTypeToString(const TypedValue& v) const {
+        using namespace std::string_literals;
+        return std::visit(utils::overloaded {
+            [&](const PointerValue& v) {
+                return TypeToString(v.type);
+            },
+            [](const IntegerValue& v) {
+                return "int"s; 
+            },
+            [](const FloatValue& v) {
+                return "float"s; 
+            },
+            [](const StructuredValue& v) {
+                return v.name;
+            }
+        }, v);
+    }
+
 private:
     friend class ExpressionEvaluator;
+    /// Builds type debugging information and stores it as class state.
+    void ReconstructTypeInformation();
+
     std::map<std::string, const DIE*> GetActiveVariables(uint64_t address) const;
 
     template<typename T>
@@ -149,6 +198,6 @@ private:
     std::optional<LineMapping> line_mapping;
     std::optional<SourceFile> source_file;
     std::optional<DIE> top_die;
-    mutable std::map<size_t, Type> cached_types;
+    std::map<size_t, Type> types;
     std::vector<TypedValue> evaluated_expressions;
 };
