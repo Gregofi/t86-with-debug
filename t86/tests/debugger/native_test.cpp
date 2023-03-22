@@ -764,3 +764,56 @@ TEST_F(NativeTest, StepOverWithBreakpoints) {
     ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e)); 
     ASSERT_EQ(native->GetIP(), 6);
 }
+
+TEST_F(NativeTest, StepOut) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV R1, 2
+2 CALL 5
+3 ADD R1, R0
+4 HALT
+5 MOV R0, 3
+6 MOV R1, 4
+7 ADD R1, 5
+8 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+
+    native->SetBreakpoint(6);
+    native->ContinueExecution();
+    auto e = native->WaitForDebugEvent();
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e));
+    e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 3);
+}
+
+TEST_F(NativeTest, StepOutOnRet) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 MOV R1, 2
+2 CALL 5
+3 ADD R1, R0
+4 HALT
+5 MOV R0, 3
+6 MOV R1, 4
+7 ADD R1, 5
+8 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(7);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+    native->PerformSingleStep();
+    auto e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 3);
+    e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(e));
+}

@@ -114,40 +114,66 @@ DebugEvent Native::PerformStepOver(bool skip_bp) {
         // Requires instruction emulator.
         throw DebuggerError(
             "Singlestep is not supported for current architecture");
-    } else {
-        auto ip = GetIP();
-        auto text = ReadText(ip, 1)[0];
-        auto calls = Arch::GetCallInstructions();
-        auto is_call = std::ranges::find_if(calls, [&text](auto&& ins) { return text.starts_with(ins); });
-        if (is_call != calls.end()) {
-            bool bp_exists = software_breakpoints.contains(ip + 1);
-            if (!bp_exists) {
-                SetBreakpoint(ip + 1); 
-            }
-            // To step over a breakpoint on current line.
-            if (skip_bp) {
-                PerformSingleStep();
-            }
-            ContinueExecution();
-            auto e = WaitForDebugEvent();
-            if (!bp_exists) {
-                UnsetBreakpoint(ip + 1);
-            }
-            // We probably hit some other breakpoint in the call.
-            if (GetIP() != ip + 1) {
-                return e;
-            } else {
-                return Singlestep{};
-            }
+    }
+    auto ip = GetIP();
+    auto text = ReadText(ip, 1)[0];
+    auto calls = Arch::GetCallInstructions();
+    auto is_call = std::ranges::find_if(calls, [&text](auto&& ins) { return text.starts_with(ins); });
+    if (is_call != calls.end()) {
+        bool bp_exists = software_breakpoints.contains(ip + 1);
+        if (!bp_exists) {
+            SetBreakpoint(ip + 1); 
+        }
+        // To step over a breakpoint on current line.
+        if (skip_bp) {
+            PerformSingleStep();
+        }
+        ContinueExecution();
+        auto e = WaitForDebugEvent();
+        if (!bp_exists) {
+            UnsetBreakpoint(ip + 1);
+        }
+        // We probably hit some other breakpoint in the call.
+        if (GetIP() != ip + 1) {
+            return e;
         } else {
-            if (skip_bp) {
-                return PerformSingleStep();
-            } else {
-                return DoRawSingleStep();
-            }
+            return Singlestep{};
+        }
+    } else {
+        if (skip_bp) {
+            return PerformSingleStep();
+        } else {
+            return DoRawSingleStep();
         }
     }
 }
+
+DebugEvent Native::PerformStepOut() {
+    if (!Arch::SupportHardwareLevelSingleStep()) {
+        throw DebuggerError(
+            "Singlestep is not supported for current architecture");
+    }
+
+    bool first = true;
+    while (true) {
+        auto ip = GetIP();
+        auto text = ReadText(ip, 1).at(0);
+        auto rets = Arch::GetReturnInstructions();
+        auto is_return = std::ranges::find_if(
+            rets, [&text](auto &&ins) { return text.starts_with(ins); });
+        DebugEvent e;
+        if (first) {
+            e = PerformSingleStep();
+        } else {
+            e = DoRawSingleStep();
+        }
+        if (is_return != rets.end()
+            || !std::holds_alternative<Singlestep>(e)) {
+            return e;
+        }
+    }
+}
+
 
 size_t Native::TextSize() {
     return process->TextSize();
