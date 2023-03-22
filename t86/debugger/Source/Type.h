@@ -19,6 +19,7 @@ struct PrimitiveType {
         SIGNED,
         UNSIGNED,
         BOOL,
+        CHAR,
     };
     Type type;
     uint64_t size;
@@ -33,6 +34,8 @@ inline std::optional<PrimitiveType::Type> ToPrimitiveType(std::string_view type)
         return PrimitiveType::Type::UNSIGNED;
     } else if (type == "bool") {
         return PrimitiveType::Type::BOOL;
+    } else if (type == "char") {
+        return PrimitiveType::Type::CHAR;
     }
     return {};
 }
@@ -47,6 +50,8 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
         return "unsigned";
     case PrimitiveType::Type::BOOL:
         return "bool";
+    case PrimitiveType::Type::CHAR:
+        return "char";
     }
     UNREACHABLE;
 }

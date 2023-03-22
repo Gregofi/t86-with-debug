@@ -163,14 +163,74 @@ public:
             [&](const PointerValue& v) {
                 return TypeToString(v.type);
             },
-            [](const IntegerValue& v) {
+            [](const CharValue&) {
+                return "char"s; 
+            },
+            [](const IntegerValue&) {
                 return "int"s; 
             },
-            [](const FloatValue& v) {
+            [](const FloatValue&) {
                 return "float"s; 
             },
             [](const StructuredValue& v) {
                 return v.name;
+            }
+        }, v);
+    }
+
+    std::string ReadZeroTerminated(Native& native, size_t begin) {
+        std::string result;
+        while (true) {
+            auto c = native.ReadMemory(begin, 1);
+        }
+    }
+
+    std::string TypedValueToString(Native& native, const TypedValue& v) {
+        return std::visit(utils::overloaded {
+            [&](const PointerValue& t) {
+                // is const char*, print it like a string.
+                auto pointee = GetType(t.type.type_id);
+                if (auto pointee_type = std::get_if<PrimitiveType>(pointee);
+                        pointee_type != nullptr
+                        && pointee_type->type == PrimitiveType::Type::CHAR) {
+                    std::string result;
+                    size_t it = t.value;
+                    while (true) {
+                        char c = native.ReadMemory(it++, 1).at(0);
+                        // TODO: Handle all unprintable or whitespace characters.
+                        if (c == '\0') {
+                            break;
+                        } else if (c == '\n') {
+                            result += "\\n";
+                        } else if (c == '\t') {
+                            result += "\\t";
+                        } else {
+                            result += c;
+                        }
+                    }
+                    return fmt::format("{} \"{}\"", t.value, result);
+                } else {
+                    return fmt::format("{}", t.value);
+                }
+            },
+            [](const IntegerValue& v) {
+                return std::to_string(v.value);
+            },
+            [](const FloatValue& v) {
+                return std::to_string(v.value);
+            },
+            [](const CharValue& v) {
+                return fmt::format("'{}'", v.value);
+            },
+            [&](const StructuredValue& v) {
+                std::vector<std::string> members;
+                for (auto&& member: v.members) {
+                    members.emplace_back(fmt::format(
+                        "{} = {}", member.first,
+                        TypedValueToString(native, member.second)));
+                }
+                auto res = utils::join(members.begin(), members.end(), ", ");
+                return fmt::format("{{ {} }}", res);
             }
         }, v);
     }

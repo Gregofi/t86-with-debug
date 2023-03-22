@@ -1,0 +1,92 @@
+.data
+"Hello, World!\n"
+
+.text
+#
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     [0] -> %str_HelloWor
+   2  MOV R0, 0
+#     5 -> main$entry
+   3  CALL 5
+   4  HALT
+# ======= FUNCTION entry END =======
+#
+# ======= FUNCTION main START =======
+# main$entry:
+   5  PUSH BP
+   6  MOV BP, SP
+   7  SUB SP, 2
+   8  MOV [BP + -2], R3
+#     main prologue end
+   9  MOV R0, 0
+  10  MOV [BP + -1], R0
+# main$whileCond:
+#     [BP + -1] -> %local_s
+  11  MOV R0, [BP + -1]
+  12  MOV R0, [R0]
+  13  CMP R0, 0
+  14  JE 21
+# main$whileBody:
+  15  MOV R3, [BP + -1]
+  16  LEA R0, [R3 + 1]
+  17  MOV [BP + -1], R0
+  18  MOV R0, [R3]
+  19  PUTCHAR R0
+  20  JMP 11
+# main$whileCont:
+  21  MOV R0, 0
+#     main epilogue start
+  22  MOV R3, [BP + -2]
+  23  MOV SP, BP
+  24  POP BP
+  25  RET
+# ======= FUNCTION main END =======
+
+.debug_line
+0: 5
+1: 9
+2: 11
+3: 15
+4: 20
+5: 21
+
+.debug_info
+DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_id: 0,
+    ATTR_name: char,
+    ATTR_size: 1,
+},
+DIE_pointer_type: {
+    ATTR_type: 0,
+    ATTR_size: 1,
+    ATTR_id: 1,
+},
+DIE_function: {
+    ATTR_name: "main",
+    ATTR_begin_addr: 5,
+    ATTR_end_addr: 26,
+    DIE_scope: {
+        ATTR_begin_addr: 5,
+        ATTR_end_addr: 26,
+        DIE_variable: {
+            ATTR_name: s,
+            ATTR_type: 1,
+            ATTR_location: `BASE_REG_OFFSET -1`,
+        }
+    }
+}
+}
+
+.debug_source
+int main() {
+    char* s = "Hello, World!\n";
+    while (*s != 0) {
+        print(*s++);
+    }
+    return 0;
+}
