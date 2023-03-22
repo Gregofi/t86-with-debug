@@ -262,7 +262,7 @@ public:
             for (auto&& varname: vars) {
                 try {
                     auto [val, idx] = source.EvaluateExpression(process, std::string{varname}, false);
-                    auto value_str = TypedValueToString(val);
+                    auto value_str = source.TypedValueToString(process, val);
                     auto type = source.GetVariableTypeInformation(process, varname);
                     if (!type) {
                         continue;
@@ -929,7 +929,7 @@ Most often, the correct address will be one below it.)";
         }
         auto [val, idx] = source.EvaluateExpression(process, std::string{command});
         fmt::print("({}) ${} = {}\n", source.TypedValueTypeToString(val),
-                                      idx, TypedValueToString(val));
+                                      idx, source.TypedValueToString(process, val));
     }
 
     void HandleCommand(std::string_view command) {

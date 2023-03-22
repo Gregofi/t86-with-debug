@@ -22,18 +22,20 @@ struct FloatValue {
     double value;
 };
 
+struct CharValue {
+    char value;
+};
+
 struct StructuredValue;
 
 using TypedValue = std::variant<PointerValue, IntegerValue, FloatValue,
-                                StructuredValue>;
+                                CharValue, StructuredValue>;
 
 struct StructuredValue {
     std::string name;
     uint64_t size;
     std::map<std::string, TypedValue> members;
 };
-
-std::string TypedValueToString(const TypedValue& v);
 
 class Identifier;
 class EvaluatedExpr;
@@ -43,6 +45,7 @@ class Plus;
 class MemberAccess;
 class MemberDereferenceAccess;
 class Float;
+class Char;
 class Integer;
 
 class ExpressionVisitor {
@@ -53,6 +56,7 @@ public:
     virtual void Visit(const ArrayAccess&) = 0;
     virtual void Visit(const Plus&) = 0;
     virtual void Visit(const Float&) = 0;
+    virtual void Visit(const Char&) = 0;
     virtual void Visit(const Integer&) = 0;
     virtual void Visit(const MemberAccess&) = 0;
     virtual void Visit(const MemberDereferenceAccess&) = 0;
@@ -70,6 +74,7 @@ public:
     void Visit(const MemberAccess&) override;
     void Visit(const Integer&) override;
     void Visit(const Float&) override;
+    void Visit(const Char&) override;
     void Visit(const MemberDereferenceAccess&) override;
     /// Used to get result after calling Visit on the expression tree.
     TypedValue YieldResult() { return std::move(visitor_value); }
@@ -183,4 +188,13 @@ public:
         v.Visit(*this);
     }
     double value;
+};
+
+class Char: public Expression {
+public:
+    Char(char value): value(value) {}
+    void Accept(ExpressionVisitor& v) const override {
+        v.Visit(*this);
+    }
+    char value;
 };

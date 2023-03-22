@@ -1,3 +1,4 @@
+#include <variant>
 #include "Expression.h"
 #include "Source.h"
 #include "debugger/Source/ExpressionInterpreter.h"
@@ -11,30 +12,6 @@ uint64_t GetRawValue(Native& native, const expr::Location& loc) {
             return native.ReadMemory(offset.value, 1)[0];
         },
     }, loc);
-}
-
-std::string TypedValueToString(const TypedValue& v) {
-    return std::visit(utils::overloaded {
-        [](const PointerValue& t) {
-            return fmt::format("{}", t.value);
-        },
-        [](const IntegerValue& v) {
-            return std::to_string(v.value);
-        },
-        [](const FloatValue& v) {
-            return std::to_string(v.value);
-        },
-        [](const StructuredValue& v) {
-            std::vector<std::string> members;
-            for (auto&& member: v.members) {
-                members.emplace_back(fmt::format(
-                    "{} = {}", member.first,
-                    TypedValueToString(member.second)));
-            }
-            auto res = utils::join(members.begin(), members.end(), ", ");
-            return fmt::format("{{ {} }}", res);
-        }
-    }, v);
 }
 
 ExpressionEvaluator::ExpressionEvaluator(Native& native, Source& source,
@@ -53,6 +30,8 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
                 return IntegerValue{*reinterpret_cast<int64_t*>(&raw_value)};
             } else if (t.type == PrimitiveType::Type::FLOAT) {
                 return FloatValue{*reinterpret_cast<double*>(&raw_value)};
+            } else if (t.type == PrimitiveType::Type::CHAR) {
+                return CharValue{*reinterpret_cast<char*>(&raw_value)};
             } else {
                 NOT_IMPLEMENTED;
             }
@@ -179,6 +158,10 @@ void ExpressionEvaluator::Visit(const Integer& integer) {
 
 void ExpressionEvaluator::Visit(const Float& fl) {
     visitor_value = FloatValue{fl.value};
+}
+
+void ExpressionEvaluator::Visit(const Char& c) {
+    visitor_value = CharValue{c.value};
 }
 
 void ExpressionEvaluator::Visit(const MemberDereferenceAccess& m) {

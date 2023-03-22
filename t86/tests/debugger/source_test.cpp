@@ -1379,7 +1379,6 @@ int main() {
     std::unique_ptr<Expression> ast = std::make_unique<Identifier>("l1");
     ast->Accept(ev);
     auto res = ev.YieldResult();
-    std::cerr << TypedValueToString(res) << "\n";
     ASSERT_TRUE(std::holds_alternative<StructuredValue>(res));
     auto st = std::get<StructuredValue>(res);
     EXPECT_TRUE(st.members.contains("v"));
