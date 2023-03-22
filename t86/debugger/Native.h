@@ -116,6 +116,9 @@ public:
     /// jumped over (the default behavior).
     DebugEvent PerformStepOver(bool skip_bp = true);
 
+    /// Performs step out, stepping until 'RET' is executed.
+    DebugEvent PerformStepOut();
+
     /// Does singlestep, does not check for breakpoints.
     DebugEvent DoRawSingleStep();
 protected:

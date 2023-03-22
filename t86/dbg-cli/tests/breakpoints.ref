@@ -11,6 +11,7 @@ commands:
 - continue = Continues execution, has no subcommands.
 - istep = Assembly level stepping.
 - step = Source level stepping.
+- finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.

@@ -121,6 +121,16 @@ public:
         throw DebuggerError("Unsupported for current architecture");
     }
 
+    /// Returns set of instructions that can be used to exit
+    /// a function.
+    static std::set<std::string> GetReturnInstructions() {
+        auto &ins = GetInstance();
+        if (ins.current_machine == Machine::T86) {
+            return {"RET"};
+        }
+        throw DebuggerError("Unsupported for current architecture");
+    }
+
     Arch(const Arch&) = delete;
     Arch operator=(Arch) = delete;
 private:

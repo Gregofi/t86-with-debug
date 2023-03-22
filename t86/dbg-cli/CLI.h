@@ -51,6 +51,7 @@ commands:
 - continue = Continues execution, has no subcommands.
 - istep = Assembly level stepping.
 - step = Source level stepping.
+- finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
 - breakpoint = Add and remove breakpoints.
@@ -192,6 +193,10 @@ If you have a variable 'a' and 'b' in scope, you can write
 can do '*a + b', or if struct: 'a.foo + b'. You can do almost
 everything that you can in TinyC. The expression however as of
 now doesn't support assignment and function calls.
+)";
+    static constexpr const char* FINISH_USAGE =
+R"(finish
+Execute until a return is executed.
 )";
 
 public:
@@ -652,6 +657,34 @@ Most often, the correct address will be one below it.)";
         }
     }
 
+    void HandleFinish(std::string_view command) {
+        if (!process.Active()) {
+            Error("No active process.");
+        }
+        if (!is_running) {
+            Error("Process finished executing, it's not possible to continue.");
+        }
+        if (command == "") {
+            auto e = process.PerformStepOut();
+            if (!std::holds_alternative<Singlestep>(e)) {
+                ReportDebugEvent(e);
+            }
+            if (std::holds_alternative<ExecutionEnd>(e)) {
+                is_running = false;
+            } else {
+                auto ip = process.GetIP();
+                auto line = source.AddrToLine(ip);
+                if (!line) {
+                    PrettyPrintText(ip);
+                } else {
+                    PrettyPrintCode(*line);
+                }
+            }
+        } else {
+            fmt::print("{}", FINISH_USAGE);
+        }
+    } 
+
     void NativeLevelStep(bool step_over = false) {
         DebugEvent e;
         if (step_over) {
@@ -985,6 +1018,8 @@ Most often, the correct address will be one below it.)";
             HandleNext(command);
         } else if (utils::is_prefix_of(main_command, "step")) {
             HandleStep(command);
+        } else if (utils::is_prefix_of(main_command, "finish")) {
+            HandleFinish(command);
         } else if (utils::is_prefix_of(main_command, "frame")) {
             HandleFrame(command);
         } else if (utils::is_prefix_of(main_command, "source")) {
