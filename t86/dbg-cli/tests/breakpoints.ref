@@ -1,24 +1,26 @@
 <command> <subcommand> [parameter [parameter...]]
-Example: `breakpoint set-addr 1` sets breakpoint at address 1.
+Example: `breakpoint iset 1` sets breakpoint at address 1.
 
-For help, use the `<command> help` syntax, for example
-`breakpoint help`, or `disassemble help`.
+For help, use the `help <command>` syntax, for example
+`help breakpoint`, or `help disassemble`.
 
 Every command has its subcommands unless explicitly specified.
 Some of the commands work with or without subcommands.
 
 commands:
-- continue = Continues execution, has no subcommands.
-- istep = Assembly level stepping.
-- step = Source level stepping.
+- help = Display help message about subcommands.
+- continue = Continue execution.
+- istep = Execute one instruction.
+- step = Execute one source line.
 - finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
-- breakpoint = Add and remove breakpoints.
+- breakpoint = Stop the program at various points.
 - register = Read and write to registers.
-- run = Run the program, has no subcommands.
-- attach <port> = Attach to an already running VM, has no subcommands.
-- frame = Print information about current function and variables, has no subcommads.
+- run = Run the program.
+- watchpoint = Watch for writes to values in memory.
+- attach <port> = Attach to an already running VM.
+- frame = Print information about current function and variables.
 - expression = Evaluate the source language expression and print result.
 - source = Print the source code that is being debugged.
 Use the `run` or `attach` command to run a process first.
