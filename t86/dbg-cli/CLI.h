@@ -351,9 +351,9 @@ public:
             }
             std::string pretty_rest;
             if (curr_loc && i == *curr_loc) {
-                pretty_rest = fmt::format(fg(fmt::color::dark_blue), "->{:>4}:{}\n", i, *line);
+                pretty_rest = fmt::format(fg(fmt::color::dark_blue), "->{:>4}:{}\n", i + 1, *line);
             } else {
-                pretty_rest = fmt::format("  {:>4}:{}\n", i, *line);
+                pretty_rest = fmt::format("  {:>4}:{}\n", i + 1, *line);
             }
             fmt::print("{}{}", GetPrettyBpForLine(i), pretty_rest);
         }
@@ -392,7 +392,7 @@ public:
             [&](const BreakpointHit& r) {
                 auto line = source.AddrToLine(r.address);
                 if (line) {
-                    return fmt::format("Software breakpoint hit at line {}", *line);
+                    return fmt::format("Software breakpoint hit at line {}", *line + 1);
                 } else {
                     return fmt::format("Software breakpoint hit at address {}", r.address);
                 }
@@ -453,6 +453,7 @@ Most often, the correct address will be one below it.)";
     }
 
     void HandleBreakpoint(std::string_view command) {
+        // TODO: Lot of repeated code
         if (!process.Active()) {
             Error("No active process.");
         }
@@ -465,48 +466,47 @@ Most often, the correct address will be one below it.)";
             fmt::print("Breakpoint set on address {}: '{}'\n", address, line[0]);
         // Breakpoint on line
         } else if (check_command(subcommands, "set", 2)) {
-            uint64_t addr = source.GetAddressFromString(subcommands.at(1));
+            uint64_t addr = source.GetAddressFromString(subcommands.at(1), true);
             process.SetBreakpoint(addr);
             auto line = source.AddrToLine(addr);
-            assert(line);
             auto source_line = source.GetLine(*line);
-            fmt::print("Breakpoint set on line {} (addr {})", *line, addr);
+            fmt::print("Breakpoint set on line {} (addr {})", *line + 1, addr);
             if (source_line) {
                 fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
         } else if (check_command(subcommands, "remove", 2)) {
-            uint64_t addr = source.GetAddressFromString(subcommands.at(1));
+            uint64_t addr = source.GetAddressFromString(subcommands.at(1), true);
             process.UnsetBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
             auto source_line = source.GetLine(*line);
-            fmt::print("Breakpoint removed from line {} (addr {})", *line, addr);
+            fmt::print("Breakpoint removed from line {} (addr {})", *line + 1, addr);
             if (source_line) {
                 fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
         } else if (check_command(subcommands, "enable", 2)) {
-            uint64_t addr = source.GetAddressFromString(subcommands.at(1));
+            uint64_t addr = source.GetAddressFromString(subcommands.at(1), true);
             process.EnableSoftwareBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
             auto source_line = source.GetLine(*line);
-            fmt::print("Breakpoint enabled on line {} (addr {})", *line, addr);
+            fmt::print("Breakpoint enabled on line {} (addr {})", *line + 1, addr);
             if (source_line) {
                 fmt::print(": {}\n", *source_line);
             } else {
                 fmt::print("\n");
             }
         } else if (check_command(subcommands, "disable", 2)) {
-            uint64_t addr = source.GetAddressFromString(subcommands.at(1));
+            uint64_t addr = source.GetAddressFromString(subcommands.at(1), true);
             process.DisableSoftwareBreakpoint(addr);
             auto line = source.AddrToLine(addr);
             assert(line);
             auto source_line = source.GetLine(*line);
-            fmt::print("Breakpoint disabled on line {} (addr {})", *line, addr);
+            fmt::print("Breakpoint disabled on line {} (addr {})", *line + 1, addr);
             if (source_line) {
                 fmt::print(": {}\n", *source_line);
             } else {
@@ -524,8 +524,6 @@ Most often, the correct address will be one below it.)";
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
             fmt::print("Breakpoint removed from address {}\n", address);
-        } else if (check_command(subcommands, "help", 1)) {
-            fmt::print("{}", BP_USAGE); 
         } else {
             fmt::print("{}", BP_USAGE); 
         }
@@ -791,7 +789,7 @@ Most often, the correct address will be one below it.)";
             auto end = *line + 2 + 1;
             PrintCode(begin, end);
         } else if (check_command(subcommands, "from", 2)) {
-            auto from_line = ParseAddress(subcommands.at(1));
+            auto from_line = ParseAddress(subcommands.at(1)) - 1;
             auto amount = subcommands.size() >= 3
                             ? ParseAddress(subcommands.at(2))
                             : source.GetLines().size() - from_line;

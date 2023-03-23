@@ -1,12 +1,12 @@
 Started process 'tests/sources/char_ptr.t86'
-Breakpoint set on line 3 (addr 15):         print(*s++);
-Process stopped, reason: Software breakpoint hit at line 3
+Breakpoint set on line 4 (addr 15):         print(*s++);
+Process stopped, reason: Software breakpoint hit at line 4
 function main at 5-26; active variables: s
-      1:    char* s = "Hello, World!\n";
-      2:    while (*s != 0) {
-@->   3:        print(*s++);
-      4:    }
-      5:    return 0;
+      2:    char* s = "Hello, World!\n";
+      3:    while (*s != 0) {
+@->   4:        print(*s++);
+      5:    }
+      6:    return 0;
 (char) $0 = 'H'
 (char*) $1 = 0 "Hello, World!\n"
 (char*) $2 = 7 "World!\n"

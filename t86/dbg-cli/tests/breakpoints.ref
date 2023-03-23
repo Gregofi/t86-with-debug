@@ -26,15 +26,15 @@ commands:
 Use the `run` or `attach` command to run a process first.
 Started process 'tests/sources/swap.t86'
 Breakpoint set on address 2: 'MOV R0, [R2]'
-Breakpoint set on line 7 (addr 7):     int a = 3;
+Breakpoint set on line 8 (addr 7):     int a = 3;
 Breakpoint set on address 10: 'LEA R3, [SP + -3]'
-Process stopped, reason: Software breakpoint hit at line 7
+Process stopped, reason: Software breakpoint hit at line 8
 function main at 7-18; active variables: a, b
-      5:
-      6:int main() {
-@->   7:    int a = 3;
-      8:    int b = 6;
-      9:    swap(&a, &b);
+      6:
+      7:int main() {
+@->   8:    int a = 3;
+      9:    int b = 6;
+     10:    swap(&a, &b);
 Process stopped, reason: Software breakpoint hit at address 10
 function main at 7-18; active variables: a, b
       8:  MOV [SP + -3], 6
@@ -42,12 +42,12 @@ function main at 7-18; active variables: a, b
 @->  10:  LEA R3, [SP + -3]
      11:  CALL 2
      12:  MOV R0, [SP + -2]
-Process stopped, reason: Software breakpoint hit at line 1
+Process stopped, reason: Software breakpoint hit at line 2
 function swap at 2-7; active variables: tmp, x, y
-      0:void swap(int* x, int* y) {
-@->   1:    int tmp = *x;
-      2:    *x = *y;
-      3:    *y = tmp;
+      1:void swap(int* x, int* y) {
+@->   2:    int tmp = *x;
+      3:    *x = *y;
+      4:    *y = tmp;
 Breakpoint set on address 1: 'HALT'
 6
 3

@@ -60,7 +60,8 @@ public:
     /// If the parse fails then the 's' is interpreted as function name
     /// and the beginning address of that function is returned.
     /// Throws if the information cannot be retrieved.
-    uint64_t GetAddressFromString(std::string_view s) {
+    /// If start at one is defined then the resulting line is lowered by one.
+    uint64_t GetAddressFromString(std::string_view s, bool start_at_one = false) {
         uint64_t address;
         auto line = utils::svtonum<uint64_t>(s);
         if (!line) {
@@ -70,7 +71,10 @@ public:
             }
             address = function->first;
         } else {
-            auto address_opt = LineToAddr(*line);
+            if (*line == 0 && start_at_one) {
+                throw DebuggerError("Lines starts from one");
+            }
+            auto address_opt = LineToAddr(*line - start_at_one);
             if (!address_opt) {
                 throw DebuggerError(fmt::format("No debug info for line {}", *line));
             }
