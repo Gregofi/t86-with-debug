@@ -39,26 +39,28 @@ void Error(fmt::format_string<Args...> format_str, Args&& ...args) {
 class Cli {
     static constexpr const char* USAGE =
 R"(<command> <subcommand> [parameter [parameter...]]
-Example: `breakpoint set-addr 1` sets breakpoint at address 1.
+Example: `breakpoint iset 1` sets breakpoint at address 1.
 
-For help, use the `<command> help` syntax, for example
-`breakpoint help`, or `disassemble help`.
+For help, use the `help <command>` syntax, for example
+`help breakpoint`, or `help disassemble`.
 
 Every command has its subcommands unless explicitly specified.
 Some of the commands work with or without subcommands.
 
 commands:
-- continue = Continues execution, has no subcommands.
-- istep = Assembly level stepping.
-- step = Source level stepping.
+- help = Display help message about subcommands.
+- continue = Continue execution.
+- istep = Execute one instruction.
+- step = Execute one source line.
 - finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
-- breakpoint = Add and remove breakpoints.
+- breakpoint = Stop the program at various points.
 - register = Read and write to registers.
-- run = Run the program, has no subcommands.
-- attach <port> = Attach to an already running VM, has no subcommands.
-- frame = Print information about current function and variables, has no subcommads.
+- run = Run the program.
+- watchpoint = Watch for writes to values in memory.
+- attach <port> = Attach to an already running VM.
+- frame = Print information about current function and variables.
 - expression = Evaluate the source language expression and print result.
 - source = Print the source code that is being debugged.
 )";
@@ -67,38 +69,31 @@ commands:
 
     static constexpr const char* BP_USAGE = 
 R"(breakpoint <subcommads> [parameter [parameter...]]
-If you want to set breakpoint at a specific address, the commands are 
-equivalent but with the 'i' prefix, for example to set a breakpoint at
-address 1 you would use `breakpoint iset 1` or just `br is 1`.
+Make program stop at certain point.
+
+To work with breakpoints at instruction level, just prefix
+the commands with the 'i' (as instruction), ie. `bp iset 1` sets 
+breakpoint on instruction at address 1.
 
 - set <line> = Creates breakpoint at <line> and enables it.
 - unset <line> = Removes breakpoint at <line>.
 - enable <line> = Enables breakpoint at <line>.
 - disable <line> = Disables breakpoint at <line>.
 - list = Lists existing breakpoints.
-- help = Print this.
 )";
-    static constexpr const char* STEPI_USAGE =
-R"(istep <subcommands> [parameter [parameter...]]
-Assembly level step in.
-
-Without any subcommands (just istep) = Performs instruction level single step.
-- help = Print this.
+    static constexpr const char* ISTEP_USAGE =
+R"(istep
+Execute one instruction and then stop.
 )";
     static constexpr const char* INEXT_USAGE =
-R"(istep <subcommands> [parameter [parameter...]]
-Assembly level step over.
-
-Without any subcommands (just inext) = Performs instruction level step over.
-- help = Print this.
+R"(istep
+Continue execution until another source line is reached,
+but treat function call as single source line.
 )";
 
     static constexpr const char* STEP_USAGE =
-R"(step <subcommands> [parameter [parameter...]]
-Source level step in.
-
-Without any subcommands (just `step`) performs source level step in.
-- help = Print this.
+R"(step
+Continue execution until another source line is reached.
 )";
     static constexpr const char* NEXT_USAGE =
 R"(next <subcommands> [parameter [parameter...]]
@@ -109,7 +104,7 @@ Without any subcommands (just `next`) performs source level step over.
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
 R"(disassemble <subcommands> [parameter [parameter...]]
-Used for disassembling the underlying T86 code.
+Used for disassembling the underlying assembly.
 
 Without any subcommands disassembles the current instruction and two below
 and above it.
@@ -187,16 +182,24 @@ commands:
 )";
     static constexpr const char* EXPRESSION_USAGE =
 R"(expression <expression>
-Evaluate a TinyC expression and print corresponding value.
+Evaluate an expression and print corresponding value.
 If you have a variable 'a' and 'b' in scope, you can write
 'a + b' to get their sum. If one of those is a pointer, you
 can do '*a + b', or if struct: 'a.foo + b'. You can do almost
-everything that you can in TinyC. The expression however as of
+everything that you can in C. The expression however as of
 now doesn't support assignment and function calls.
 )";
     static constexpr const char* FINISH_USAGE =
 R"(finish
 Execute until a return is executed.
+)";
+    static constexpr const char* FRAME_USAGE =
+R"(frame
+Display current function and active variables.
+)";
+    static constexpr const char* CONTINUE_USAGE =
+R"(continue
+Continue execution until a debug event happens.
 )";
 
 public:
@@ -715,10 +718,8 @@ Most often, the correct address will be one below it.)";
         }
         if (command == "") {
             NativeLevelStep();
-        } else if (utils::is_prefix_of(command, "help")) {
-            fmt::print("{}", STEPI_USAGE);
         } else {
-            fmt::print("{}", STEPI_USAGE);
+            fmt::print("{}", ISTEP_USAGE);
         }
     }
 
@@ -763,8 +764,6 @@ Most often, the correct address will be one below it.)";
                 : text_size - begin;
             auto text = process.ReadText(begin, amount);
             PrintText(begin, text);
-        } else if (check_command(subcommands, "help", 1)) {
-            fmt::print("{}", DISASSEMBLE_USAGE);
         } else {
             fmt::print("{}", DISASSEMBLE_USAGE);
         }
@@ -965,6 +964,46 @@ Most often, the correct address will be one below it.)";
                                       idx, source.TypedValueToString(process, val));
     }
 
+    void HandleHelp(std::string_view command) {
+        if (command == "") {
+            fmt::print("{}", USAGE);
+        } else if (utils::is_prefix_of(command, "breakpoint")) {
+            fmt::print("{}", BP_USAGE);
+        } else if (utils::is_prefix_of(command, "istep")) {
+            fmt::print("{}", ISTEP_USAGE);
+        } else if (utils::is_prefix_of(command, "inext")) {
+            fmt::print("{}", INEXT_USAGE);
+        } else if (utils::is_prefix_of(command, "disassemble")) {
+            fmt::print("{}", DISASSEMBLE_USAGE);
+        } else if (utils::is_prefix_of(command, "assemble")) {
+            fmt::print("{}", ASSEMBLE_USAGE);
+        } else if (utils::is_prefix_of(command, "continue")) {
+            fmt::print("{}", CONTINUE_USAGE);
+        } else if (utils::is_prefix_of(command, "register")) {
+            fmt::print("{}", REGISTER_USAGE);
+        } else if (utils::is_prefix_of(command, "memory")) {
+            fmt::print("{}", MEMORY_USAGE);
+        } else if (utils::is_prefix_of(command, "variable")) {
+            fmt::print("{}", VARIABLE_USAGE);
+        } else if (utils::is_prefix_of(command, "watchpoint")) {
+            fmt::print("{}", WATCHPOINT_USAGE);
+        } else if (utils::is_prefix_of(command, "next")) {
+            fmt::print("{}", NEXT_USAGE);
+        } else if (utils::is_prefix_of(command, "step")) {
+            fmt::print("{}", STEP_USAGE);
+        } else if (utils::is_prefix_of(command, "finish")) {
+            fmt::print("{}", FINISH_USAGE);
+        } else if (utils::is_prefix_of(command, "frame")) {
+            fmt::print("{}", FRAME_USAGE);
+        } else if (utils::is_prefix_of(command, "source")) {
+            fmt::print("{}", SOURCE_USAGE);
+        } else if (utils::is_prefix_of(command, "expression")) {
+            fmt::print("{}", EXPRESSION_USAGE);
+        } else {
+            fmt::print("{}", USAGE);
+        }
+    }
+
     void HandleCommand(std::string_view command) {
         auto main_command_offset = command.find(' ');
         std::string_view main_command;
@@ -975,7 +1014,9 @@ Most often, the correct address will be one below it.)";
             main_command = command.substr(0, main_command_offset);
             command = command.substr(main_command.size() + 1);
         }
-        if (utils::is_prefix_of(main_command, "run")) {
+        if (main_command == "") {
+            fmt::print("{}", USAGE);
+        } else if (utils::is_prefix_of(main_command, "run")) {
             ExitProcess();
             HandleRun(command);
             return;
@@ -985,8 +1026,11 @@ Most often, the correct address will be one below it.)";
             is_running = true;
             process.WaitForDebugEvent();
             return;
+        } else if (utils::is_prefix_of(main_command, "help")) {
+            HandleHelp(command);
+            return;
         }
-        // Following commands needs active process
+        // ======== Following commands needs active process ===========
         if (!process.Active()) {
             fmt::print("{}", USAGE);
             fmt::print(fmt::emphasis::bold | fg(fmt::color::red),
