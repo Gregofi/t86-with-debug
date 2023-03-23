@@ -764,8 +764,15 @@ Most often, the correct address will be one below it.)";
                 : text_size - begin;
             auto text = process.ReadText(begin, amount);
             PrintText(begin, text);
-        } else {
-            fmt::print("{}", DISASSEMBLE_USAGE);
+        } else if (check_command(subcommands, "function", 2)) {
+            auto id = subcommands.at(1);
+            auto fun_addr = source.GetFunctionAddrByName(id);
+            if (!fun_addr) {
+                Error("No debug info about function '{}'", id);
+            }
+            auto text = process.ReadText(fun_addr->first,
+                    fun_addr->second - fun_addr->first);
+            PrintText(fun_addr->first, text);
         }
     }
 
