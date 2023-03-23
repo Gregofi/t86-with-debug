@@ -1,19 +1,19 @@
 Started process 'tests/sources/linked_list.t86'
-Breakpoint set on line 19 (addr 19):     struct list* it = &l1;
-Process stopped, reason: Software breakpoint hit at line 19
+Breakpoint set on line 20 (addr 19):     struct list* it = &l1;
+Process stopped, reason: Software breakpoint hit at line 20
 function main at 2-35; active variables: it, l1
-     17:    l1.next->next->next = NULL;
-     18:
-@->  19:    struct list* it = &l1;
-     20:    while (it != NULL) {
-     21:        printf("%d\n", it->v);
+     18:    l1.next->next->next = NULL;
+     19:
+@->  20:    struct list* it = &l1;
+     21:    while (it != NULL) {
+     22:        printf("%d\n", it->v);
 (struct list) $0 = { next = 1016, v = 5 }
 function main at 2-35; active variables: it, l1
-     18:
-@    19:    struct list* it = &l1;
- ->  20:    while (it != NULL) {
-     21:        printf("%d\n", it->v);
-     22:        it = it->next;
+     19:
+@    20:    struct list* it = &l1;
+ ->  21:    while (it != NULL) {
+     22:        printf("%d\n", it->v);
+     23:        it = it->next;
 (struct list*) $1 = 1018
 1016:10
 1017:1014
