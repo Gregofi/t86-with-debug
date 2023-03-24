@@ -524,6 +524,19 @@ Most often, the correct address will be one below it.)";
             auto address = ParseAddress(subcommands.at(1));
             process.UnsetBreakpoint(address);
             fmt::print("Breakpoint removed from address {}\n", address);
+        } else if (check_command(subcommands, "list", 1)) {
+            auto& bps = process.GetBreakpoints();
+            for (auto&& [addr, b]: bps) {
+                auto line = source.AddrToLine(addr);
+                fmt::print("addr: {}{}; {}", addr,
+                        line ? fmt::format(", line: {}", *line) : "",
+                        b.enabled ? "enabled" : "disabled");
+                auto fun = source.GetFunctionNameByAddress(addr);
+                if (fun) {
+                    fmt::print("; function: {}", *fun);
+                }
+                fmt::print("\n");
+            }
         } else {
             fmt::print("{}", BP_USAGE); 
         }
