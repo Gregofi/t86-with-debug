@@ -542,25 +542,6 @@ Most often, the correct address will be one below it.)";
         }
     }
 
-    /// Fetches the value at provided location as bytes.
-    uint64_t FetchRawValue(const expr::Location& loc) {
-        return std::visit(utils::overloaded {
-            [&](const expr::Register& reg) {
-                return process.GetRegister(reg.name);
-            },
-            [&](const expr::Offset& offset) {
-                return process.ReadMemory(offset.value, 1).at(0);
-            }
-        }, loc);
-    }
-
-    expr::Location OffsetLocation(const expr::Location& loc, int64_t offset) {
-        return ExpressionInterpreter::Interpret({
-                expr::Push{loc},
-                expr::Push{expr::Offset{offset}},
-                expr::Add{}}, process);
-    }
-
     void SetVariableT86(const expr::Location& location, int64_t value) {
         std::visit(utils::overloaded {
             [&](const expr::Register& r) {
