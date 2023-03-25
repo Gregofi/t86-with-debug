@@ -3,10 +3,10 @@
 #include "helpers.h"
 #include <string>
 #include <variant>
+
 /// Describes the location in the executing code.
 /// Is a stack virtual machine, the last value
 /// remaining on the stack is the location.
-
 namespace expr {
 
 struct Register {

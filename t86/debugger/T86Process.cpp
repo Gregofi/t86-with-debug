@@ -223,6 +223,7 @@ void T86Process::CheckResponse(std::string_view error_message) {
         } else {
             report += fmt::format("; No confirmation was sent back");
         }
+        report += fmt::format(fg(fmt::color::red), "{}", "\nThis is probably a bug in the debugger, please send a bug report");
         throw DebuggerError(report);
     }
 }

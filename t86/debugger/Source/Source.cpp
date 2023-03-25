@@ -334,3 +334,113 @@ std::set<std::string> Source::GetScopedVariables(uint64_t address) const {
             [](auto&& p) { return p.first; });
     return result;
 }
+
+std::string Source::TypedValueTypeToString(const TypedValue& v) const {
+    using namespace std::string_literals;
+    return std::visit(utils::overloaded {
+        [&](const PointerValue& v) {
+            return TypeToString(v.type);
+        },
+        [](const CharValue&) {
+            return "char"s; 
+        },
+        [](const IntegerValue&) {
+            return "int"s; 
+        },
+        [](const FloatValue&) {
+            return "float"s; 
+        },
+        [](const StructuredValue& v) {
+            return v.name;
+        }
+    }, v);
+}
+
+std::string Source::TypeToString(const Type& type) const {
+    return std::visit(utils::overloaded {
+        [this](const PointerType& t) {
+            if (!types.contains(t.type_id)) {
+                return fmt::format("<unknown>*");
+            }
+            return fmt::format("{}*", TypeToString(types.at(t.type_id))); 
+        },
+        [](const StructuredType& t) {
+            return fmt::format("{}", t.name);
+        },
+        [](const PrimitiveType& t) {
+            return FromPrimitiveType(t.type);
+        },
+    }, type);
+}
+
+std::string Source::TypedValueToString(Native& native, const TypedValue& v) {
+    return std::visit(utils::overloaded {
+        [&](const PointerValue& t) {
+            // is const char*, print it like a string.
+            auto pointee = GetType(t.type.type_id);
+            if (auto pointee_type = std::get_if<PrimitiveType>(pointee);
+                    pointee_type != nullptr
+                    && pointee_type->type == PrimitiveType::Type::CHAR) {
+                std::string result;
+                size_t it = t.value;
+                while (true) {
+                    char c = native.ReadMemory(it++, 1).at(0);
+                    // TODO: Handle all unprintable or whitespace characters.
+                    if (c == '\0') {
+                        break;
+                    } else if (c == '\n') {
+                        result += "\\n";
+                    } else if (c == '\t') {
+                        result += "\\t";
+                    } else {
+                        result += c;
+                    }
+                }
+                return fmt::format("{} \"{}\"", t.value, result);
+            } else {
+                return fmt::format("{}", t.value);
+            }
+        },
+        [](const IntegerValue& v) {
+            return std::to_string(v.value);
+        },
+        [](const FloatValue& v) {
+            return std::to_string(v.value);
+        },
+        [](const CharValue& v) {
+            return fmt::format("'{}'", v.value);
+        },
+        [&](const StructuredValue& v) {
+            std::vector<std::string> members;
+            for (auto&& member: v.members) {
+                members.emplace_back(fmt::format(
+                    "{} = {}", member.first,
+                    TypedValueToString(native, member.second)));
+            }
+            auto res = utils::join(members.begin(), members.end(), ", ");
+            return fmt::format("{{ {} }}", res);
+        }
+    }, v);
+}
+
+uint64_t Source::GetAddressFromString(std::string_view s, bool start_at_one) const {
+    uint64_t address;
+    auto line = utils::svtonum<uint64_t>(s);
+    if (!line) {
+        auto function = GetFunctionAddrByName(s);
+        if (!function) {
+            throw DebuggerError(fmt::format("Expected line or function name, '{}' is neither.", s));
+        }
+        address = function->first;
+    } else {
+        if (*line == 0 && start_at_one) {
+            throw DebuggerError("Lines starts from one");
+        }
+        auto address_opt = LineToAddr(*line - start_at_one);
+        if (!address_opt) {
+            throw DebuggerError(fmt::format("No debug info for line {}", *line));
+        }
+        address = *address_opt;
+    }
+    return address;
+}

@@ -2,26 +2,26 @@
 #include "common/parsing.h"
 #include "debugger/Source/Expression.h"
 
-/** The grammar:
- * Lexical syntax:
- *  Number = Integer and floating point numbers.
- *  ID = Identifier containing letter, numbers and underscores.
- *       Can't begin with a number.
- *                   
- * Context-free syntax:
- *  expr = equality
- *  equality = logical {("==" | "!=") logical}
- *  logical = comparison {("&&" | "||") comparison}
- *  comparison = term {("<" | "<=" | ">=" | ">") term}
- *  shifts = bit_ops {("<<" | ">>") bit_ops}
- *  bit_ops = term {("|" | "&" | "^") term}
- *  term = factor {("+" | "-") factor}
- *  factor = unary {("*" | "/" | "%") unary}
- *  unary = ["*"] postfix
- *  postfix = primary ([ "[" expr "]" ] | "->" ID | "." ID)
- *  primary = Number | ID | "(" expr ")"
- */
-
+/// Parses the debugging expression.
+///
+/// The grammar:
+/// Lexical syntax:
+///  Number = Integer and floating point numbers.
+///  ID = Identifier containing letter, numbers and underscores.
+///       Can't begin with a number.
+///                  
+/// Context-free syntax:
+///  expr = equality
+///  equality = logical {("==" | "!=") logical}
+///  logical = comparison {("&&" | "||") comparison}
+///  comparison = term {("<" | "<=" | ">=" | ">") term}
+///  shifts = bit_ops {("<<" | ">>") bit_ops}
+///  bit_ops = term {("|" | "&" | "^") term}
+///  term = factor {("+" | "-") factor}
+///  factor = unary {("*" | "/" | "%") unary}
+///  unary = ["*"] postfix
+///  postfix = primary ([ "[" expr "]" ] | "->" ID | "." ID)
+///  primary = Number | ID | "(" expr ")"
 class ExpressionParser {
 public:
     ExpressionParser(std::istream& is): lex(is) { GetNext(); }

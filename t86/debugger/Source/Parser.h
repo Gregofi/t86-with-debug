@@ -13,6 +13,7 @@ struct DebuggingInfo {
     std::optional<SourceFile> source_code;
 };
 
+/// Parser debugging information, like DIEs, line to addr mapping and so on.
 class Parser {
 public:
     Parser(std::istream& iss) noexcept : lex(iss) { GetNext(); }

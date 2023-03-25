@@ -28,7 +28,7 @@ const Attr* FindDieAttribute(const DIE& die) {
     return nullptr;
 }
 
-/// Responsible for all source level debugging.
+/// Handles most logic behind source level debugging.
 class Source {
 public:
     void RegisterSourceFile(SourceFile file) {
@@ -44,8 +44,8 @@ public:
         ReconstructTypeInformation();
     }
 
-    // Those four guys are currently unused but are left here
-    // if needed in the future.
+    // NOTE: Those four guys are currently unused but are left here
+    //       if needed in the future.
     /// Sets software breakpoint at given line and returns the address
     /// of the breakpoint (the assembly address).
     uint64_t SetSourceSoftwareBreakpoint(Native& native, size_t line) const;
@@ -61,27 +61,7 @@ public:
     /// and the beginning address of that function is returned.
     /// Throws if the information cannot be retrieved.
     /// If start at one is defined then the resulting line is lowered by one.
-    uint64_t GetAddressFromString(std::string_view s, bool start_at_one = false) {
-        uint64_t address;
-        auto line = utils::svtonum<uint64_t>(s);
-        if (!line) {
-            auto function = GetFunctionAddrByName(s);
-            if (!function) {
-                throw DebuggerError(fmt::format("Expected line or function name, '{}' is neither.", s));
-            }
-            address = function->first;
-        } else {
-            if (*line == 0 && start_at_one) {
-                throw DebuggerError("Lines starts from one");
-            }
-            auto address_opt = LineToAddr(*line - start_at_one);
-            if (!address_opt) {
-                throw DebuggerError(fmt::format("No debug info for line {}", *line));
-            }
-            address = *address_opt;
-        }
-        return address;
-    }
+    uint64_t GetAddressFromString(std::string_view s, bool start_at_one = false) const;
 
     /// Returns function that owns instruction at given address.
     std::optional<std::string> GetFunctionNameByAddress(uint64_t address) const;
@@ -122,6 +102,7 @@ public:
     /// Returns empty vector if no debugging info is provided.
     std::vector<std::string_view> GetLinesRange(size_t idx, size_t amount) const;
 
+    /// Returns a line of the source program, if available.
     std::optional<std::string_view> GetLine(size_t line) const;
 
     /// Performs a source level step in.
@@ -144,101 +125,12 @@ public:
         return &it->second;
     }
 
-    std::string TypeToString(const Type& type) const {
-        return std::visit(utils::overloaded {
-            [this](const PointerType& t) {
-                if (!types.contains(t.type_id)) {
-                    return fmt::format("<unknown>*");
-                }
-                return fmt::format("{}*", TypeToString(types.at(t.type_id))); 
-            },
-            [](const StructuredType& t) {
-                return fmt::format("{}", t.name);
-            },
-            [](const PrimitiveType& t) {
-                return FromPrimitiveType(t.type);
-            },
-        }, type);
-    }
+    /// Returns the type as a string, if the type is known.
+    std::string TypeToString(const Type& type) const;
 
-    std::string TypedValueTypeToString(const TypedValue& v) const {
-        using namespace std::string_literals;
-        return std::visit(utils::overloaded {
-            [&](const PointerValue& v) {
-                return TypeToString(v.type);
-            },
-            [](const CharValue&) {
-                return "char"s; 
-            },
-            [](const IntegerValue&) {
-                return "int"s; 
-            },
-            [](const FloatValue&) {
-                return "float"s; 
-            },
-            [](const StructuredValue& v) {
-                return v.name;
-            }
-        }, v);
-    }
+    std::string TypedValueTypeToString(const TypedValue& v) const;
 
-    std::string ReadZeroTerminated(Native& native, size_t begin) {
-        std::string result;
-        while (true) {
-            auto c = native.ReadMemory(begin, 1);
-        }
-    }
-
-    std::string TypedValueToString(Native& native, const TypedValue& v) {
-        return std::visit(utils::overloaded {
-            [&](const PointerValue& t) {
-                // is const char*, print it like a string.
-                auto pointee = GetType(t.type.type_id);
-                if (auto pointee_type = std::get_if<PrimitiveType>(pointee);
-                        pointee_type != nullptr
-                        && pointee_type->type == PrimitiveType::Type::CHAR) {
-                    std::string result;
-                    size_t it = t.value;
-                    while (true) {
-                        char c = native.ReadMemory(it++, 1).at(0);
-                        // TODO: Handle all unprintable or whitespace characters.
-                        if (c == '\0') {
-                            break;
-                        } else if (c == '\n') {
-                            result += "\\n";
-                        } else if (c == '\t') {
-                            result += "\\t";
-                        } else {
-                            result += c;
-                        }
-                    }
-                    return fmt::format("{} \"{}\"", t.value, result);
-                } else {
-                    return fmt::format("{}", t.value);
-                }
-            },
-            [](const IntegerValue& v) {
-                return std::to_string(v.value);
-            },
-            [](const FloatValue& v) {
-                return std::to_string(v.value);
-            },
-            [](const CharValue& v) {
-                return fmt::format("'{}'", v.value);
-            },
-            [&](const StructuredValue& v) {
-                std::vector<std::string> members;
-                for (auto&& member: v.members) {
-                    members.emplace_back(fmt::format(
-                        "{} = {}", member.first,
-                        TypedValueToString(native, member.second)));
-                }
-                auto res = utils::join(members.begin(), members.end(), ", ");
-                return fmt::format("{{ {} }}", res);
-            }
-        }, v);
-    }
-
+    std::string TypedValueToString(Native& native, const TypedValue& v);
 private:
     friend class ExpressionEvaluator;
     /// Builds type debugging information and stores it as class state.

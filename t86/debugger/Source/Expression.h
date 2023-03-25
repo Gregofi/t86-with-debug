@@ -7,6 +7,11 @@
 #include "debugger/Native.h"
 #include "debugger/Source/Die.h"
 
+// Contains classes and functions used to evaluate
+// debugger expressions (like a + b->c).
+// The expression is converted into an AST and evaluated
+// by visitor class.
+
 class Source;
 
 struct PointerValue {
@@ -28,6 +33,7 @@ struct CharValue {
 
 struct StructuredValue;
 
+/// Represents evaluated typed value.
 using TypedValue = std::variant<PointerValue, IntegerValue, FloatValue,
                                 CharValue, StructuredValue>;
 
@@ -48,6 +54,7 @@ class Float;
 class Char;
 class Integer;
 
+/// An abstract visitor for visiting the AST of the expressions.
 class ExpressionVisitor {
 public:
     virtual void Visit(const Identifier&) = 0;
@@ -62,6 +69,7 @@ public:
     virtual void Visit(const MemberDereferenceAccess&) = 0;
 };
 
+/// Evaluates an expression AST.
 class ExpressionEvaluator: public ExpressionVisitor {
 public:
     ExpressionEvaluator(Native& native, Source& source,
@@ -85,7 +93,7 @@ private:
     Native& native;
     Source& source;
     const std::vector<TypedValue>& evaluated_expressions;
-    // Serves as a result since  the visit methods can't have return type.
+    // Serves as a result since the visit methods can't have return type.
     TypedValue visitor_value;
 };
 

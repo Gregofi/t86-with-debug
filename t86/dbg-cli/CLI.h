@@ -167,7 +167,6 @@ To print variable values, use the `expression` command.
 
 commands:
 - set <var> <value> - Set a variable <var> to <val>.
-- scope - List all variables in current scope.
 )";
     static constexpr const char* SOURCE_USAGE =
 R"(source <subcommands> [parameter [parameter...]]
