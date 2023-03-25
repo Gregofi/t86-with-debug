@@ -4,6 +4,7 @@
 #include "Source.h"
 #include "debugger/Source/ExpressionInterpreter.h"
 
+/// Returns a raw value contained in given location as bytes.
 uint64_t GetRawValue(Native& native, const expr::Location& loc) {
     return std::visit(utils::overloaded{
         [&](const expr::Register& reg) {

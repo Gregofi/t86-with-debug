@@ -4,6 +4,7 @@
 #include <vector>
 #include <optional>
 
+/// Provides a mapping from address to program lines.
 class LineMapping {
 public:
     LineMapping(std::map<size_t, uint64_t> mapping) : location_mapping(std::move(mapping)) {}

@@ -14,8 +14,8 @@ struct ThreadQueue {
 
 class ThreadMessenger: public Messenger {
 public:
-    /// @param in - Sends the messages to this queue
-    /// @param out - Receives messages from this queue
+    /// in - Sends the messages to this queue
+    /// out - Receives messages from this queue
     ThreadMessenger(ThreadQueue<std::string> &in, ThreadQueue<std::string>& out): in(in), out(out) {
     }
 

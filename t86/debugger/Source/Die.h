@@ -52,8 +52,10 @@ using DIE_ATTR = std::variant<ATTR_name,
                               ATTR_members,
                               ATTR_id>;
 
-/// Represents one DIE_TAG value. That value contains attributes
-/// and possibly other values.
+/// An Debugging Information Entry.
+/// Each DIE has an arbitrary amount of attributes
+/// and children DIEs. It is also identified by a
+/// tag.
 class DIE {
 public:
     enum class TAG {
@@ -75,32 +77,37 @@ public:
           attributes(std::move(attributes)),
           children(std::move(children)) {}
 
-    /// Begin iterator to the children DIEs.
+    /// Returns an iterator to the beginning of children DIEs.
     auto begin() const {
         return children.cbegin();
     }
 
-    /// Past the end iterator to child DIEs.
+    /// Returns an iterator to the end of children DIEs.
     auto end() const {
         return children.cend();
     }
 
+    /// Returns an iterator to the first attribute.
     auto begin_attr() const {
         return attributes.begin();
     }
 
+    /// Returns an iterator to the end of attributes.
     auto end_attr() const {
         return attributes.end();
     }
 
+    /// Access die at specified index with bounds checking.
     const DIE& at(size_t i) {
         return children.at(i);
     }
     
+    /// Access attribute at specified index with bounds checking.
     const DIE_ATTR& attr_at(size_t i) {
         return attributes.at(i);
     }
 
+    /// Return the tag of the die.
     TAG get_tag() const { return tag; }
 protected:
     TAG tag;

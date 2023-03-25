@@ -7,6 +7,10 @@
 
 #include "DebugEvent.h"
 
+/// Represents a debugee process.
+/// Handles all communications and API calls to the debugee.
+/// Should not contain any debugger logic, that is left
+/// to the Native class.
 class Process {
 public:
     virtual ~Process() = default;
@@ -39,4 +43,3 @@ public:
     virtual void Terminate() = 0;
 protected:
 };
-

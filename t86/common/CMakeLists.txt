@@ -8,6 +8,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Wall")
 
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
-file(GLOB_RECURSE SRC "*.cpp")
+file(GLOB_RECURSE SRC "*.cpp" "*.h")
 add_library(common ${SRC})
 target_link_libraries(common fmt::fmt)

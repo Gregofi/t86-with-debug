@@ -9,6 +9,9 @@
 #include "debugger/Native.h"
 #include "debugger/Source/LocExpr.h"
 
+// Interprets location expressions, which specify locations of variables.
+// Not to be confused with debugger expressions. 
+
 class InterpretError : public std::exception {
 public:
     InterpretError(std::string message) : message(std::move(message)) { }

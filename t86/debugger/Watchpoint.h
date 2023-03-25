@@ -1,9 +1,10 @@
 #pragma once
-
 #include <cstddef>
+
+
 struct Watchpoint {
     enum class Type {
-        Read,
+        Read, // Not implemented
         Write,
     } type;
     // Which hardware register the WP occupies.
