@@ -1,45 +1,126 @@
 #include "ExpressionParser.h"
 
+static const std::map<TokenKind, BinaryOperator::Op> operators = {
+    {TokenKind::PLUS, BinaryOperator::Op::Add},
+    {TokenKind::MINUS, BinaryOperator::Op::Sub},
+    {TokenKind::TIMES, BinaryOperator::Op::Mul},
+    {TokenKind::SLASH, BinaryOperator::Op::Div},
+    {TokenKind::MOD, BinaryOperator::Op::Mod},
+    {TokenKind::EQ, BinaryOperator::Op::Eq},
+    {TokenKind::NEQ, BinaryOperator::Op::Neq},
+    {TokenKind::LESS, BinaryOperator::Op::Less},
+    {TokenKind::GREATER, BinaryOperator::Op::Greater},
+    {TokenKind::GEQ, BinaryOperator::Op::Geq},
+    {TokenKind::LEQ, BinaryOperator::Op::Leq},
+    {TokenKind::LAND, BinaryOperator::Op::And},
+    {TokenKind::LOR, BinaryOperator::Op::Or},
+    {TokenKind::AND, BinaryOperator::Op::IAnd},
+    {TokenKind::OR, BinaryOperator::Op::IOr},
+    {TokenKind::XOR, BinaryOperator::Op::IXor},
+    {TokenKind::LSHIFT, BinaryOperator::Op::LShift},
+    {TokenKind::RSHIFT, BinaryOperator::Op::RShift},
+};
+
 std::unique_ptr<Expression> ExpressionParser::expr() {
     return equality(); 
 }
 
 std::unique_ptr<Expression> ExpressionParser::equality() {
+    std::unique_ptr<Expression> result = logical();
+    while (curtok.kind == TokenKind::EQ
+            || curtok.kind == TokenKind::NEQ) {
+        auto kind = curtok.kind;
+        GetNext();
+        auto next = logical();
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
+    }
+    return result;
+}
+
+std::unique_ptr<Expression> ExpressionParser::logical() {
     std::unique_ptr<Expression> result = comparison();
-    while (curtok.kind == TokenKind::EQ) {
+    while (curtok.kind == TokenKind::LAND
+            || curtok.kind == TokenKind::LOR) {
+        auto kind = curtok.kind;
         GetNext();
         auto next = comparison();
-        NOT_IMPLEMENTED;
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
     }
     return result;
 }
 
 std::unique_ptr<Expression> ExpressionParser::comparison() {
-    std::unique_ptr<Expression> result = term();
-    while (curtok.kind == TokenKind::LESS || curtok.kind == TokenKind::GREATER) {
+    std::unique_ptr<Expression> result = shifts();
+    while (curtok.kind == TokenKind::LESS
+            || curtok.kind == TokenKind::GREATER) {
+        auto kind = curtok.kind;
         GetNext();
-        auto next = factor();
-        NOT_IMPLEMENTED;
+        auto next = shifts();
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
+    }
+    return result;
+}
+
+std::unique_ptr<Expression> ExpressionParser::shifts() {
+    std::unique_ptr<Expression> result = bit_ops();
+    while (curtok.kind == TokenKind::LSHIFT
+            || curtok.kind == TokenKind::RSHIFT) {
+        auto kind = curtok.kind;
+        GetNext();
+        auto next = bit_ops();
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
+    }
+    return result;
+}
+
+std::unique_ptr<Expression> ExpressionParser::bit_ops() {
+    std::unique_ptr<Expression> result = term();
+    while (curtok.kind == TokenKind::AND
+            || curtok.kind == TokenKind::XOR
+            || curtok.kind == TokenKind::OR) {
+        auto kind = curtok.kind;
+        GetNext();
+        auto next = term();
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
     }
     return result;
 }
 
 std::unique_ptr<Expression> ExpressionParser::term() {
     std::unique_ptr<Expression> result = factor();
-    while (curtok.kind == TokenKind::PLUS) {
+    while (curtok.kind == TokenKind::PLUS
+            || curtok.kind == TokenKind::MINUS) {
+        auto kind = curtok.kind;
         GetNext();
         auto next = factor();
-        result = std::make_unique<Plus>(std::move(result), std::move(next));
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
     }
     return result;
 }
 
 std::unique_ptr<Expression> ExpressionParser::factor() {
     std::unique_ptr<Expression> result = unary();
-    while (curtok.kind == TokenKind::TIMES) {
+    while (curtok.kind == TokenKind::TIMES
+            || curtok.kind == TokenKind::MOD
+            || curtok.kind == TokenKind::SLASH) {
+        auto kind = curtok.kind;
         GetNext();
         auto next = unary();
-        NOT_IMPLEMENTED;
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
     }
     return result;
 }

@@ -1,4 +1,5 @@
 #include <variant>
+#include <functional>
 #include "Expression.h"
 #include "Source.h"
 #include "debugger/Source/ExpressionInterpreter.h"
@@ -98,20 +99,100 @@ void ExpressionEvaluator::Visit(const class Dereference& deref) {
 
 TypedValue AddValues(TypedValue&& left, TypedValue&& right) {
     return std::visit(utils::overloaded{
-        [&](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+        [](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
             return IntegerValue{left.value + right.value}; 
         },
-        [&](FloatValue&& left, FloatValue&& right) -> TypedValue {
+        [](FloatValue&& left, FloatValue&& right) -> TypedValue {
             return FloatValue{left.value + right.value};
         },
-        [&](IntegerValue&& left, PointerValue&& right) -> TypedValue {
+        [](CharValue&& left, CharValue&& right) -> TypedValue {
+            return IntegerValue{left.value + right.value};
+        },
+        [](IntegerValue&& left, PointerValue&& right) -> TypedValue {
             return PointerValue{right.type, left.value + right.value};
         },
-        [&](PointerValue&& left, IntegerValue&& right) -> TypedValue {
+        [](PointerValue&& left, IntegerValue&& right) -> TypedValue {
             return PointerValue{left.type, left.value + right.value};
         },
-        [&](auto&&, auto&&) -> TypedValue {
+        [](auto&&, auto&&) -> TypedValue {
             throw DebuggerError("Unsupported types for operator '+'");
+        }
+    }, std::move(left), std::move(right));
+}
+
+TypedValue SubValues(TypedValue&& left, TypedValue&& right) {
+    return std::visit(utils::overloaded{
+        [](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+            return IntegerValue{left.value - right.value}; 
+        },
+        [](FloatValue&& left, FloatValue&& right) -> TypedValue {
+            return FloatValue{left.value - right.value};
+        },
+        [](PointerValue&& left, IntegerValue&& right) -> TypedValue {
+            return PointerValue{left.type, left.value - right.value};
+        },
+        [](PointerValue&& left, PointerValue&& right) -> TypedValue {
+            if (left.type.type_id != right.type.type_id) {
+                throw DebuggerError("Only pointers to the same type can be substracted");
+            }
+            return IntegerValue{static_cast<int64_t>(left.value - right.value)};
+        },
+        [](auto&&, auto&&) -> TypedValue {
+            throw DebuggerError("Unsupported types for operator '-'");
+        }
+    }, std::move(left), std::move(right));
+}
+
+template<typename Operation>
+TypedValue ArithmeticOp(TypedValue&& left, Operation&& op, TypedValue&& right) {
+    return std::visit(utils::overloaded{
+        [&](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](FloatValue&& left, FloatValue&& right) -> TypedValue {
+            return FloatValue{op(left.value, right.value)};
+        },
+        [&](CharValue&& left, CharValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](auto&&, auto&&) -> TypedValue {
+            throw DebuggerError("Unsupported types for operator binary operator");
+        }
+    }, std::move(left), std::move(right));
+}
+
+template<typename Operation>
+TypedValue CompareValues(TypedValue&& left, Operation&& op, TypedValue&& right) {
+    return std::visit(utils::overloaded{
+        [&](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](FloatValue&& left, FloatValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)};
+        },
+        [&](CharValue&& left, CharValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](PointerValue&& left, PointerValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](auto&&, auto&&) -> TypedValue {
+            throw DebuggerError("Unsupported types for comparison operator");
+        }
+    }, std::move(left), std::move(right));
+}
+
+template<typename Operation>
+TypedValue BitValues(TypedValue&& left, Operation&& op, TypedValue&& right) {
+    return std::visit(utils::overloaded{
+        [&](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](CharValue&& left, CharValue&& right) -> TypedValue {
+            return IntegerValue{op(left.value, right.value)}; 
+        },
+        [&](auto&&, auto&&) -> TypedValue {
+            throw DebuggerError("Unsupported types for comparison operator");
         }
     }, std::move(left), std::move(right));
 }
@@ -126,12 +207,105 @@ void ExpressionEvaluator::Visit(const ArrayAccess& id) {
     visitor_value = std::move(deref);
 }
 
-void ExpressionEvaluator::Visit(const Plus& plus) {
+bool CheckZero(const TypedValue& val) {
+    return std::visit(utils::overloaded{
+        [](const IntegerValue& v) {
+            return v.value != 0;
+        },
+        [](const FloatValue& v) {
+            return v.value != 0;
+        },
+        [](const CharValue& v) {
+            return v.value != 0;
+        },
+        [](const auto&) {
+            return true;
+        }
+    }, val);
+}
+
+void ExpressionEvaluator::Visit(const BinaryOperator& plus) {
     plus.left->Accept(*this);
     auto left = std::move(visitor_value);
     plus.right->Accept(*this);
     auto right = std::move(visitor_value);
-    visitor_value = AddValues(std::move(left), std::move(right));
+    switch (plus.op) {
+    break; case BinaryOperator::Op::Add:
+        visitor_value = AddValues(std::move(left), std::move(right));
+    break; case BinaryOperator::Op::Sub: 
+        visitor_value = SubValues(std::move(left), std::move(right));
+    break; case BinaryOperator::Op::Mul: 
+        visitor_value = ArithmeticOp(std::move(left),
+                                     std::multiplies{},
+                                     std::move(right));
+    break; case BinaryOperator::Op::Div: 
+        if (!CheckZero(right)) {
+            throw DebuggerError("Can't divide by zero");
+        }
+        visitor_value = ArithmeticOp(std::move(left),
+                                     std::divides{},
+                                     std::move(right));
+    break; case BinaryOperator::Op::Mod: 
+        if (!CheckZero(right)) {
+            throw DebuggerError("Can't divide by zero");
+        }
+        visitor_value = BitValues(std::move(left),
+                                  std::modulus{},
+                                  std::move(right));
+    break; case BinaryOperator::Op::Eq: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::equal_to{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::Neq: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::not_equal_to{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::Less: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::less{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::Greater: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::greater{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::Leq: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::less_equal{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::Geq: 
+        visitor_value = CompareValues(std::move(left),
+                                      std::greater_equal{},
+                                      std::move(right));
+    break; case BinaryOperator::Op::And: 
+        visitor_value = CompareValues(std::move(left),
+                                     std::logical_and{},
+                                     std::move(right));
+    break; case BinaryOperator::Op::Or: 
+        visitor_value = CompareValues(std::move(left),
+                                     std::logical_or{},
+                                     std::move(right));
+    break; case BinaryOperator::Op::IAnd: 
+        visitor_value = BitValues(std::move(left),
+                                  std::bit_and{},
+                                  std::move(right));
+    break; case BinaryOperator::Op::IOr: 
+        visitor_value = BitValues(std::move(left),
+                                  std::bit_or{},
+                                  std::move(right));
+    break; case BinaryOperator::Op::IXor: 
+        visitor_value = BitValues(std::move(left),
+                                  std::bit_xor{},
+                                  std::move(right));
+    break; case BinaryOperator::Op::LShift: 
+        visitor_value = BitValues(std::move(left),
+                                  [](auto&& l, auto&& r) { return l << r; },
+                                  std::move(right));
+    break; case BinaryOperator::Op::RShift: 
+        visitor_value = BitValues(std::move(left),
+                                  [](auto&& l, auto&& r) { return l >> r; },
+                                  std::move(right));
+    break; default: UNREACHABLE;
+    }
 }
 
 TypedValue AccessMember(const TypedValue& base, const std::string& member) {

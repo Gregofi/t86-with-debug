@@ -41,7 +41,7 @@ class Identifier;
 class EvaluatedExpr;
 class Dereference;
 class ArrayAccess;
-class Plus;
+class BinaryOperator;
 class MemberAccess;
 class MemberDereferenceAccess;
 class Float;
@@ -54,7 +54,7 @@ public:
     virtual void Visit(const EvaluatedExpr&) = 0;
     virtual void Visit(const Dereference&) = 0;
     virtual void Visit(const ArrayAccess&) = 0;
-    virtual void Visit(const Plus&) = 0;
+    virtual void Visit(const BinaryOperator&) = 0;
     virtual void Visit(const Float&) = 0;
     virtual void Visit(const Char&) = 0;
     virtual void Visit(const Integer&) = 0;
@@ -70,7 +70,7 @@ public:
     void Visit(const EvaluatedExpr& id) override;
     void Visit(const Dereference& id) override;
     void Visit(const ArrayAccess& id) override;
-    void Visit(const Plus& id) override;
+    void Visit(const BinaryOperator& id) override;
     void Visit(const MemberAccess&) override;
     void Visit(const Integer&) override;
     void Visit(const Float&) override;
@@ -135,14 +135,36 @@ public:
     std::unique_ptr<Expression> index;
 };
 
-class Plus: public Expression {
+class BinaryOperator: public Expression {
 public:
-    Plus(std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
-        : left(std::move(left)), right(std::move(right)) { }
+    enum class Op {
+        Add,
+        Sub,
+        Mul,
+        Div,
+        Mod,
+        Eq,
+        Neq,
+        Leq,
+        Geq,
+        Greater,
+        Less,
+        And,
+        Or,
+        IAnd,
+        IOr,
+        IXor,
+        LShift,
+        RShift,
+    };
+    BinaryOperator(std::unique_ptr<Expression> left, Op op,
+            std::unique_ptr<Expression> right)
+        : left(std::move(left)), op(op), right(std::move(right)) { }
     void Accept(ExpressionVisitor& v) const override {
         v.Visit(*this);
     }
     std::unique_ptr<Expression> left;
+    Op op;
     std::unique_ptr<Expression> right;
 };
 

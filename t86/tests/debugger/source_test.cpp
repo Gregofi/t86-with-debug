@@ -1214,25 +1214,32 @@ int main() {
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
     EXPECT_EQ(std::get<IntegerValue>(res).value, 6);
 
-    ast = std::make_unique<Plus>(std::make_unique<Identifier>("a"),
+    ast = std::make_unique<BinaryOperator>(
+            std::make_unique<Identifier>("a"),
+            BinaryOperator::Op::Add,
             std::make_unique<Identifier>("b"));
     ast->Accept(ev);
     res = ev.YieldResult();
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
     EXPECT_EQ(std::get<IntegerValue>(res).value, 9);
 
-    ast = std::make_unique<Plus>(
-        std::make_unique<Plus>(std::make_unique<Identifier>("a"),
-                               std::make_unique<Identifier>("a")),
+    ast = std::make_unique<BinaryOperator>(
+        std::make_unique<BinaryOperator>(
+               std::make_unique<Identifier>("a"),
+               BinaryOperator::Op::Add,
+               std::make_unique<Identifier>("a")),
+        BinaryOperator::Op::Add,
         std::make_unique<Identifier>("b"));
     ast->Accept(ev);
     res = ev.YieldResult();
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
     EXPECT_EQ(std::get<IntegerValue>(res).value, 12);
 
-    ast = std::make_unique<Plus>(
-        std::make_unique<Plus>(std::make_unique<Integer>(5),
-                               std::make_unique<Identifier>("a")),
+    ast = std::make_unique<BinaryOperator>(
+        std::make_unique<BinaryOperator>(std::make_unique<Integer>(5),
+                                         BinaryOperator::Op::Add,
+                                         std::make_unique<Identifier>("a")),
+        BinaryOperator::Op::Add,
         std::make_unique<Integer>(-10));
     ast->Accept(ev);
     res = ev.YieldResult();
@@ -1604,6 +1611,31 @@ int main() {
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 11);
 
+    expr = "2 << 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 16);
+
+    expr = "1 + 2 << 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 24);
+
+    expr = "1 > 2 || 4 > 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 1);
+
+    expr = "1 > 2 && 4 > 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 0);
+
+    expr = "3 > 2 == 4 > 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 1);
+
     expr = "it->next";
     result = source.EvaluateExpression(*native, expr).first;
     ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
@@ -1659,6 +1691,16 @@ int main() {
     }, DebuggerError);
 
     expr = "*it->v";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr).first;
+    }, DebuggerError);
+
+    expr = "1 / 0";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr).first;
+    }, DebuggerError);
+
+    expr = "1 % 0";
     ASSERT_THROW({
         result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
