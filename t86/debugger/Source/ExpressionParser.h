@@ -10,10 +10,13 @@
  *                   
  * Context-free syntax:
  *  expr = equality
- *  equality = comparison {("==" | "!=") comparison}
+ *  equality = logical {("==" | "!=") logical}
+ *  logical = comparison {("&&" | "||") comparison}
  *  comparison = term {("<" | "<=" | ">=" | ">") term}
+ *  shifts = bit_ops {("<<" | ">>") bit_ops}
+ *  bit_ops = term {("|" | "&" | "^") term}
  *  term = factor {("+" | "-") factor}
- *  factor = unary {("*" | "/") unary}
+ *  factor = unary {("*" | "/" | "%") unary}
  *  unary = ["*"] postfix
  *  postfix = primary ([ "[" expr "]" ] | "->" ID | "." ID)
  *  primary = Number | ID | "(" expr ")"
@@ -35,7 +38,10 @@ private:
 
     std::unique_ptr<Expression> expr();
     std::unique_ptr<Expression> equality();
+    std::unique_ptr<Expression> logical();
     std::unique_ptr<Expression> comparison();
+    std::unique_ptr<Expression> bit_ops();
+    std::unique_ptr<Expression> shifts();
     std::unique_ptr<Expression> term();
     std::unique_ptr<Expression> factor();
     std::unique_ptr<Expression> unary();

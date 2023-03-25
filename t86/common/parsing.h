@@ -31,21 +31,33 @@ enum class TokenKind {
     RPAREN,
     END,
     SEMICOLON,
+    BANG,
     PLUS,
     MINUS,
     TIMES,
     LESS,
     DOLLAR,
+    SLASH,
     GREATER,
     COMMA,
     STRING,
     ASSIGN,
     EQ,
     NEQ,
+    GEQ,
+    LEQ,
     FLOAT,
     DOUBLEDOT,
     BACKTICK,
     ARROW, // ->
+    LAND,
+    LOR,
+    AND,
+    OR,
+    XOR,
+    LSHIFT,
+    RSHIFT,
+    MOD,
 };
 
 struct Token {
@@ -173,6 +185,13 @@ public:
         } else if (lookahead == ')') {
             GetChar();
             return MakeToken(TokenKind::RPAREN);
+        } else if (lookahead == '!') {
+            GetChar();
+            if (lookahead == '=') {
+                GetChar();
+                return MakeToken(TokenKind::NEQ);
+            }
+            return MakeToken(TokenKind::BANG);
         } else if (lookahead == '=') {
             GetChar();
             if (lookahead == '=') {
@@ -180,6 +199,9 @@ public:
                 MakeToken(TokenKind::EQ);
             }
             return MakeToken(TokenKind::ASSIGN);
+        } else if (lookahead == '%') {
+            GetChar();
+            return MakeToken(TokenKind::MOD);
         } else if (lookahead == '+') {
             GetChar();
            return MakeToken(TokenKind::PLUS);
@@ -192,13 +214,30 @@ public:
            return MakeToken(TokenKind::MINUS);
         } else if (lookahead == '>') {
             GetChar();
-           return MakeToken(TokenKind::GREATER);
+            if (lookahead == '=') {
+                GetChar();
+                return MakeToken(TokenKind::GEQ);
+            } else if (lookahead == '>') {
+                GetChar();
+                return MakeToken(TokenKind::RSHIFT);
+            }
+            return MakeToken(TokenKind::GREATER);
         } else if (lookahead == '<') {
             GetChar();
-           return MakeToken(TokenKind::LESS);
+            if (lookahead == '=') {
+                GetChar();
+                return MakeToken(TokenKind::LEQ);
+            } else if (lookahead == '<') {
+                GetChar();
+                return MakeToken(TokenKind::LSHIFT);
+            }
+            return MakeToken(TokenKind::LESS);
         } else if (lookahead == ':') {
             GetChar();
             return MakeToken(TokenKind::DOUBLEDOT);
+        } else if (lookahead == '/') {
+            GetChar();
+            return MakeToken(TokenKind::SLASH);
         } else if (lookahead == '*') {
             GetChar();
             return MakeToken(TokenKind::TIMES);
@@ -214,6 +253,21 @@ public:
         } else if (lookahead == '"') {
             ParseString();
             return MakeToken(TokenKind::STRING);
+        } else if (lookahead == '&') {
+            if (GetChar() == '&') {
+                GetChar();
+                return MakeToken(TokenKind::LAND);
+            }
+            return MakeToken(TokenKind::AND);
+        } else if (lookahead == '|') {
+            if (GetChar() == '|') {
+                GetChar();
+                return MakeToken(TokenKind::LOR);
+            }
+            return MakeToken(TokenKind::OR);
+        } else if (lookahead == '^') {
+            GetChar();
+            return MakeToken(TokenKind::XOR);
         } else if (isdigit(lookahead)) {
             return MakeToken(ParseNumber());
         } else if (isalpha(lookahead) || lookahead == '_') { // identifier

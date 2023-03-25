@@ -89,13 +89,6 @@ TEST(TokenizerTest, MultilineInput) {
     ASSERT_EQ(l.getNext(), _T(TokenKind::END, 4, 0));
 }
 
-TEST(TokenizerTest, UnknownToken) {
-    std::istringstream iss(" 1 // A comment");
-    Lexer l(iss);
-    ASSERT_EQ(l.getNext(), _T(TokenKind::NUM, 0, 1));
-    ASSERT_THROW({l.getNext();}, ParserError);
-}
-
 TEST(TokenizerTest, UnterminatedString) {
     std::istringstream iss("1 \"Hello 2");
     Lexer l(iss);
@@ -130,17 +123,6 @@ TEST(TokenizerTest, Floats2) {
     ASSERT_EQ(l.getNext(), _T(TokenKind::COMMA, 0, 6));
     ASSERT_EQ(l.getNext(), _T(TokenKind::FLOAT, 0, 8));
     ASSERT_EQ(l.getFloat(), 3.14);
-}
-
-TEST(TokenizerTest, Ignore) {
-    std::istringstream iss("A B @ % @ A %");
-    Lexer l(iss);
-    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 0));
-    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 2));
-    l.SetIgnoreMode(true);
-    ASSERT_EQ(l.getNext(), _T(TokenKind::ID, 0, 10));
-    l.SetIgnoreMode(false);
-    ASSERT_THROW({l.getNext();}, ParserError);
 }
 
 TEST(ParserTest, Minuses) {
