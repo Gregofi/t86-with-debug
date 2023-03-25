@@ -1,7 +1,0 @@
-int main() {
-    if (3 > 2) {
-        return 32;
-    } else {
-        return 54;
-    }
-}

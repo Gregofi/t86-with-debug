@@ -1,7 +1,0 @@
-
-int main() {
-    if (11 < 10) {
-        return 2;
-    }
-    return 3;
-}
