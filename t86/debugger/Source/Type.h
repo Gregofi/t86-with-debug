@@ -18,7 +18,6 @@ struct PrimitiveType {
         FLOAT,
         SIGNED,
         UNSIGNED,
-        BOOL,
         CHAR,
     };
     Type type;
@@ -28,12 +27,10 @@ struct PrimitiveType {
 inline std::optional<PrimitiveType::Type> ToPrimitiveType(std::string_view type) {
     if (type == "float") {
         return PrimitiveType::Type::FLOAT; 
-    } else if (type == "signed_int") {
+    } else if (type == "int") {
         return PrimitiveType::Type::SIGNED;
-    } else if (type == "unsigned_int") {
+    } else if (type == "unsigned") {
         return PrimitiveType::Type::UNSIGNED;
-    } else if (type == "bool") {
-        return PrimitiveType::Type::BOOL;
     } else if (type == "char") {
         return PrimitiveType::Type::CHAR;
     }
@@ -48,8 +45,6 @@ inline std::string FromPrimitiveType(PrimitiveType::Type type) {
         return "int";
     case PrimitiveType::Type::UNSIGNED:
         return "unsigned";
-    case PrimitiveType::Type::BOOL:
-        return "bool";
     case PrimitiveType::Type::CHAR:
         return "char";
     }

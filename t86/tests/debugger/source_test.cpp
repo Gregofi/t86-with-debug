@@ -625,7 +625,7 @@ R"(.text
 .debug_info
 DIE_compilation_unit: {
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_size: 1,
     ATTR_id: 0,
 },
@@ -780,7 +780,7 @@ R"(.text
 .debug_info
 DIE_compilation_unit: {
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_size: 1,
     ATTR_id: 0,
 },
@@ -1128,7 +1128,7 @@ R"(.text
 .debug_info
 DIE_compilation_unit: {
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_id: 0,
     ATTR_size: 1,
 },
@@ -1324,7 +1324,7 @@ DIE_pointer_type: {
     ATTR_id: 2,
 },
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_size: 1,
     ATTR_id: 0,
 },
@@ -1538,7 +1538,7 @@ DIE_pointer_type: {
     ATTR_id: 2,
 },
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_size: 1,
     ATTR_id: 0,
 },
