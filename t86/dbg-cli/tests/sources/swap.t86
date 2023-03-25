@@ -37,7 +37,7 @@
 .debug_info
 DIE_compilation_unit: {
 DIE_primitive_type: {
-    ATTR_name: signed_int,
+    ATTR_name: int,
     ATTR_id: 0,
     ATTR_size: 1,
 },
