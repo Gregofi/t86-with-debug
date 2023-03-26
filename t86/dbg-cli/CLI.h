@@ -138,17 +138,16 @@ R"(memory <subcommands> [parameter [parameter...]]
 Write and read into the .data section (the RAM memory) of the program.
 
 commands:
-- get <begin-addr> <end-addr> - Read from memory range <begin-addr>:<end-addr>.
-- gets <begin-addr> <end-addr> - Read from memory range <begin-addr>:<end-addr>,
-                                 interpret the result as a c-string. If the string
-                                 is missing newline at the end it is appended and
-                                 together with a '\%' sequence.
+- get <addr> <amount> - Reads an <amount> of memory cells beginning from <addr>
+- gets <addr> <amount> - Reads an <amount> of memory cells beginning from <addr>
+                               interpret the result as a c-string. If the string
+                               is missing newline at the end it is appended and
+                               together with a '\%' sequence.
 - set <addr> <value> [<value>...] - Write values, beginning at address <addr>.
 - sets <addr> <string> - Write string encoded in ASCII on address <addr>. The
                          terminating zero is appended automatically. The string
                          is in form "Hello, World!\n", it must begin and end with
-                         quotation marks, they however needn't be escaped inside
-                         the string itself.
+                         quotation marks.
 )";
     static constexpr const char* WATCHPOINT_USAGE =
 R"(watchpoint <subcommands> [parameter [parameter...]]
