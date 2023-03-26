@@ -1256,3 +1256,51 @@ TEST_F(BinarySearchNativeSourceTest, ArrayType) {
         EXPECT_EQ(std::get<IntegerValue>(result).value, i);
     }
 }
+
+TEST_F(NativeSourceTest, SourceWithoutDebugInfo) {
+    auto program =
+R"(
+.text
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2] # No debug information about these guys
+13      MOV     R1, [SP + -3]
+14      PUTNUM  R0
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+.debug_line
+0: 2
+1: 2
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 16
+)";
+    Run(program);
+    native->WaitForDebugEvent();
+    ASSERT_FALSE(source.GetLine(0));
+    ASSERT_FALSE(source.GetLine(1));
+    ASSERT_FALSE(source.GetLine(2));
+    ASSERT_FALSE(source.GetLine(3));
+    ASSERT_FALSE(source.GetLine(13));
+    ASSERT_EQ(source.GetLines().size(), 0);
+    ASSERT_EQ(source.GetLinesRange(0, 5).size(), 0);
+    ASSERT_EQ(source.GetScopedVariables(0).size(), 0);
+    ASSERT_EQ(source.GetScopedVariables(5).size(), 0);
+}

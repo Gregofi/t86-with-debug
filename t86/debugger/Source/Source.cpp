@@ -39,6 +39,9 @@ uint64_t Source::DisableSourceSoftwareBreakpoint(Native& native, size_t line) co
 }
 
 const std::vector<std::string>& Source::GetLines() const {
+    if (!source_file) {
+        throw DebuggerError("No debug information about source code");
+    }
     return source_file->GetLines();
 }
 
@@ -77,7 +80,11 @@ std::vector<std::string_view> Source::GetLinesRange(size_t idx, size_t amount) c
 }
 
 std::optional<std::string_view> Source::GetLine(size_t line) const {
-    return source_file->GetLine(line);
+    if (source_file) {
+        return source_file->GetLine(line);
+    } else {
+        return {};
+    }
 }
 
 /// Returns DIE with given id or nullptr if not found.
