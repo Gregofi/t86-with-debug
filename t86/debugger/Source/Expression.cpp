@@ -110,12 +110,6 @@ TypedValue ExpressionEvaluator::Dereference(TypedValue&& val) {
     return EvaluateTypeAndLocation(loc, *points_to_type);
 }
 
-void ExpressionEvaluator::Visit(const class Dereference& deref) {
-    deref.target->Accept(*this);
-    auto value = std::move(visitor_value);
-    visitor_value = Dereference(std::move(value));
-}
-
 TypedValue ExpressionEvaluator::AddValues(TypedValue&& left, TypedValue&& right) {
     return std::visit(utils::overloaded{
         [](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
@@ -257,6 +251,36 @@ bool CheckZero(const TypedValue& val) {
             return true;
         }
     }, val);
+}
+
+template<typename UnaryOp>
+TypedValue EvaluateUnary(const TypedValue& val, UnaryOp&& op) {
+    return std::visit(utils::overloaded{
+        [&](const IntegerValue& v) -> TypedValue {
+            return IntegerValue{op(v.value)};
+        },
+        [&](const CharValue& v) -> TypedValue {
+            return CharValue{static_cast<char>(op(v.value))};
+        },
+        [](const auto&) -> TypedValue {
+            throw DebuggerError("Unsupported type for unary operation");
+        }
+    }, val);
+}
+
+void ExpressionEvaluator::Visit(const UnaryOperator& op) {
+    op.target->Accept(*this);
+    auto target = std::move(visitor_value);
+    switch (op.op) {
+    break; case UnaryOperator::Op::Deref:
+        visitor_value = Dereference(std::move(target)); 
+    break; case UnaryOperator::Op::Not:
+        visitor_value = EvaluateUnary(target, std::bit_not{});
+    break; case UnaryOperator::Op::LNot:
+        visitor_value = EvaluateUnary(target, std::logical_not{});
+    break; case UnaryOperator::Op::Negate:
+        visitor_value = EvaluateUnary(target, std::negate{});
+    }
 }
 
 void ExpressionEvaluator::Visit(const BinaryOperator& plus) {
