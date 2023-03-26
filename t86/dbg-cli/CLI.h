@@ -157,14 +157,6 @@ commands:
 - irem <addr> - Remove watchpoint on address <addr>.
 - list - Lists all active watchpoints.
 )";
-    static constexpr const char* VARIABLE_USAGE =
-R"(variable <subcommands> [parameter [parameter...]]
-Manipulate with source variables.
-To print variable values, use the `expression` command.
-
-commands:
-- set <var> <value> - Set a variable <var> to <val>.
-)";
     static constexpr const char* SOURCE_USAGE =
 R"(source <subcommands> [parameter [parameter...]]
 Print the debugged source code if enough debugging information
@@ -535,42 +527,6 @@ Most often, the correct address will be one below it.)";
             }
         } else {
             fmt::print("{}", BP_USAGE); 
-        }
-    }
-
-    void SetVariableT86(const expr::Location& location, int64_t value) {
-        std::visit(utils::overloaded {
-            [&](const expr::Register& r) {
-                process.SetRegister(r.name, value);
-            },
-            [&](const expr::Offset& m) {
-                process.SetMemory(m.value, {value});
-            },
-        }, location);
-    }
-
-    void SetVariableValue(std::string_view name, int64_t value_raw) {
-        auto location = source.GetVariableLocation(process, name);
-        if (!location) {
-            Error("Variable '{}' is not in scope or missing debug info", name);
-        }
-        if (Arch::GetMachine() == Arch::Machine::T86) {
-            SetVariableT86(*location, value_raw);    
-        }
-    }
-
-    void HandleVariable(std::string_view command) {
-        auto subcommands = utils::split_v(command);
-        if (check_command(subcommands, "set", 3)) {
-            auto var_name = subcommands.at(1);
-            // TODO: Should, at the very least, handle other primitive types.
-            auto value = utils::svtonum<int64_t>(subcommands.at(2));
-            if (!value) {
-                Error("Expected number, got '{}'", subcommands.at(2));
-            }
-            SetVariableValue(var_name, *value);
-        } else {
-            fmt::print(VARIABLE_USAGE);
         }
     }
 
@@ -978,8 +934,6 @@ Most often, the correct address will be one below it.)";
             fmt::print("{}", REGISTER_USAGE);
         } else if (utils::is_prefix_of(command, "memory")) {
             fmt::print("{}", MEMORY_USAGE);
-        } else if (utils::is_prefix_of(command, "variable")) {
-            fmt::print("{}", VARIABLE_USAGE);
         } else if (utils::is_prefix_of(command, "watchpoint")) {
             fmt::print("{}", WATCHPOINT_USAGE);
         } else if (utils::is_prefix_of(command, "next")) {
@@ -1049,8 +1003,6 @@ Most often, the correct address will be one below it.)";
             HandleRegister(command);
         } else if (utils::is_prefix_of(main_command, "memory")) {
             HandleMemory(command);
-        } else if (utils::is_prefix_of(main_command, "variable")) {
-            HandleVariable(command);
         } else if (utils::is_prefix_of(main_command, "watchpoint")) {
             HandleWatchpoint(command);
         } else if (utils::is_prefix_of(main_command, "next")) {

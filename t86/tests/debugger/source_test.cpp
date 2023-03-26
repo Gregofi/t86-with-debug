@@ -1258,6 +1258,89 @@ TEST_F(LinkedListNativeSourceTest, ExpressionWithParsing1) {
 
 }
 
+TEST_F(LinkedListNativeSourceTest, Assignment) {
+    native->WaitForDebugEvent();
+    source.SetSourceSoftwareBreakpoint(*native, 20);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    auto expr = "it->v";
+    auto [result, _] = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 5);
+
+    expr = "it = it->next";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<PointerValue>(result));
+
+    expr = "it->v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
+
+    expr = "it->v = 3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 3);
+
+    expr = "l1.v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 5);
+
+    expr = "l2.v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 3);
+
+    expr = "it->v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 3);
+
+    expr = "(it->v = 7) + 2";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 9);
+
+    expr = "it->v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 7);
+
+    expr = "l1 = l2";
+    result = source.EvaluateExpression(*native, expr).first;
+    expr = "l1.v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 7);
+    expr = "l2.v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 7);
+
+    expr = "l1.next->v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 15);
+
+
+    expr = "1 = 0";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr).first;
+    }, DebuggerError);
+
+    expr = "it->v = 2.3";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr).first;
+    }, DebuggerError);
+
+    expr = "it->v = it->next";
+    ASSERT_THROW({
+        result = source.EvaluateExpression(*native, expr).first;
+    }, DebuggerError);
+}
+
 TEST_F(BinarySearchNativeSourceTest, ArrayType) {
     native->WaitForDebugEvent();
     source.SetSourceSoftwareBreakpoint(*native, 23);

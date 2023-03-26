@@ -19,6 +19,7 @@ static const std::map<TokenKind, BinaryOperator::Op> operators = {
     {TokenKind::XOR, BinaryOperator::Op::IXor},
     {TokenKind::LSHIFT, BinaryOperator::Op::LShift},
     {TokenKind::RSHIFT, BinaryOperator::Op::RShift},
+    {TokenKind::ASSIGN, BinaryOperator::Op::Assign},
 };
 
 static const std::map<TokenKind, UnaryOperator::Op> unary_operators = {
@@ -28,7 +29,20 @@ static const std::map<TokenKind, UnaryOperator::Op> unary_operators = {
 };
 
 std::unique_ptr<Expression> ExpressionParser::expr() {
-    return equality(); 
+    return assign(); 
+}
+
+std::unique_ptr<Expression> ExpressionParser::assign() {
+    std::unique_ptr<Expression> result = equality();
+    while (curtok.kind == TokenKind::ASSIGN) {
+        auto kind = curtok.kind;
+        GetNext();
+        auto next = equality();
+        result = std::make_unique<BinaryOperator>(std::move(result),
+                                                  operators.at(kind),
+                                                  std::move(next));
+    }
+    return result;
 }
 
 std::unique_ptr<Expression> ExpressionParser::equality() {

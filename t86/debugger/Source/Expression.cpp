@@ -24,24 +24,33 @@ ExpressionEvaluator::ExpressionEvaluator(Native& native, Source& source,
       source(source),
       evaluated_expressions(evaluated_expressions) {}
  
+TypedValue AddLocation(TypedValue v, expr::Location loc) {
+    return std::visit(
+        [&](auto&& v) -> TypedValue {
+            v.loc = std::move(loc);
+            return std::move(v);
+        }
+    , std::move(v));
+}
+
 TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& loc,
                                                         const Type& type) {
     TypedValue v = std::visit(utils::overloaded {
         [&](const PrimitiveType& t) -> TypedValue {
             uint64_t raw_value = GetRawValue(native, loc);
             if (t.type == PrimitiveType::Type::SIGNED) {
-                return IntegerValue{*reinterpret_cast<int64_t*>(&raw_value)};
+                return IntegerValue{*reinterpret_cast<int64_t*>(&raw_value), loc};
             } else if (t.type == PrimitiveType::Type::FLOAT) {
-                return FloatValue{*reinterpret_cast<double*>(&raw_value)};
+                return FloatValue{*reinterpret_cast<double*>(&raw_value), loc};
             } else if (t.type == PrimitiveType::Type::CHAR) {
-                return CharValue{*reinterpret_cast<char*>(&raw_value)};
+                return CharValue{*reinterpret_cast<char*>(&raw_value), loc};
             } else {
                 NOT_IMPLEMENTED;
             }
         },
         [&](const PointerType& t) -> TypedValue {
             uint64_t raw_value = GetRawValue(native, loc); 
-            return PointerValue{t, raw_value};
+            return PointerValue{t, raw_value, loc};
         },
         [&](const StructuredType& t) -> TypedValue {
             std::map<std::string, TypedValue> members; 
@@ -55,9 +64,11 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
                     throw DebuggerError("Not enough debug information");
                 }
                 auto member_value = EvaluateTypeAndLocation(member_loc, *member_type);
+                member_value =
+                    AddLocation(std::move(member_value), std::move(member_loc));
                 members.emplace(member.name, member_value);
             }
-            return StructuredValue{t.name, t.size, std::move(members)};
+            return StructuredValue{t.name, t.size, std::move(members), loc};
         },
         [&](const ArrayType& t) -> TypedValue {
             auto* l = std::get_if<expr::Offset>(&loc);
@@ -70,11 +81,14 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
             }
             std::vector<TypedValue> members;
             for (size_t i = 0; i < t.cnt; ++i) {
-                auto member_location = expr::Offset{static_cast<int64_t>(l->value + i * source.GetTypeSize(t.type_id))};
+                auto member_location = expr::Offset{static_cast<int64_t>(
+                    l->value + i * source.GetTypeSize(t.type_id))};
                 auto member = EvaluateTypeAndLocation(member_location, *member_type);
+                member = AddLocation(std::move(member), std::move(member_location));
                 members.emplace_back(std::move(member));
             }
-            return ArrayValue{t, static_cast<uint64_t>(l->value), std::move(members)};
+            return ArrayValue{t, static_cast<uint64_t>(l->value),
+                              std::move(members), loc};
         },
     }, type);
     return v;
@@ -283,6 +297,82 @@ void ExpressionEvaluator::Visit(const UnaryOperator& op) {
     }
 }
 
+void SetRaw(Native& native, const expr::Location& loc, uint64_t value) {
+    std::visit(utils::overloaded {
+        [&](const expr::Register& r) {
+            native.SetRegister(r.name, value);
+        },
+        [&](const expr::Offset& r) {
+            native.SetMemory(r.value, {*(int64_t*)&value});
+        },
+    }, loc);
+}
+
+TypedValue ExpressionEvaluator::Assignment(TypedValue&& left, TypedValue&& right) {
+    std::visit([](auto&& arg) {
+        if (!arg.loc) {
+            throw DebuggerError("Cannot perform assignment, left expr is no lvalue");
+        }
+    }, left);
+
+    return std::visit(utils::overloaded{
+        [&](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
+            SetRaw(native, left.loc.value(), right.value);
+            left.value = right.value;
+            return std::move(left);
+        },
+        [&](FloatValue&& left, FloatValue&& right) -> TypedValue {
+            SetRaw(native, left.loc.value(), right.value);
+            left.value = right.value;
+            return std::move(left);
+        },
+        [&](CharValue&& left, CharValue&& right) -> TypedValue {
+            SetRaw(native, left.loc.value(), right.value);
+            left.value = right.value;
+            return std::move(left);
+        },
+        [&](PointerValue&& left, PointerValue&& right) -> TypedValue {
+            if (left.type.type_id != right.type.type_id) {
+                throw DebuggerError("Incopatible pointer types");
+            }
+            SetRaw(native, left.loc.value(), right.value);
+            left.value = right.value;
+            return std::move(left);
+        },
+        [&](ArrayValue&& left, ArrayValue&& right) -> TypedValue {
+            if (left.type.type_id != right.type.type_id) {
+                throw DebuggerError("Incopatible pointer types");
+            }
+            assert(left.members.size() == right.members.size());
+            for (size_t i = 0; i < left.members.size(); ++ i) {
+                left.members.at(i) = Assignment(std::move(left.members.at(i)),
+                                                std::move(right.members.at(i)));
+            }
+            return std::move(left);
+        },
+        [&](StructuredValue&& left, StructuredValue&& right) -> TypedValue {
+            // TODO: This is a cheap workaround, we should compare the types
+            // but they are not stored in the struct.
+            if (left.name != right.name) {
+                throw DebuggerError("Incopatible structured types for assignment");
+            }
+            std::map<std::string, TypedValue> result;
+            for (auto&& [name, val]: left.members) {
+                if (!right.members.contains(name)) {
+                    throw DebuggerError("Incompatible structured type for assignment");
+                }
+                result[name] = Assignment(std::move(val), std::move(right.members.at(name)));
+            }
+            left.members = std::move(result);
+            return left;
+        },
+        [&](auto&&, auto&&) -> TypedValue {
+            throw DebuggerError("Assignment is either not supported for given "
+                    "types or they aren't of the same type.");
+        }
+    }, std::move(left), std::move(right));
+}
+
 void ExpressionEvaluator::Visit(const BinaryOperator& plus) {
     plus.left->Accept(*this);
     auto left = std::move(visitor_value);
@@ -363,6 +453,8 @@ void ExpressionEvaluator::Visit(const BinaryOperator& plus) {
         visitor_value = BitValues(std::move(left),
                                   [](auto&& l, auto&& r) { return l >> r; },
                                   std::move(right));
+    break; case BinaryOperator::Op::Assign: 
+        visitor_value = Assignment(std::move(left), std::move(right));
     break; default: UNREACHABLE;
     }
 }

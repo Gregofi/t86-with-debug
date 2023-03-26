@@ -14,20 +14,37 @@
 
 class Source;
 
-struct PointerValue {
+struct Located {
+    std::optional<expr::Location> loc;
+};
+
+struct PointerValue: Located {
+    PointerValue(PointerType type, uint64_t value,
+                 std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, type(std::move(type)), value(value){}
+    PointerValue() = default;
     PointerType type;
     uint64_t value;
 };
 
-struct IntegerValue {
+struct IntegerValue: Located {
+    IntegerValue(int64_t value, std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, value(value) {}
+    IntegerValue() = default;
     int64_t value;
 };
 
-struct FloatValue {
+struct FloatValue: Located {
+    FloatValue(double value, std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, value(value) {}
+    FloatValue() = default;
     double value;
 };
 
-struct CharValue {
+struct CharValue: Located {
+    CharValue(char value, std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, value(value) {}
+    CharValue() = default;
     char value;
 };
 
@@ -38,14 +55,26 @@ struct ArrayValue;
 using TypedValue = std::variant<PointerValue, IntegerValue, FloatValue,
                                 CharValue, StructuredValue, ArrayValue>;
 
-struct ArrayValue {
+struct ArrayValue: Located {
+    ArrayValue(ArrayType type, uint64_t begin_address,
+               std::vector<TypedValue> members,
+               std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, type(std::move(type)),
+          begin_address(begin_address), members(std::move(members)) {}
+    ArrayValue() = default;
     ArrayType type;
     uint64_t begin_address;
     std::vector<TypedValue> members;
 };
 
 
-struct StructuredValue {
+struct StructuredValue: Located {
+    StructuredValue(std::string name, uint64_t size,
+                    std::map<std::string, TypedValue> members,
+                    std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, name(std::move(name)), size(size),
+          members(std::move(members)) {}
+    StructuredValue() = default;
     std::string name;
     uint64_t size;
     std::map<std::string, TypedValue> members;
@@ -98,6 +127,7 @@ private:
     TypedValue AddValues(TypedValue&& left, TypedValue&& right);
     TypedValue SubValues(TypedValue&& left, TypedValue&& right);
     TypedValue EvaluateTypeAndLocation(const expr::Location& loc, const Type& type);
+    TypedValue Assignment(TypedValue&& left, TypedValue&& right);
     TypedValue Dereference(TypedValue&& val);
     std::map<std::string, const DIE*> variables;
     Native& native;
@@ -181,6 +211,7 @@ public:
         IXor,
         LShift,
         RShift,
+        Assign,
     };
     BinaryOperator(std::unique_ptr<Expression> left, Op op,
             std::unique_ptr<Expression> right)
