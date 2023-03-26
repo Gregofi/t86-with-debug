@@ -73,6 +73,8 @@ DIE::TAG Parser::ParseDIETag(std::string_view v) const {
         return DIE::TAG::structured_type;
     } else if (v == "DIE_pointer_type") {
         return DIE::TAG::pointer_type;
+    } else if (v == "DIE_array_type") {
+        return DIE::TAG::array_type;
     } else if (v == "DIE_variable") {
         return DIE::TAG::variable;
     } else if (v == "DIE_scope") {

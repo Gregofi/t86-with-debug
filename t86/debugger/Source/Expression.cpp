@@ -5,6 +5,7 @@
 #include "debugger/Source/ExpressionInterpreter.h"
 
 /// Returns a raw value contained in given location as bytes.
+/// If the location is an offset, it dereferences it.
 uint64_t GetRawValue(Native& native, const expr::Location& loc) {
     return std::visit(utils::overloaded{
         [&](const expr::Register& reg) {
@@ -58,6 +59,23 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
             }
             return StructuredValue{t.name, t.size, std::move(members)};
         },
+        [&](const ArrayType& t) -> TypedValue {
+            auto* l = std::get_if<expr::Offset>(&loc);
+            if (l == nullptr) {
+                throw DebuggerError("Array stored in register is not supported");
+            }
+            auto member_type = source.GetType(t.type_id);
+            if (member_type == nullptr) {
+                throw DebuggerError("Unknown array subtype");
+            }
+            std::vector<TypedValue> members;
+            for (size_t i = 0; i < t.cnt; ++i) {
+                auto member_location = expr::Offset{static_cast<int64_t>(l->value + i * source.GetTypeSize(t.type_id))};
+                auto member = EvaluateTypeAndLocation(member_location, *member_type);
+                members.emplace_back(std::move(member));
+            }
+            return ArrayValue{t, static_cast<uint64_t>(l->value), std::move(members)};
+        },
     }, type);
     return v;
 }
@@ -98,7 +116,7 @@ void ExpressionEvaluator::Visit(const class Dereference& deref) {
     visitor_value = Dereference(std::move(value));
 }
 
-TypedValue AddValues(TypedValue&& left, TypedValue&& right) {
+TypedValue ExpressionEvaluator::AddValues(TypedValue&& left, TypedValue&& right) {
     return std::visit(utils::overloaded{
         [](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
             return IntegerValue{left.value + right.value}; 
@@ -109,11 +127,13 @@ TypedValue AddValues(TypedValue&& left, TypedValue&& right) {
         [](CharValue&& left, CharValue&& right) -> TypedValue {
             return IntegerValue{left.value + right.value};
         },
-        [](IntegerValue&& left, PointerValue&& right) -> TypedValue {
-            return PointerValue{right.type, left.value + right.value};
+        [this](IntegerValue&& left, PointerValue&& right) -> TypedValue {
+            auto item_size = source.GetTypeSize(right.type.type_id);
+            return PointerValue{right.type, left.value * item_size + right.value};
         },
-        [](PointerValue&& left, IntegerValue&& right) -> TypedValue {
-            return PointerValue{left.type, left.value + right.value};
+        [this](PointerValue&& left, IntegerValue&& right) -> TypedValue {
+            auto item_size = source.GetTypeSize(left.type.type_id);
+            return PointerValue{left.type, left.value + right.value * item_size};
         },
         [](auto&&, auto&&) -> TypedValue {
             throw DebuggerError("Unsupported types for operator '+'");
@@ -121,7 +141,7 @@ TypedValue AddValues(TypedValue&& left, TypedValue&& right) {
     }, std::move(left), std::move(right));
 }
 
-TypedValue SubValues(TypedValue&& left, TypedValue&& right) {
+TypedValue ExpressionEvaluator::SubValues(TypedValue&& left, TypedValue&& right) {
     return std::visit(utils::overloaded{
         [](IntegerValue&& left, IntegerValue&& right) -> TypedValue {
             return IntegerValue{left.value - right.value}; 
@@ -129,8 +149,9 @@ TypedValue SubValues(TypedValue&& left, TypedValue&& right) {
         [](FloatValue&& left, FloatValue&& right) -> TypedValue {
             return FloatValue{left.value - right.value};
         },
-        [](PointerValue&& left, IntegerValue&& right) -> TypedValue {
-            return PointerValue{left.type, left.value - right.value};
+        [this](PointerValue&& left, IntegerValue&& right) -> TypedValue {
+            auto item_size = source.GetTypeSize(left.type.type_id);
+            return PointerValue{left.type, left.value - right.value * item_size};
         },
         [](PointerValue&& left, PointerValue&& right) -> TypedValue {
             if (left.type.type_id != right.type.type_id) {
@@ -203,9 +224,22 @@ void ExpressionEvaluator::Visit(const ArrayAccess& id) {
     auto index = std::move(visitor_value);
     id.array->Accept(*this);
     auto array = std::move(visitor_value);
-    auto sum = AddValues(std::move(array), std::move(index));
-    auto deref = Dereference(std::move(sum));
-    visitor_value = std::move(deref);
+    if (std::holds_alternative<PointerValue>(array)) {
+        auto sum = AddValues(std::move(array), std::move(index));
+        auto deref = Dereference(std::move(sum));
+        visitor_value = std::move(deref);
+    } else if (auto av = std::get_if<ArrayValue>(&array)) {
+        auto idx = std::get_if<IntegerValue>(&index);
+        if (idx == nullptr) {
+            throw DebuggerError("Can only indexate with integers");
+        }
+        if (idx->value >= av->members.size()) {
+            throw DebuggerError(fmt::format("Out of bounds access: {} >= {}", idx->value, av->members.size()));
+        }
+        visitor_value = av->members[idx->value];
+    } else {
+        throw DebuggerError("Can only access arrays or pointers");
+    }
 }
 
 bool CheckZero(const TypedValue& val) {

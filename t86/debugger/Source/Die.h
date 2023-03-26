@@ -65,6 +65,7 @@ public:
         primitive_type,
         structured_type,
         pointer_type,
+        array_type,
         name,
         invalid,
         compilation_unit,

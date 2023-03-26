@@ -1,0 +1,517 @@
+.data
+"Magnus Midtbo"
+"Eddie Hall"
+"Adam Ondra"
+"Alex Honnold"
+.text
+#     
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     [0] -> %str_MagnusMi
+   2  MOV R0, 0
+#     [14] -> %str_EddieHal
+   3  MOV R0, 14
+#     [25] -> %str_AdamOndr
+   4  MOV R0, 25
+#     [36] -> %str_AlexHonn
+   5  MOV R0, 36
+#     94 -> main$entry
+   6  CALL 94
+   7  HALT
+# ======= FUNCTION entry END =======
+#     
+#     
+# ======= FUNCTION is_long START =======
+# is_long$entry:
+   8  PUSH BP
+   9  MOV BP, SP
+  10  SUB SP, 3
+  11  MOV [BP + -3], R1
+#     is_long prologue end
+#     [BP + 2] -> arg #0
+  12  MOV R0, [BP + 2]
+#     [BP + -1] -> %arg_name
+  13  MOV [BP + -1], R0
+#     [BP + -2] -> %local_i
+  14  MOV [BP + -2], 0
+# is_long$forCond:
+#     [BP + -2] -> %local_i
+  15  MOV R0, [BP + -2]
+  16  CMP R0, 11
+#     32 -> is_long$forCont
+  17  JGE 32
+# is_long$forBody:
+#     [BP + -1] -> %arg_name
+  18  MOV R1, [BP + -1]
+#     [BP + -2] -> %local_i
+  19  MOV R0, [BP + -2]
+  20  MOV R0, [R1 + R0 * 1]
+  21  CMP R0, 0
+#     28 -> is_long$ifFalse
+  22  JNZ 28
+# is_long$ifTrue:
+  23  MOV R0, 0
+#     is_long epilogue start
+  24  MOV R1, [BP + -3]
+  25  MOV SP, BP
+  26  POP BP
+  27  RET
+# is_long$ifFalse:
+# is_long$ifCont:
+# is_long$forInc:
+#     [BP + -2] -> %local_i
+  28  MOV R0, [BP + -2]
+  29  ADD R0, 1
+#     [BP + -2] -> %local_i
+  30  MOV [BP + -2], R0
+#     15 -> is_long$forCond
+  31  JMP 15
+# is_long$forCont:
+  32  MOV R0, 1
+#     is_long epilogue start
+  33  MOV R1, [BP + -3]
+  34  MOV SP, BP
+  35  POP BP
+  36  RET
+# ======= FUNCTION is_long END =======
+#     
+#     
+# ======= FUNCTION strcpy START =======
+# strcpy$entry:
+  37  PUSH BP
+  38  MOV BP, SP
+  39  SUB SP, 5
+  40  MOV [BP + -3], R1
+  41  MOV [BP + -5], R2
+  42  MOV [BP + -4], R3
+#     strcpy prologue end
+#     [BP + 2] -> arg #0
+  43  MOV R2, [BP + 2]
+#     [BP + 3] -> arg #1
+  44  MOV R1, [BP + 3]
+#     [BP + -1] -> %arg_from
+  45  MOV [BP + -1], R2
+#     [BP + -2] -> %arg_dest
+  46  MOV [BP + -2], R1
+# strcpy$whileCond:
+#     [BP + -1] -> %arg_from
+  47  MOV R1, [BP + -1]
+  48  MOV R1, [R1]
+  49  CMP R1, 0
+#     60 -> strcpy$whileCont
+  50  JE 60
+# strcpy$whileBody:
+#     [BP + -2] -> %arg_dest
+  51  MOV R2, [BP + -2]
+  52  LEA R1, [R2 + 1]
+#     [BP + -2] -> %arg_dest
+  53  MOV [BP + -2], R1
+#     [BP + -1] -> %arg_from
+  54  MOV R3, [BP + -1]
+  55  LEA R1, [R3 + 1]
+#     [BP + -1] -> %arg_from
+  56  MOV [BP + -1], R1
+  57  MOV R1, [R3]
+  58  MOV [R2], R1
+#     47 -> strcpy$whileCond
+  59  JMP 47
+# strcpy$whileCont:
+#     [BP + -2] -> %arg_dest
+  60  MOV R2, [BP + -2]
+#     [BP + -1] -> %arg_from
+  61  MOV R1, [BP + -1]
+  62  MOV R1, [R1]
+  63  MOV [R2], R1
+#     strcpy epilogue start
+  64  MOV R1, [BP + -3]
+  65  MOV R2, [BP + -5]
+  66  MOV R3, [BP + -4]
+  67  MOV SP, BP
+  68  POP BP
+  69  RET
+# ======= FUNCTION strcpy END =======
+#     
+#     
+# ======= FUNCTION puts START =======
+# puts$entry:
+  70  PUSH BP
+  71  MOV BP, SP
+  72  SUB SP, 3
+  73  MOV [BP + -2], R2
+  74  MOV [BP + -3], R3
+#     puts prologue end
+#     [BP + 2] -> arg #0
+  75  MOV R2, [BP + 2]
+#     [BP + -1] -> %arg_str
+  76  MOV [BP + -1], R2
+# puts$whileCond:
+#     [BP + -1] -> %arg_str
+  77  MOV R2, [BP + -1]
+  78  MOV R2, [R2]
+  79  CMP R2, 0
+#     87 -> puts$whileCont
+  80  JE 87
+# puts$whileBody:
+#     [BP + -1] -> %arg_str
+  81  MOV R3, [BP + -1]
+  82  LEA R2, [R3 + 1]
+#     [BP + -1] -> %arg_str
+  83  MOV [BP + -1], R2
+  84  MOV R2, [R3]
+  85  PUTCHAR R2
+#     77 -> puts$whileCond
+  86  JMP 77
+# puts$whileCont:
+  87  MOV R2, 10
+  88  PUTCHAR R2
+#     puts epilogue start
+  89  MOV R2, [BP + -2]
+  90  MOV R3, [BP + -3]
+  91  MOV SP, BP
+  92  POP BP
+  93  RET
+# ======= FUNCTION puts END =======
+#     
+#     
+# ======= FUNCTION main START =======
+# main$entry:
+  94  PUSH BP
+  95  MOV BP, SP
+  96  SUB SP, 217
+  97  MOV [BP + -215], R1
+  98  MOV [BP + -214], R2
+  99  MOV [BP + -216], R3
+#     main prologue end
+#     [0] -> %str_MagnusMi
+ 100  MOV R3, 0
+#     [14] -> %str_EddieHal
+ 101  MOV R2, 14
+#     [25] -> %str_AdamOndr
+ 102  MOV R0, 25
+ 103  MOV [BP + -213], R0
+#     [36] -> %str_AlexHonn
+ 104  MOV R0, 36
+ 105  MOV [BP + -217], R0
+#     [BP + -210] -> %local_db
+ 106  LEA R1, [BP + -210]
+ 107  LEA R0, [R1 + 0]
+ 108  LEA R0, [R0 + 0]
+ 109  LEA R0, [R0 + 0]
+ 110  PUSH R0
+ 111  PUSH R3
+#     37 -> strcpy$entry
+ 112  CALL 37
+ 113  ADD SP, 2
+ 114  LEA R0, [R1 + 0]
+ 115  LEA R0, [R0 + 0]
+ 116  MOV [R0 + 20], 34
+ 117  LEA R0, [R1 + 0]
+ 118  LEA R0, [R0 + 21]
+ 119  LEA R0, [R0 + 0]
+ 120  PUSH R0
+ 121  PUSH R2
+#     37 -> strcpy$entry
+ 122  CALL 37
+ 123  ADD SP, 2
+ 124  LEA R0, [R1 + 0]
+ 125  LEA R0, [R0 + 21]
+ 126  MOV [R0 + 20], 35
+ 127  LEA R0, [R1 + 0]
+ 128  LEA R0, [R0 + 42]
+ 129  LEA R0, [R0 + 0]
+ 130  PUSH R0
+ 131  MOV R0, [BP + -213]
+ 132  PUSH R0
+#     37 -> strcpy$entry
+ 133  CALL 37
+ 134  ADD SP, 2
+ 135  LEA R0, [R1 + 0]
+ 136  LEA R0, [R0 + 42]
+ 137  MOV [R0 + 20], 30
+ 138  LEA R0, [R1 + 0]
+ 139  LEA R0, [R0 + 63]
+ 140  LEA R0, [R0 + 0]
+ 141  PUSH R0
+ 142  MOV R0, [BP + -217]
+ 143  PUSH R0
+#     37 -> strcpy$entry
+ 144  CALL 37
+ 145  ADD SP, 2
+ 146  LEA R0, [R1 + 0]
+ 147  LEA R0, [R0 + 63]
+ 148  MOV [R0 + 20], 37
+#     [BP + -211] -> %local_long_names
+ 149  MOV [BP + -211], 0
+#     [BP + -212] -> %local_i
+ 150  MOV [BP + -212], 0
+# main$forCond:
+#     [BP + -212] -> %local_i
+ 151  MOV R0, [BP + -212]
+ 152  CMP R0, 4
+#     175 -> main$forCont
+ 153  JGE 175
+# main$forBody:
+ 154  LEA R2, [R1 + 0]
+#     [BP + -212] -> %local_i
+ 155  MOV R0, [BP + -212]
+ 156  LEA R0, [R2 + R0 * 21]
+ 157  LEA R0, [R0 + 0]
+ 158  PUSH R0
+#     8 -> is_long$entry
+ 159  CALL 8
+ 160  ADD SP, 1
+ 161  CMP R0, 0
+#     174 -> main$ifFalse
+ 162  JZ 174
+# main$ifTrue:
+ 163  LEA R2, [R1 + 0]
+#     [BP + -212] -> %local_i
+ 164  MOV R0, [BP + -212]
+ 165  LEA R0, [R2 + R0 * 21]
+ 166  LEA R0, [R0 + 0]
+ 167  PUSH R0
+#     70 -> puts$entry
+ 168  CALL 70
+ 169  ADD SP, 1
+# main$ifCont:
+# main$forInc:
+#     [BP + -212] -> %local_i
+ 170  MOV R0, [BP + -212]
+ 171  ADD R0, 1
+#     [BP + -212] -> %local_i
+ 172  MOV [BP + -212], R0
+#     151 -> main$forCond
+ 173  JMP 151
+# main$ifFalse:
+#     170 -> main$ifCont
+ 174  JMP 170
+# main$forCont:
+#     [BP + -211] -> %local_long_names
+ 175  MOV R0, [BP + -211]
+#     main epilogue start
+ 176  MOV R1, [BP + -215]
+ 177  MOV R2, [BP + -214]
+ 178  MOV R3, [BP + -216]
+ 179  MOV SP, BP
+ 180  POP BP
+ 181  RET
+# ======= FUNCTION main END =======
+#     
+
+.debug_line
+# is_long
+9: 8
+10: 14
+11: 18
+12: 23
+13: 24
+14: 28
+15: 32
+16: 33
+
+# strcpy
+18: 37
+19: 47
+20: 51
+21: 59
+22: 60
+23: 64
+
+# puts
+25: 70
+26: 77
+27: 81
+28: 86
+29: 87
+30: 89
+
+# main
+32: 94
+33: 106
+34: 107
+35: 114
+36: 117
+37: 124
+38: 127
+39: 135
+40: 138
+41: 146
+42: 149
+43: 149
+44: 151
+45: 154
+46: 163
+47: 170
+48: 170
+49: 175
+50: 176
+
+.debug_info
+DIE_compilation_unit: {
+# int
+DIE_primitive_type: {
+    ATTR_name: int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+# char
+DIE_primitive_type: {
+    ATTR_name: char,
+    ATTR_size: 1,
+    ATTR_id: 1,
+},
+# char*
+DIE_pointer_type: {
+    ATTR_type: 1,
+    ATTR_size: 1,
+    ATTR_id: 2,
+},
+# char[20]
+DIE_array_type: {
+    ATTR_type: 1,
+    ATTR_size: 20,
+    ATTR_id: 3,
+},
+# struct Person
+DIE_structured_type: {
+    ATTR_name: "struct Person",
+    ATTR_size: 21,
+    ATTR_members: {
+        0: {3: name},
+        21: {0: age},
+    },
+    ATTR_id: 4,
+},
+# struct Person[10]
+DIE_array_type: {
+    ATTR_size: 10,
+    ATTR_type: 4, 
+    ATTR_id: 5,
+},
+# struct Database
+DIE_structured_type: {
+    ATTR_name: "struct Database",
+    ATTR_size: 210,
+    ATTR_id: 6,
+    ATTR_members: {
+        0: {5: array}, 
+    },
+},
+DIE_function: {
+    ATTR_name: is_long,
+    ATTR_begin_addr: 8,
+    ATTR_end_addr: 34,
+    DIE_scope: {
+        ATTR_begin_addr: 8,
+        ATTR_end_addr: 34,
+        DIE_variable: {
+            ATTR_name: name,
+            ATTR_type: 2,
+        },
+    },
+},
+DIE_function: {
+    ATTR_name: strcpy,
+    ATTR_begin_addr: 37,
+    ATTR_end_addr: 65,
+    DIE_scope: {
+        ATTR_begin_addr: 37,
+        ATTR_end_addr: 65,
+        DIE_variable: {
+            ATTR_name: from,
+            ATTR_type: 2,
+        },
+        DIE_variable: {
+            ATTR_name: dest,
+            ATTR_type: 2,
+        },
+    },
+},
+DIE_function: {
+    ATTR_name: puts,
+    ATTR_begin_addr: 70,
+    ATTR_end_addr: 90,
+    DIE_scope: {
+        ATTR_begin_addr: 70,
+        ATTR_end_addr: 90,
+        DIE_variable: {
+            ATTR_name: str,
+            ATTR_type: 2,
+        },
+    },
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 94,
+    ATTR_end_addr: 177,
+    DIE_scope: {
+        ATTR_begin_addr: 94,
+        ATTR_end_addr: 177,
+        DIE_variable: {
+            ATTR_name: db,
+            ATTR_type: 6,
+            ATTR_location: [BASE_REG_OFFSET -210],
+        },
+        DIE_variable: {
+            ATTR_name: long_names,
+            ATTR_type: 0,
+        },
+    },
+},
+}
+
+.debug_source
+struct Person {
+    char name[20];
+    int age;
+};
+
+struct Database {
+    Person array[10];
+};
+
+int is_long(char* name) {
+    for (int i = 0; i < 11; ++i) {
+        if (name[i] == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+void strcpy(char* from, char* dest) {
+    while (*from != 0) {
+        *dest++ = *from++;
+    }
+    *dest = *from;
+}
+
+void puts(char* str) {
+    while (*str != 0) {
+        print(*str++);
+    }
+    print('\n');
+}
+
+int main() {
+    Database db;
+    strcpy("Magnus Midtbo", db.array[0].name);
+    db.array[0].age = 34;
+    strcpy("Eddie Hall", db.array[1].name);
+    db.array[1].age = 35;
+    strcpy("Adam Ondra", db.array[2].name);
+    db.array[2].age = 30;
+    strcpy("Alex Honnold", db.array[3].name);
+    db.array[3].age = 37;
+
+    int long_names = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (is_long(db.array[i].name)) {
+            puts(db.array[i].name);
+        }
+    }
+    return long_names;
+}

@@ -219,7 +219,7 @@ void Source::ReconstructTypeInformation() {
             auto result = StructuredType{.name = name->n,
                                          .size = size->size,
                                          .members = std::move(members_vec)};
-            types[id->id] = result;
+            types[id->id] = std::move(result);
         } else if (die.get_tag() == DIE::TAG::pointer_type) {
             auto pointing_to = FindDieAttribute<ATTR_type>(die);
             if (!pointing_to) {
@@ -234,6 +234,20 @@ void Source::ReconstructTypeInformation() {
             auto ptr = PointerType{.type_id = pointing_to->type_id,
                                    .size = size->size};
             types[id->id] = ptr;
+        } else if (die.get_tag() == DIE::TAG::array_type) {
+            auto member_types = FindDieAttribute<ATTR_type>(die);
+            if (!member_types) {
+                log_error("DIE array type, missing members type");
+                continue;
+            }
+            auto size = FindDieAttribute<ATTR_size>(die);
+            if (!size) {
+                log_error("DIE array type, missing number of elements");
+                continue;
+            }
+            auto arr = ArrayType{.type_id = member_types->type_id,
+                                 .cnt = size->size};
+            types[id->id] = std::move(arr);
         }
         // Else not a type die.
     }
@@ -317,7 +331,12 @@ std::pair<TypedValue, size_t>
 Source::EvaluateExpression(Native& native, std::string expression, bool cache) {
     std::istringstream iss(std::move(expression));
     ExpressionParser parser(iss);
-    auto e = parser.ParseExpression();
+    std::unique_ptr<Expression> e; 
+    try {
+        e = parser.ParseExpression();
+    } catch (const ParserError& err) {
+        throw DebuggerError(fmt::format("Unable to parse expression: {}", err.what()));
+    }
     ExpressionEvaluator eval(native, *this, evaluated_expressions);
     e->Accept(eval);
     if (cache) {
@@ -339,6 +358,9 @@ std::string Source::TypedValueTypeToString(const TypedValue& v) const {
     using namespace std::string_literals;
     return std::visit(utils::overloaded {
         [&](const PointerValue& v) {
+            return TypeToString(v.type);
+        },
+        [&](const ArrayValue& v) {
             return TypeToString(v.type);
         },
         [](const CharValue&) {
@@ -364,6 +386,12 @@ std::string Source::TypeToString(const Type& type) const {
             }
             return fmt::format("{}*", TypeToString(types.at(t.type_id))); 
         },
+        [this](const ArrayType& t) {
+            if (!types.contains(t.type_id)) {
+                return fmt::format("<unknown>*");
+            }
+            return fmt::format("{}[]", TypeToString(types.at(t.type_id))); 
+        },
         [](const StructuredType& t) {
             return fmt::format("{}", t.name);
         },
@@ -371,6 +399,24 @@ std::string Source::TypeToString(const Type& type) const {
             return FromPrimitiveType(t.type);
         },
     }, type);
+}
+
+std::string ReadMemoryAsString(Native& native, uint64_t addr) {
+    std::string result;
+    while (true) {
+        char c = native.ReadMemory(addr++, 1).at(0);
+        // TODO: Handle all unprintable or whitespace characters.
+        if (c == '\0') {
+            break;
+        } else if (c == '\n') {
+            result += "\\n";
+        } else if (c == '\t') {
+            result += "\\t";
+        } else {
+            result += c;
+        }
+    }
+    return result;
 }
 
 std::string Source::TypedValueToString(Native& native, const TypedValue& v) {
@@ -381,24 +427,23 @@ std::string Source::TypedValueToString(Native& native, const TypedValue& v) {
             if (auto pointee_type = std::get_if<PrimitiveType>(pointee);
                     pointee_type != nullptr
                     && pointee_type->type == PrimitiveType::Type::CHAR) {
-                std::string result;
-                size_t it = t.value;
-                while (true) {
-                    char c = native.ReadMemory(it++, 1).at(0);
-                    // TODO: Handle all unprintable or whitespace characters.
-                    if (c == '\0') {
-                        break;
-                    } else if (c == '\n') {
-                        result += "\\n";
-                    } else if (c == '\t') {
-                        result += "\\t";
-                    } else {
-                        result += c;
-                    }
-                }
-                return fmt::format("{} \"{}\"", t.value, result);
+                auto s = ReadMemoryAsString(native, t.value);
+                return fmt::format("{} \"{}\"", t.value, s);
             } else {
                 return fmt::format("{}", t.value);
+            }
+        },
+        [&](const ArrayValue& v) {
+            if (!v.members.empty()
+                    && std::holds_alternative<CharValue>(v.members.back())) {
+                auto s = ReadMemoryAsString(native, v.begin_address);
+                return fmt::format("{} \"{}\"", v.begin_address, s);
+            } else {
+                std::vector<std::string> res;
+                for (auto&& member: v.members) {
+                    res.emplace_back(TypedValueToString(native, member));
+                }
+                return fmt::format("[{}]", utils::join(res.begin(), res.end(), ", "));
             }
         },
         [](const IntegerValue& v) {
