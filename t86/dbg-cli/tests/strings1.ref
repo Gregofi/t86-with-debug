@@ -10,3 +10,5 @@ function main at 5-26; active variables: s
 (char) $0 = 'H'
 (char*) $1 = 0 "Hello, World!\n"
 (char*) $2 = 7 "World!\n"
+Good
+(char*) $3 = 0 "Good\n"

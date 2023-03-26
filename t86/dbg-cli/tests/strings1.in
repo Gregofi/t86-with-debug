@@ -4,3 +4,6 @@ c
 p *s
 p s
 p s + 7 
+m sets 0 "Good\n"
+m gets 0 5
+p s
