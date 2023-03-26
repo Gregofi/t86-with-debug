@@ -163,14 +163,15 @@ DebugEvent Native::PerformStepOut() {
             rets, [&text](auto &&ins) { return text.starts_with(ins); });
         DebugEvent e;
         if (first) {
-            e = PerformSingleStep();
+            e = PerformStepOver();
         } else {
-            e = DoRawSingleStep();
+            e = PerformStepOver(false);
         }
         if (is_return != rets.end()
             || !std::holds_alternative<Singlestep>(e)) {
             return e;
         }
+        first = false;
     }
 }
 

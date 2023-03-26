@@ -817,3 +817,61 @@ TEST_F(NativeTest, StepOutOnRet) {
     e = native->PerformStepOut();
     ASSERT_TRUE(std::holds_alternative<ExecutionEnd>(e));
 }
+
+TEST_F(NativeTest, StepOutOverCall) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 CALL 3
+2 HALT
+
+3 NOP
+4 CALL 7
+5 NOP
+6 RET
+
+7 NOP
+8 RET
+
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(3);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+    auto e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 2);
+}
+
+TEST_F(NativeTest, StepOutOntoBP) {
+    auto program = R"(
+.text
+
+0 MOV R0, 1
+1 CALL 3
+2 HALT
+
+3 NOP
+4 CALL 7
+5 NOP
+6 RET
+
+7 NOP
+8 RET
+
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(3);
+    native->SetBreakpoint(5);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+    auto e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<BreakpointHit>(e));
+    ASSERT_EQ(native->GetIP(), 5);
+    e = native->PerformStepOut();
+    ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
+    ASSERT_EQ(native->GetIP(), 2);
+}
