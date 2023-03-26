@@ -194,6 +194,10 @@ void Source::ReconstructTypeInformation() {
         if (!id) {
             continue;
         }
+        if (types.contains(id->id)) {
+            log_error("Type of id {} already exists! Skipping this one", id->id);
+            continue;
+        }
         if (die.get_tag() == DIE::TAG::primitive_type) {
             auto id = FindDieAttribute<ATTR_id>(die);
             if (!id) {
