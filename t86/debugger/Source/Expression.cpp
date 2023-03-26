@@ -233,7 +233,7 @@ void ExpressionEvaluator::Visit(const ArrayAccess& id) {
         if (idx == nullptr) {
             throw DebuggerError("Can only indexate with integers");
         }
-        if (idx->value >= av->members.size()) {
+        if (idx->value >= static_cast<int64_t>(av->members.size())) {
             throw DebuggerError(fmt::format("Out of bounds access: {} >= {}", idx->value, av->members.size()));
         }
         visitor_value = av->members[idx->value];

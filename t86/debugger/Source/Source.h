@@ -93,6 +93,7 @@ public:
     EvaluateExpression(Native& native, std::string expression, bool cache = true);
 
     /// Returns vector representing lines in the source.
+    /// If no source code is available then throws DebuggerError.
     const std::vector<std::string>& GetLines() const;
 
     /// Returns lines from the source file. This function does
