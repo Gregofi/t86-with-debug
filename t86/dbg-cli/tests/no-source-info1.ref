@@ -6,7 +6,6 @@ Breakpoint set on address 5: 'MOV R0, [BP + -1]'
       2:  MOV R0, [BP + -1]
       3:  MOV R1, [R0]
 Error: Expected line or function name, 'main' is neither.
-Error: Variable 'a' is not in scope or missing debug info
 HProcess stopped, reason: Software breakpoint hit at address 5
       3:  MOV R1, [R0]
       4:  PUTCHAR R1

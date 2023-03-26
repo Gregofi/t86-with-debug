@@ -99,7 +99,7 @@ Token Lexer::getNext() {
         GetChar();
         if (lookahead == '=') {
             GetChar();
-            MakeToken(TokenKind::EQ);
+            return MakeToken(TokenKind::EQ);
         }
         return MakeToken(TokenKind::ASSIGN);
     } else if (lookahead == '%') {

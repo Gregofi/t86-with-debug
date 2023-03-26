@@ -11,7 +11,8 @@
 ///       Can't begin with a number.
 ///                  
 /// Context-free syntax:
-///  expr = equality
+///  expr = assign
+///  assign = equality {"=" equality}
 ///  equality = logical {("==" | "!=") logical}
 ///  logical = comparison {("&&" | "||") comparison}
 ///  comparison = term {("<" | "<=" | ">=" | ">") term}
@@ -37,6 +38,7 @@ private:
     }
 
     std::unique_ptr<Expression> expr();
+    std::unique_ptr<Expression> assign();
     std::unique_ptr<Expression> equality();
     std::unique_ptr<Expression> logical();
     std::unique_ptr<Expression> comparison();

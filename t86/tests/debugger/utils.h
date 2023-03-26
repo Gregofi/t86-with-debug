@@ -269,6 +269,11 @@ DIE_function: {
             ATTR_location: `BASE_REG_OFFSET -4`,
         },
         DIE_variable: {
+            ATTR_name: l2,
+            ATTR_type: 1,
+            ATTR_location: `BASE_REG_OFFSET -6`,
+        },
+        DIE_variable: {
             ATTR_name: it,
             ATTR_type: 2,
             ATTR_location: `BASE_REG_OFFSET -1`,
