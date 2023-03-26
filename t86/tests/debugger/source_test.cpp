@@ -1060,16 +1060,20 @@ TEST_F(LinkedListNativeSourceTest, Expressions2) {
     res = ev.YieldResult();
     ASSERT_TRUE(std::holds_alternative<PointerValue>(res));
 
-    ast = std::make_unique<MemberAccess>(std::make_unique<Dereference>(std::make_unique<Identifier>("it")), "v");
+    ast = std::make_unique<MemberAccess>(std::make_unique<UnaryOperator>(std::make_unique<Identifier>("it"), UnaryOperator::Op::Deref), "v");
     ast->Accept(ev);
     res = ev.YieldResult();
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(res));
     EXPECT_EQ(std::get<IntegerValue>(res).value, 5);
 
     ast = std::make_unique<MemberAccess>(
-        std::make_unique<Dereference>(std::make_unique<MemberAccess>(
-            std::make_unique<Dereference>(std::make_unique<Identifier>("it")),
-            "next")),
+        std::make_unique<UnaryOperator>(
+            std::make_unique<MemberAccess>(
+                std::make_unique<UnaryOperator>(
+                    std::make_unique<Identifier>("it"),
+                    UnaryOperator::Op::Deref),
+                "next"),
+            UnaryOperator::Op::Deref),
         "v");
     ast->Accept(ev);
     res = ev.YieldResult();
@@ -1197,6 +1201,26 @@ TEST_F(LinkedListNativeSourceTest, ExpressionWithParsing1) {
     ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
     ASSERT_EQ(std::get<IntegerValue>(result).value, 30);
 
+    expr = "-1";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, -1);
+
+    expr = "!1";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 0);
+
+    expr = "!!3";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 1);
+
+    expr = "(it + 1)[-1].next->v";
+    result = source.EvaluateExpression(*native, expr).first;
+    ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+    ASSERT_EQ(std::get<IntegerValue>(result).value, 10);
+
     expr = "it->next + it";
     ASSERT_THROW({
         result = source.EvaluateExpression(*native, expr).first;
@@ -1231,6 +1255,7 @@ TEST_F(LinkedListNativeSourceTest, ExpressionWithParsing1) {
     ASSERT_THROW({
         result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
+
 }
 
 TEST_F(BinarySearchNativeSourceTest, ArrayType) {

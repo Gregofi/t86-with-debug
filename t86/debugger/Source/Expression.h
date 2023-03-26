@@ -53,7 +53,6 @@ struct StructuredValue {
 
 class Identifier;
 class EvaluatedExpr;
-class Dereference;
 class ArrayAccess;
 class BinaryOperator;
 class MemberAccess;
@@ -61,13 +60,13 @@ class MemberDereferenceAccess;
 class Float;
 class Char;
 class Integer;
+class UnaryOperator;
 
 /// An abstract visitor for visiting the AST of the expressions.
 class ExpressionVisitor {
 public:
     virtual void Visit(const Identifier&) = 0;
     virtual void Visit(const EvaluatedExpr&) = 0;
-    virtual void Visit(const Dereference&) = 0;
     virtual void Visit(const ArrayAccess&) = 0;
     virtual void Visit(const BinaryOperator&) = 0;
     virtual void Visit(const Float&) = 0;
@@ -75,6 +74,7 @@ public:
     virtual void Visit(const Integer&) = 0;
     virtual void Visit(const MemberAccess&) = 0;
     virtual void Visit(const MemberDereferenceAccess&) = 0;
+    virtual void Visit(const UnaryOperator&) = 0;
 };
 
 /// Evaluates an expression AST.
@@ -84,7 +84,6 @@ public:
                         const std::vector<TypedValue>& evaluated_expressions = {});
     void Visit(const Identifier& id) override;
     void Visit(const EvaluatedExpr& id) override;
-    void Visit(const Dereference& id) override;
     void Visit(const ArrayAccess& id) override;
     void Visit(const BinaryOperator& id) override;
     void Visit(const MemberAccess&) override;
@@ -92,6 +91,7 @@ public:
     void Visit(const Float&) override;
     void Visit(const Char&) override;
     void Visit(const MemberDereferenceAccess&) override;
+    void Visit(const UnaryOperator&) override;
     /// Used to get result after calling Visit on the expression tree.
     TypedValue YieldResult() { return std::move(visitor_value); }
 private:
@@ -133,13 +133,20 @@ public:
     std::string id;
 };
 
-class Dereference: public Expression {
+class UnaryOperator: public Expression {
 public:
-    Dereference(std::unique_ptr<Expression> target): target(std::move(target)) {}
+    enum class Op {
+        Negate,
+        LNot,
+        Deref,
+        Not,
+    };
+    UnaryOperator(std::unique_ptr<Expression> target, Op op): target(std::move(target)), op(op) {}
     void Accept(ExpressionVisitor& v) const override {
         v.Visit(*this);
     }
     std::unique_ptr<Expression> target;
+    Op op;
 };
 
 class ArrayAccess: public Expression {

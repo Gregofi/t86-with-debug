@@ -21,6 +21,12 @@ static const std::map<TokenKind, BinaryOperator::Op> operators = {
     {TokenKind::RSHIFT, BinaryOperator::Op::RShift},
 };
 
+static const std::map<TokenKind, UnaryOperator::Op> unary_operators = {
+    {TokenKind::MINUS, UnaryOperator::Op::Negate},
+    {TokenKind::BANG, UnaryOperator::Op::LNot},
+    {TokenKind::TIMES, UnaryOperator::Op::Deref},
+};
+
 std::unique_ptr<Expression> ExpressionParser::expr() {
     return equality(); 
 }
@@ -126,10 +132,11 @@ std::unique_ptr<Expression> ExpressionParser::factor() {
 }
 
 std::unique_ptr<Expression> ExpressionParser::unary() {
-    if (curtok.kind == TokenKind::TIMES) {
+    if (unary_operators.contains(curtok.kind)) {
+        auto op = unary_operators.at(curtok.kind);
         GetNext();
-        auto pstfx = postfix();
-        return std::make_unique<Dereference>(std::move(pstfx));
+        auto e = unary();
+        return std::make_unique<UnaryOperator>(std::move(e), op);
     }
     return postfix();
 }

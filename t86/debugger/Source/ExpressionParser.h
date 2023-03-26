@@ -19,7 +19,7 @@
 ///  bit_ops = term {("|" | "&" | "^") term}
 ///  term = factor {("+" | "-") factor}
 ///  factor = unary {("*" | "/" | "%") unary}
-///  unary = ["*"] postfix
+///  unary = ["*" | "-" | "!"] postfix
 ///  postfix = primary ([ "[" expr "]" ] | "->" ID | "." ID)
 ///  primary = Number | ID | "(" expr ")"
 class ExpressionParser {
