@@ -86,9 +86,9 @@ R"(istep
 Execute one instruction and then stop.
 )";
     static constexpr const char* INEXT_USAGE =
-R"(istep
-Continue execution until another source line is reached,
-but treat function call as single source line.
+R"(inext
+Execute one instruction and then stop.
+Treat calls as a single instruction (effectively stepping over them).
 )";
 
     static constexpr const char* STEP_USAGE =
@@ -97,10 +97,8 @@ Continue execution until another source line is reached.
 )";
     static constexpr const char* NEXT_USAGE =
 R"(next <subcommands> [parameter [parameter...]]
-Source level step over.
-
-Without any subcommands (just `next`) performs source level step over.
-- help = Print this.
+Continue execution until another source line is reached.
+Treat calls as a single source line (effectively stepping over them).
 )";
     static constexpr const char* DISASSEMBLE_USAGE =
 R"(disassemble <subcommands> [parameter [parameter...]]
