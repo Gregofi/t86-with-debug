@@ -32,10 +32,18 @@ struct CharValue {
 };
 
 struct StructuredValue;
+struct ArrayValue;
 
 /// Represents evaluated typed value.
 using TypedValue = std::variant<PointerValue, IntegerValue, FloatValue,
-                                CharValue, StructuredValue>;
+                                CharValue, StructuredValue, ArrayValue>;
+
+struct ArrayValue {
+    ArrayType type;
+    uint64_t begin_address;
+    std::vector<TypedValue> members;
+};
+
 
 struct StructuredValue {
     std::string name;
@@ -87,6 +95,8 @@ public:
     /// Used to get result after calling Visit on the expression tree.
     TypedValue YieldResult() { return std::move(visitor_value); }
 private:
+    TypedValue AddValues(TypedValue&& left, TypedValue&& right);
+    TypedValue SubValues(TypedValue&& left, TypedValue&& right);
     TypedValue EvaluateTypeAndLocation(const expr::Location& loc, const Type& type);
     TypedValue Dereference(TypedValue&& val);
     std::map<std::string, const DIE*> variables;

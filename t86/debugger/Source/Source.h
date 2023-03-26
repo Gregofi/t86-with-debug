@@ -125,6 +125,23 @@ public:
         return &it->second;
     }
 
+    /// Returns size of given type.
+    uint64_t GetTypeSize(size_t id) const {
+        auto type = GetType(id);
+        if (type == nullptr) {
+            throw DebuggerError(fmt::format("No information about type with id {}", id));
+        }
+        return std::visit(utils::overloaded {
+            [](const PrimitiveType& t) { return t.size; },
+            [](const PointerType& t) { return t.size; },
+            [](const StructuredType& t) { return t.size; },
+            [&](const ArrayType& t) {
+                auto subtype = GetTypeSize(t.type_id);
+                return subtype * t.cnt;
+            },
+        }, *type);
+    }
+
     /// Returns the type as a string, if the type is known.
     std::string TypeToString(const Type& type) const;
 

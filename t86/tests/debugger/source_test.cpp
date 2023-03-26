@@ -1232,3 +1232,27 @@ TEST_F(LinkedListNativeSourceTest, ExpressionWithParsing1) {
         result = source.EvaluateExpression(*native, expr).first;
     }, DebuggerError);
 }
+
+TEST_F(BinarySearchNativeSourceTest, ArrayType) {
+    native->WaitForDebugEvent();
+    source.SetSourceSoftwareBreakpoint(*native, 23);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+
+    auto expr = "arr";
+    auto [result, _] = source.EvaluateExpression(*native, expr);
+    ASSERT_TRUE(std::holds_alternative<ArrayValue>(result));
+    const auto& arr = std::get<ArrayValue>(result);
+    ASSERT_EQ(arr.members.size(), 10);
+
+    for (int i = 0; i < 10; ++i) {
+        ASSERT_TRUE(std::holds_alternative<IntegerValue>(arr.members[i]));
+        EXPECT_EQ(std::get<IntegerValue>(arr.members[i]).value, i);
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        auto [result, _] = source.EvaluateExpression(*native, fmt::format("arr[{}]", i));
+        ASSERT_TRUE(std::holds_alternative<IntegerValue>(result));
+        EXPECT_EQ(std::get<IntegerValue>(result).value, i);
+    }
+}

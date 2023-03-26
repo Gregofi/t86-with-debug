@@ -10,8 +10,9 @@
 struct PrimitiveType;
 struct StructuredType;
 struct PointerType;
+struct ArrayType;
 
-using Type = std::variant<PrimitiveType, StructuredType, PointerType>;
+using Type = std::variant<PrimitiveType, StructuredType, PointerType, ArrayType>;
 
 struct PrimitiveType {
     enum class Type {
@@ -58,13 +59,15 @@ struct PointerType {
     uint64_t size;
 };
 
+struct ArrayType {
+    size_t type_id;
+    uint64_t cnt;
+};
+
 struct StructuredMember;
 
 struct StructuredType {
     std::string name;
-    // If the size is zero then this is considered forward declaration
-    // TODO: Maybe add separate variable, size zero is forbidden in C
-    // but can be in other languages.
     uint64_t size;
     std::vector<StructuredMember> members;
 };

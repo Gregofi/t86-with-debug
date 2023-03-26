@@ -421,3 +421,333 @@ int main() {
         Run(program); 
     }
 };
+
+class BinarySearchNativeSourceTest: public NativeSourceTest {
+protected:
+    void SetUp() override {
+        auto program = R"(
+.text
+#     
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     58 -> main$entry
+   2  CALL 58
+   3  HALT
+# ======= FUNCTION entry END =======
+#     
+#     
+# ======= FUNCTION binary_search START =======
+# binary_search$entry:
+   4  PUSH BP
+   5  MOV BP, SP
+   6  SUB SP, 8
+   7  MOV [BP + -7], R2
+   8  MOV [BP + -8], R3
+#     binary_search prologue end
+#     [BP + 2] -> arg #0
+   9  MOV R0, [BP + 2]
+#     [BP + 3] -> arg #1
+  10  MOV R2, [BP + 3]
+#     [BP + 4] -> arg #2
+  11  MOV R3, [BP + 4]
+#     [BP + -1] -> %arg_arr
+  12  MOV [BP + -1], R0
+#     [BP + -2] -> %arg_length
+  13  MOV [BP + -2], R2
+#     [BP + -3] -> %arg_n
+  14  MOV [BP + -3], R3
+#     [BP + -4] -> %local_lo
+  15  MOV [BP + -4], 0
+#     [BP + -2] -> %arg_length
+  16  MOV R0, [BP + -2]
+#     [BP + -5] -> %local_hi
+  17  MOV [BP + -5], R0
+# binary_search$whileCond:
+#     [BP + -4] -> %local_lo
+  18  MOV R0, [BP + -4]
+#     [BP + -5] -> %local_hi
+  19  MOV R2, [BP + -5]
+  20  CMP R0, R2
+#     52 -> binary_search$whileCont
+  21  JGE 52
+# binary_search$whileBody:
+#     [BP + -4] -> %local_lo
+  22  MOV R0, [BP + -4]
+#     [BP + -5] -> %local_hi
+  23  MOV R2, [BP + -5]
+  24  ADD R0, R2
+  25  IDIV R0, 2
+#     [BP + -6] -> %local_ptr
+  26  MOV [BP + -6], R0
+#     [BP + -1] -> %arg_arr
+  27  MOV R0, [BP + -1]
+#     [BP + -6] -> %local_ptr
+  28  MOV R2, [BP + -6]
+  29  MOV R0, [R0 + R2 * 1]
+#     [BP + -3] -> %arg_n
+  30  MOV R2, [BP + -3]
+  31  CMP R0, R2
+#     37 -> binary_search$ifFalse
+  32  JGE 37
+# binary_search$ifTrue:
+#     [BP + -6] -> %local_ptr
+  33  MOV R0, [BP + -6]
+  34  ADD R0, 1
+#     [BP + -4] -> %local_lo
+  35  MOV [BP + -4], R0
+# binary_search$ifCont:
+#     18 -> binary_search$whileCond
+  36  JMP 18
+# binary_search$ifFalse:
+#     [BP + -1] -> %arg_arr
+  37  MOV R0, [BP + -1]
+#     [BP + -6] -> %local_ptr
+  38  MOV R2, [BP + -6]
+  39  MOV R0, [R0 + R2 * 1]
+#     [BP + -3] -> %arg_n
+  40  MOV R2, [BP + -3]
+  41  CMP R0, R2
+#     46 -> binary_search$ifFalse2
+  42  JLE 46
+# binary_search$ifTrue2:
+#     [BP + -6] -> %local_ptr
+  43  MOV R0, [BP + -6]
+#     [BP + -5] -> %local_hi
+  44  MOV [BP + -5], R0
+# binary_search$ifCont2:
+#     36 -> binary_search$ifCont
+  45  JMP 36
+# binary_search$ifFalse2:
+  46  MOV R0, 1
+#     binary_search epilogue start
+  47  MOV R2, [BP + -7]
+  48  MOV R3, [BP + -8]
+  49  MOV SP, BP
+  50  POP BP
+  51  RET
+# binary_search$whileCont:
+  52  MOV R0, 0
+#     binary_search epilogue start
+  53  MOV R2, [BP + -7]
+  54  MOV R3, [BP + -8]
+  55  MOV SP, BP
+  56  POP BP
+  57  RET
+# ======= FUNCTION binary_search END =======
+#     
+#     
+# ======= FUNCTION main START =======
+# main$entry:
+  58  PUSH BP
+  59  MOV BP, SP
+  60  SUB SP, 13
+  61  MOV [BP + -13], R1
+  62  MOV [BP + -12], R3
+#     main prologue end
+#     [BP + -10] -> %local_arr
+  63  LEA R1, [BP + -10]
+#     [BP + -11] -> %local_i
+  64  MOV [BP + -11], 0
+# main$forCond:
+#     [BP + -11] -> %local_i
+  65  MOV R0, [BP + -11]
+  66  CMP R0, 10
+#     75 -> main$forCont
+  67  JGE 75
+# main$forBody:
+#     [BP + -11] -> %local_i
+  68  MOV R0, [BP + -11]
+#     [BP + -11] -> %local_i
+  69  MOV R3, [BP + -11]
+  70  MOV [R1 + R0 * 1], R3
+# main$forInc:
+#     [BP + -11] -> %local_i
+  71  MOV R0, [BP + -11]
+  72  ADD R0, 1
+#     [BP + -11] -> %local_i
+  73  MOV [BP + -11], R0
+#     65 -> main$forCond
+  74  JMP 65
+# main$forCont:
+  75  MOV R3, 10
+  76  MOV R0, 4
+  77  PUSH R0
+  78  PUSH R3
+  79  PUSH R1
+#     4 -> binary_search$entry
+  80  CALL 4
+  81  ADD SP, 3
+  82  MOV R0, 10
+  83  MOV R3, 5
+  84  PUSH R3
+  85  PUSH R0
+  86  PUSH R1
+#     4 -> binary_search$entry
+  87  CALL 4
+  88  ADD SP, 3
+  89  MOV R0, 10
+  90  MOV R3, 10
+  91  PUSH R3
+  92  PUSH R0
+  93  PUSH R1
+#     4 -> binary_search$entry
+  94  CALL 4
+  95  ADD SP, 3
+  96  MOV R0, 0
+#     main epilogue start
+  97  MOV R1, [BP + -13]
+  98  MOV R3, [BP + -12]
+  99  MOV SP, BP
+ 100  POP BP
+ 101  RET
+# ======= FUNCTION main END =======
+#     
+
+.debug_line
+0: 4
+1: 15
+2: 16
+3: 18
+4: 22
+5: 27
+6: 33
+7: 37
+8: 43
+9: 46
+10: 46
+13: 52
+14: 53
+16: 58
+17: 63
+18: 64
+19: 68
+20: 71
+21: 75
+22: 75
+23: 82
+24: 89
+25: 96
+26: 96
+27: 97
+
+.debug_info
+DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: int,
+    ATTR_size: 1,
+    ATTR_id: 0,
+},
+DIE_pointer_type: {
+    ATTR_id: 1,
+    ATTR_type: 0,
+    ATTR_size: 1,
+},
+DIE_array_type: {
+    ATTR_id: 2,
+    ATTR_type: 0,
+    ATTR_size: 10,
+},
+DIE_function: {
+    ATTR_name: binary_search,
+    ATTR_begin_addr: 4,
+    ATTR_end_addr: 58,
+    DIE_scope: {
+        ATTR_begin_addr: 4,
+        ATTR_end_addr: 58,
+        DIE_variable: {
+            ATTR_name: arr,
+            ATTR_type: 1,
+            ATTR_location: [BASE_REG_OFFSET -1],
+        },
+        DIE_variable: {
+            ATTR_name: length,
+            ATTR_type: 0,
+            ATTR_location: [BASE_REG_OFFSET -2],
+        },
+        DIE_variable: {
+            ATTR_name: n,
+            ATTR_type: 0,
+            ATTR_location: [BASE_REG_OFFSET -3],
+        },
+        DIE_variable: {
+            ATTR_name: lo,
+            ATTR_type: 0,
+            ATTR_location: [BASE_REG_OFFSET -4],
+        },
+        DIE_variable: {
+            ATTR_name: hi,
+            ATTR_type: 0,
+            ATTR_location: [BASE_REG_OFFSET -5],
+        },
+        DIE_scope: {
+            ATTR_begin_addr: 22,
+            ATTR_end_addr: 46,
+            DIE_variable: {
+                ATTR_name: ptr,
+                ATTR_type: 0,
+                ATTR_location: [BASE_REG_OFFSET -6],
+            },
+        },
+    },
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 58,
+    ATTR_end_addr: 102,
+    DIE_scope: {
+        ATTR_begin_addr: 58,
+        ATTR_end_addr: 102,
+        DIE_variable: {
+            ATTR_name: arr,
+            ATTR_type: 2,
+            ATTR_location: [BASE_REG_OFFSET -10],
+        },
+        DIE_scope: {
+            ATTR_begin_addr: 64,
+            ATTR_end_addr: 75,
+            DIE_variable: {
+                ATTR_name: i,
+                ATTR_type: 0,
+                ATTR_location: [BASE_REG_OFFSET -11],
+            }
+        }
+    }
+}
+}
+
+.debug_source
+int binary_search(int* arr, int length, int n) {
+    int lo = 0;
+    int hi = length;
+    while (lo < hi) {
+        int ptr = (lo + hi) / 2;
+        if (arr[ptr] < n) {
+            lo = ptr + 1;
+        } else if (arr[ptr] > n) {
+            hi = ptr;
+        } else {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int main() {
+    int arr[10];
+    for (int i = 0; i < 10; ++i) {
+        arr[i] = i;
+    }
+
+    binary_search(arr, 10, 4);
+    binary_search(arr, 10, 5);
+    binary_search(arr, 10, 10);
+
+    return 0;
+}
+)";
+    Run(program);
+    }
+};
