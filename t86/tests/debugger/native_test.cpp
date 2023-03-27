@@ -875,3 +875,66 @@ TEST_F(NativeTest, StepOutOntoBP) {
     ASSERT_TRUE(std::holds_alternative<Singlestep>(e));
     ASSERT_EQ(native->GetIP(), 2);
 }
+
+TEST_F(NativeTest, StepOverRecursive) {
+    auto program = R"(
+.text
+0 MOV R0, 1
+1 CALL 3
+2 HALT
+
+3 PUSH BP
+4 MOV BP, SP
+
+5 CMP R0, 3
+6 JNE 8
+
+7 JMP 10
+
+8 ADD R0, 1
+9 CALL 3
+10 POP BP
+11 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->SetBreakpoint(9);
+    native->ContinueExecution();
+    native->WaitForDebugEvent();
+    native->UnsetBreakpoint(9);
+    ASSERT_EQ(native->GetIP(), 9);
+    native->PerformStepOver();
+    ASSERT_EQ(native->GetIP(), 10);
+    native->PerformSingleStep();
+    native->PerformSingleStep();
+    ASSERT_EQ(native->GetIP(), 2);
+}
+
+TEST_F(NativeTest, StepOutRecursive) {
+    auto program = R"(
+.text
+0 MOV R0, 1
+1 CALL 3
+2 HALT
+
+3 PUSH BP
+4 MOV BP, SP
+
+5 CMP R0, 3
+6 JNE 8
+
+7 JMP 10
+
+8 ADD R0, 1
+9 CALL 3
+10 POP BP
+11 RET
+)";
+    Run(program, 3, 0);
+    native->WaitForDebugEvent();
+    native->PerformSingleStep();
+    native->PerformSingleStep();
+    ASSERT_EQ(native->GetIP(), 3);
+    native->PerformStepOut();
+    ASSERT_EQ(native->GetIP(), 2);
+}

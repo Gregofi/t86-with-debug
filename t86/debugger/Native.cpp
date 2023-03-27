@@ -129,8 +129,32 @@ DebugEvent Native::PerformStepOver(bool skip_bp) {
         if (skip_bp) {
             PerformSingleStep();
         }
-        ContinueExecution();
-        auto e = WaitForDebugEvent();
+        // There is a problem with recursive functions. They can hit the breakpoint
+        // also. We do this bold heuristic where we check if the BP is the same,
+        // because functions with some normal calling convention have to backup
+        // this guy, especially if they're recursive.
+        auto bp = GetRegister("BP");
+        DebugEvent e;
+        while (true) {
+            ContinueExecution();
+            e = WaitForDebugEvent();
+            // If we landed on the same position we came from
+            if (bp == GetRegister("BP")
+                    && GetIP() == ip + 1
+                    && std::holds_alternative<BreakpointHit>(e)) {
+                break;
+            }
+            // If other breakpoint happened
+            if (std::holds_alternative<BreakpointHit>(e)
+                    && GetIP() != ip + 1) {
+                break;
+            }
+            // Totally other event
+            if (!std::holds_alternative<BreakpointHit>(e)) {
+                break;
+            }
+        }
+
         if (!bp_exists) {
             UnsetBreakpoint(ip + 1);
         }
@@ -155,7 +179,7 @@ DebugEvent Native::PerformStepOut() {
             "Singlestep is not supported for current architecture");
     }
 
-    bool first = true;
+    bool skip_bp = true;
     while (true) {
         auto ip = GetIP();
         auto text = ReadText(ip, 1).at(0);
@@ -163,17 +187,13 @@ DebugEvent Native::PerformStepOut() {
         auto is_return =
             std::find_if(rets.begin(), rets.end(),
                          [&text](auto &&ins) { return text.starts_with(ins); });
-        DebugEvent e;
-        if (first) {
-            e = PerformStepOver();
-        } else {
-            e = PerformStepOver(false);
-        }
+
+        DebugEvent e = PerformStepOver(skip_bp);
         if (is_return != rets.end()
             || !std::holds_alternative<Singlestep>(e)) {
             return e;
         }
-        first = false;
+        skip_bp = false;
     }
 }
 

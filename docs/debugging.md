@@ -153,6 +153,10 @@ The native part offers three ways of stepping.
 Do note that if any other event happens while stepping (like breakpoint hit or HALT),
 then the program is stopped at that point.
 
+For step out and over to work correctly in recursive functions it is needed to
+properly backup base pointer (`PUSH BP; MOV BP, SP`). It uses it as a heuristic
+to know that the expected frame has finished.
+
 The source level debugging offers:
 - `step` = Continue execution until another source line is encountered.
 - `next` = Same as step, but step over `CALL` instructions.
