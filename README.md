@@ -16,7 +16,7 @@ The debugger is then available at `dbg-cli/dbg-cli`, while the t86-cli is at `t8
 
 ## Credits
 The vast majority of the work on the T86 Virtual machine and the design of the architecture
-was made by Ivo Strejc as part of his [http://hdl.handle.net/10467/94644](thesis). We just
+was made by Ivo Strejc as part of his [thesis](http://hdl.handle.net/10467/94644). We just
 added the debugging interface to it.
 
 Also, many of the complicated tests for the CLI and debugger were created thanks to Martin
