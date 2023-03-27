@@ -188,7 +188,7 @@ void Source::ReconstructTypeInformation() {
     if (!top_die) {
         return;
     }
-    for (auto&& die: *top_die) {
+    for (auto&& die: top_die.value()) {
         // Every type must have an ID.
         auto id = FindDieAttribute<ATTR_id>(die);
         if (!id) {
@@ -223,7 +223,8 @@ void Source::ReconstructTypeInformation() {
             auto size = FindDieAttribute<ATTR_size>(die);
             auto members = FindDieAttribute<ATTR_members>(die);
             std::vector<StructuredMember> members_vec;
-            std::ranges::transform(members->m, std::back_inserter(members_vec),
+            std::transform(members->m.begin(), members->m.end(),
+                    std::back_inserter(members_vec),
                     [](auto &&m) {
                 return StructuredMember{m.name, m.type_id, m.offset};
             });
@@ -360,7 +361,8 @@ Source::EvaluateExpression(Native& native, std::string expression, bool cache) {
 std::set<std::string> Source::GetScopedVariables(uint64_t address) const {
     std::set<std::string> result;
     auto vars = GetActiveVariables(address);
-    std::ranges::transform(vars, std::inserter(result, result.end()),
+    std::transform(vars.begin(), vars.end(),
+            std::inserter(result, result.end()),
             [](auto&& p) { return p.first; });
     return result;
 }

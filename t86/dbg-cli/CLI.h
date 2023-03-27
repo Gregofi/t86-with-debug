@@ -1134,7 +1134,8 @@ private:
     template<typename T>
     std::optional<T> ParseOptionalCommand(const std::vector<std::string_view>& commands,
                                        std::string_view searched_command) {
-        auto f_it = std::ranges::find_if(commands, [&](auto&& s) { return s.starts_with(searched_command); });
+        auto f_it = std::find_if(commands.begin(), commands.end(),
+                                 [&](auto&& s) { return s.starts_with(searched_command); });
         if (f_it != commands.end()) {
             auto val = f_it->substr(searched_command.size());
             auto opt = utils::svtonum<size_t>(val);

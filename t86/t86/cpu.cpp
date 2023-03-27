@@ -126,7 +126,7 @@ namespace tiny::t86 {
         for (std::size_t i = 0; i < registerCount; ++i) {
             setRegister(Register{i}, 0);
         }
-        std::ranges::fill(debug_registers_, 0);
+        std::fill(debug_registers_.begin(), debug_registers_.end(), 0);
         setRegister(Register::ProgramCounter(), 0);
         setRegister(Register::Flags(), 0);
         setRegister(Register::StackPointer(), ram_.size());

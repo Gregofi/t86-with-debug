@@ -1,5 +1,6 @@
 #pragma once
 #include <istream>
+#include <thread>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include "common/threads_messenger.h"
