@@ -66,3 +66,22 @@ jobs:
         run: |
           cd ${{ github.workspace }}/t86
           ./scripts/run_tests.sh ../t86-cli/t86-cli
+
+# =============== MacOS ===============
+  build-t86-macos:
+    name: Build and Unit test T86 on MacOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          cd ${{ github.workspace }}/t86
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Sanitizer
+          make -j
+      - name: Unit tests
+        run: |
+          cd ${{ github.workspace }}/t86/build
+          make test
