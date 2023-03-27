@@ -576,8 +576,12 @@ Most often, the correct address will be one below it.)";
         } else {
             auto ip = process.GetIP();
             auto line = source.AddrToLine(ip);
-            // The line must be valid here since we did a source level singlestep.
-            assert(line);
+            // The line should be valid because source level single step
+            // was made but it is possible that no source info is available
+            // and source step was invoked anyway.
+            if (!line) {
+                return;
+            }
             PrettyPrintCode(*line);
         }
     }

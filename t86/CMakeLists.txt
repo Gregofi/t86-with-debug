@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOG_LEVEL=4")
 set(CMAKE_CXX_FLAGS_SANITIZER "-Wall -g -DLOG_LEVEL=4 -fsanitize=address")
-set(CMAKE_CXX_FLAGS_RELEASE "-Wall -DLOG_LEVEL=2")
+set(CMAKE_CXX_FLAGS_RELEASE "-Wall -DLOG_LEVEL=2 -O2")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common)
