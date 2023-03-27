@@ -11,8 +11,11 @@ mkdir t86/build
 cd t86/build
 cmake ..
 make -j
+# optionally
+sudo make install
 ```
-The debugger is then available at `dbg-cli/dbg-cli`, while the t86-cli is at `t86-cli/t86-cli`.
+The debugger is then available at `dbg-cli/dbg-cli` (or just `dbg-cli` if it
+was installed), while the t86-cli is at `t86-cli/t86-cli`.
 
 ## Credits
 The vast majority of the work on the T86 Virtual machine and the design of the architecture
