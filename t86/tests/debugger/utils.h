@@ -157,9 +157,16 @@ protected:
         std::istringstream iss(elf);
         dbg::Parser p(iss);
         auto debug_info = p.Parse();
-        source.RegisterLineMapping(std::move(*debug_info.line_mapping));
-        source.RegisterDebuggingInformation(std::move(*debug_info.top_die));
-        source.RegisterSourceFile(std::move(*debug_info.source_code));
+
+        if (debug_info.line_mapping) {
+            source.RegisterLineMapping(std::move(*debug_info.line_mapping));
+        }
+        if (debug_info.top_die) {
+            source.RegisterDebuggingInformation(std::move(*debug_info.top_die));
+        }
+        if (debug_info.source_code) {
+            source.RegisterSourceFile(std::move(*debug_info.source_code));
+        }
     }
 
     void TearDown() override {
