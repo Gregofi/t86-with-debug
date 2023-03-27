@@ -763,6 +763,7 @@ Most often, the correct address will be one below it.)";
             }
             std::string line{line_raw};
             if (line == "") {
+                free(line_raw);
                 break;
             }
             result.push_back(line);
