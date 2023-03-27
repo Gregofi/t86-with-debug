@@ -118,7 +118,8 @@ DebugEvent Native::PerformStepOver(bool skip_bp) {
     auto ip = GetIP();
     auto text = ReadText(ip, 1)[0];
     auto calls = Arch::GetCallInstructions();
-    auto is_call = std::ranges::find_if(calls, [&text](auto&& ins) { return text.starts_with(ins); });
+    auto is_call = std::find_if(calls.begin(), calls.end(),
+                                [&text](auto&& ins) { return text.starts_with(ins); });
     if (is_call != calls.end()) {
         bool bp_exists = software_breakpoints.contains(ip + 1);
         if (!bp_exists) {
@@ -159,8 +160,9 @@ DebugEvent Native::PerformStepOut() {
         auto ip = GetIP();
         auto text = ReadText(ip, 1).at(0);
         auto rets = Arch::GetReturnInstructions();
-        auto is_return = std::ranges::find_if(
-            rets, [&text](auto &&ins) { return text.starts_with(ins); });
+        auto is_return =
+            std::find_if(rets.begin(), rets.end(),
+                         [&text](auto &&ins) { return text.starts_with(ins); });
         DebugEvent e;
         if (first) {
             e = PerformStepOver();
@@ -278,7 +280,7 @@ DebugEvent Native::MapReasonToEvent(StopReason reason) {
         return BreakpointHit{BPType::Software, GetIP() - 1};
     } else if (reason == StopReason::HardwareBreak) {
         auto idx = Arch::GetResponsibleRegister(process->FetchDebugRegisters());
-        auto it = std::ranges::find_if(watchpoints,
+        auto it = std::find_if(watchpoints.begin(), watchpoints.end(),
                 [idx](auto&& w) { return w.second.hw_reg == idx; });
         assert(it != watchpoints.end());
         return WatchpointTrigger{WatchpointType::Write, it->first};
@@ -397,7 +399,8 @@ void Native::SetDebugRegister(uint8_t idx, uint64_t value) {
 std::optional<size_t> Native::GetFreeDebugRegister() const {
     auto count = Arch::DebugRegistersCount();
     for (size_t i = 0; i < count; ++i) {
-        auto w = std::ranges::find_if(watchpoints, [i](auto&& w) {
+        auto w = std::find_if(watchpoints.begin(), watchpoints.end(),
+                [i](auto&& w) {
             return w.second.hw_reg == i;
         });
         if (w == watchpoints.end()) {
