@@ -64,9 +64,15 @@ commands:
 - expression = Evaluate the source language expression and print result.
 - source = Print the source code that is being debugged.
 )";
-// Do not append anything other than commands here because
-// the Cli class will add its own command after this string
+    static constexpr const char* RUN_USAGE =
+R"(run [--arg=val [--arg=val ...]]
+Run the program, stopping before the first instruction is executed.
 
+options:
+--reg-count=<cnt> - Number of normal registers.
+--float-reg-count=<cnt> - Number of float registers.
+--data-size=<cnt> - Size of the RAM memory.
+)";
     static constexpr const char* BP_USAGE = 
 R"(breakpoint <subcommads> [parameter [parameter...]]
 Make program stop at certain point.
@@ -924,6 +930,8 @@ Most often, the correct address will be one below it.)";
             fmt::print("{}", ISTEP_USAGE);
         } else if (utils::is_prefix_of(command, "inext")) {
             fmt::print("{}", INEXT_USAGE);
+        } else if (utils::is_prefix_of(command, "run")) {
+            fmt::print("{}", RUN_USAGE);
         } else if (utils::is_prefix_of(command, "disassemble")) {
             fmt::print("{}", DISASSEMBLE_USAGE);
         } else if (utils::is_prefix_of(command, "assemble")) {

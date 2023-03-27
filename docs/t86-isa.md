@@ -70,8 +70,7 @@ MOV | `R1`, `R2` | `R1 = R2`
 | | `[R1 + i1 + R2 * i2]`, `R3` | `[R1 + i1 + R2 * i2] = R3`
 | | `[R1 + i1 + R2 * i2]`, `F1` | `[R1 + i1 + R2 * i2] = F1` (bit copy)
 | | `[R1 + i1 + R2 * i2]`, `i3` | `[R1 + i1 + R2 * i2] = i3`
-
-NOP | | Do nothing
+| NOP | | Do nothing |
 
 ### Arithmetics
 
@@ -306,98 +305,3 @@ DBG | debug function | executes debug function
 BREAK | | executes handle function
 BKPT | | used for a breakpoint by debuggers
 HALT | | halts the CPU
-
-## VM
-
-__Note__: All code examples expect you to use namespace `tiny::t86`, it is not enforced on you, it is omitted for better readability.
-
-### Configuration
-You can configure your VM by adding arguments to the executed program\
-To set register count, use `-registerCnt=X` - default is 10 (you can use large number of registers to begin with).\
-To set float register count, use `-floatRegisterCnt=X` - default is 5.\
-To set number of ALUs, use `-aluCnt=X` - default is 1.\
-To set number of reservation station entries, use `-reservationStationEntriesCnt=X` - default is 2.\
-To set RAM size, use `-ram=X` - default is 1024 64bit values (so total size will be 8*X bytes).\
-To set RAM gate count, use `-ramGates=X` - default is 4.
-
-__Note__: You can check config from like in this example:
-```c++
-Cpu::Config::instance().registerCnt();
-```
-
-### Creating program
-```
-ProgramBuilder pb;
-pb.add(MOV{Reg(0), 42});
-pb.add(MOV{Mem(Reg(0) + 27), 23});
-pb.add(HALT{});
-
-return pb.program();
-```
-
-__Note__: Do not forget to add `HALT`, otherwise your program will run forever executing only `NOP`s.
-
-### Running program example
-```c++
-StatsLogger::instance().reset();
-Cpu cpu;
-
-cpu.start(std::move(program));
-while (!cpu.halted()) {
-    cpu.tick();
-}
-StatsLogger::instance().processBasicStats(std::cerr);
-```
-__Note__: For more detailed stats you can add:
-```c++
-StatsLogger::instance().processDetailedStats(std::cerr);
-```
-
-### Patching labels
-```c++
-ProgramBuilder pb;
-Label jumpToBody = pb.add(JMP{Label::empty()});
-...
-Label body = pb.add(MOV{Reg(0), 0});
-...
-pb.patch(jumpToBody, body);
-```
-
-### Adding data
-```c++
-DataLabel str = pb.addData("Hello world\n");
-pb.add(MOV{Reg(0), str});
-```
-Data will be stored starting on address 0 and further.
-__Note__: This string storing is very wasteful, you can create your own packed data (I am sure you will be rewarded extra points).
-
-### Accessing CPU registers
-```c++
-cpu.getRegister(Reg(0));
-```
-
-### Accessing CPU memory
-```c++
-cpu.getMemory(Mem(0))
-```
-__Note__: Memory is addresable by 8bytes (64bit values)
-
-### Debug and handle function
-Debug and handle functions have to have this function signature
-```c++
-void fn(Cpu&)
-```
-You can hook one handle function (executed on `BREAK`) by
-```c++
-cpu.connectBreakHandler(&fn);
-```
-or using c++11 lambdas. \
-Debug example:
-```c++
-pb.add(DBG{&fn});
-```
-__Note__ that DBG will be added only if your `ProgramBuilder` was not given `true` argument indicating release environment.
-
-### Other notes
-There are some example is `tests/targets/tiny86/programs.cpp`.\
-If you encounter any bug, please don't hesitate to report it.
