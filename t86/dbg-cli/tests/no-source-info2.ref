@@ -1,4 +1,4 @@
-Started process 'tests/sources/only_lines.t86'
+Started process 'dbg-cli/tests/sources/only_lines.t86'
 (int) $0 = 3
 Error: Not enough type info about variable 'a'
 Error: No debug information about source code

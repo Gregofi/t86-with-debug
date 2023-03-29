@@ -1,4 +1,4 @@
-Started process 'tests/sources/linked_list.t86'
+Started process 'dbg-cli/tests/sources/linked_list.t86'
 Breakpoint set on line 20 (addr 19):     struct list* it = &l1;
 Process stopped, reason: Software breakpoint hit at line 20
 function main at 2-35; active variables: it, l1
