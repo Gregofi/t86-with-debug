@@ -1440,7 +1440,7 @@ R"(
     ASSERT_FALSE(source.GetLine(2));
     ASSERT_FALSE(source.GetLine(3));
     ASSERT_FALSE(source.GetLine(13));
-    ASSERT_THROW({source.GetLines().size();}, DebuggerError);
+    ASSERT_THROW({[[maybe_unused]] auto x = source.GetLines().size();}, DebuggerError);
     ASSERT_EQ(source.GetLinesRange(0, 5).size(), 0);
     ASSERT_EQ(source.GetScopedVariables(0).size(), 0);
     ASSERT_EQ(source.GetScopedVariables(5).size(), 0);
