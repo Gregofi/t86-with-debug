@@ -220,5 +220,5 @@ An examples:
 - `e *a` - Dereferences `a` and prints the value.
 - `e *a = 5` - Assings value `5` to the location that `a` points to.
 
-Arrays and structs are also supported, see the `t86/tests/debugger/source_test.cpp` tests
+Arrays and structs are also supported, see the `src/tests/debugger/source_test.cpp` tests
 to get a glimpse of all the possible things.
