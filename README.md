@@ -7,8 +7,8 @@ strictly tied to the T86 architecture, it is the only one supported as of now.
 ## Build
 To build the T86 CLI and Debugger CLI:
 ```
-mkdir t86/build
-cd t86/build
+mkdir src/build
+cd src/build
 cmake ..
 make -j
 # optionally

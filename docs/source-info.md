@@ -301,5 +301,3 @@ add `PUSH 1` and `ADD`, the result would be the value in register `R0` added to
 The program itself is written either in backticks `` `BASE_REG_OFFSET -2` `` or
 in square brackets `[PUSH 0; PUSH R0; ADD]`. The backticks allow only zero or one
 instruction, the brackets allow arbitrary amount.
-
-

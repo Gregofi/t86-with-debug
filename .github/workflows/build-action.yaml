@@ -15,22 +15,22 @@ jobs:
         uses: actions/checkout@v3
       - name: Build
         run: |
-          cd ${{ github.workspace }}/t86
+          cd ${{ github.workspace }}/src
           mkdir build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Sanitizer
           make -j
       - name: Unit tests
         run: |
-          cd ${{ github.workspace }}/t86/build
+          cd ${{ github.workspace }}/src/build
           make test
       - name: Artifact
         uses: actions/upload-artifact@v3
         with:
           name: t86
           path: |
-            ${{ github.workspace }}/t86/build/t86-cli/t86-cli
-            ${{ github.workspace }}/t86/build/dbg-cli/dbg-cli
+            ${{ github.workspace }}/src/build/t86-cli/t86-cli
+            ${{ github.workspace }}/src/build/dbg-cli/dbg-cli
           retention-days: 1
             
   test-dbg-cli-ubuntu:
@@ -47,7 +47,7 @@ jobs:
         run: chmod +x ${{ github.workspace }}/dbg-cli/dbg-cli
       - name: Run tests
         run: |
-          cd ${{ github.workspace }}/t86
+          cd ${{ github.workspace }}/src
           ./scripts/run_dbg_tests.sh ../dbg-cli/dbg-cli
 
   test-t86-cli-ubuntu:
@@ -64,7 +64,7 @@ jobs:
         run: chmod +x ${{ github.workspace }}/t86-cli/t86-cli
       - name: Run tests
         run: |
-          cd ${{ github.workspace }}/t86
+          cd ${{ github.workspace }}/src
           ./scripts/run_t86_tests.sh ../t86-cli/t86-cli
 
 # =============== MacOS ===============
@@ -76,12 +76,12 @@ jobs:
         uses: actions/checkout@v3
       - name: Build
         run: |
-          cd ${{ github.workspace }}/t86
+          cd ${{ github.workspace }}/src
           mkdir build
           cd build
           cmake .. -DCMAKE_BUILD_TYPE=Sanitizer
           make -j
       - name: Unit tests
         run: |
-          cd ${{ github.workspace }}/t86/build
+          cd ${{ github.workspace }}/src/build
           make test
