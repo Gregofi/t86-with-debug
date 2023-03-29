@@ -757,19 +757,28 @@ int main() {
 
 TEST_F(NativeSourceTest, TestMappingScopes) {
     auto elf =
-R"(.text
+R"(
+.data
+55
+
+.text
 0   CALL 2
 1   HALT
 # main()
 2   MOV R0, 1
 3   MOV R1, 2
-4   MOV R2, 3
-5   MOV R3, 5
+3   MOV R2, 22
+4   MOV R3, 3
+5   MOV R4, 5
 6   ADD R0, R1
 7   RET
 
 .debug_info
 DIE_compilation_unit: {
+DIE_variable: {
+    ATTR_name: c,
+    ATTR_location: `PUSH 0`,
+},
 DIE_function: {
     ATTR_begin_addr: 2,
     ATTR_end_addr: 8,
@@ -788,12 +797,16 @@ DIE_function: {
                 ATTR_name: b,
                 ATTR_location: `PUSH R1`,
             },
+            DIE_variable: {
+                ATTR_name: c,
+                ATTR_location: `PUSH R2`,
+            },
             DIE_scope: {
                 ATTR_begin_addr: 4,
                 ATTR_end_addr: 5,
                 DIE_variable: {
                     ATTR_name: a,
-                    ATTR_location: `PUSH R2`,
+                    ATTR_location: `PUSH R3`,
                 },
             },
             DIE_scope: {
@@ -801,7 +814,7 @@ DIE_function: {
                 ATTR_end_addr: 6,
                 DIE_variable: {
                     ATTR_name: b,
-                    ATTR_location: `PUSH R3`,
+                    ATTR_location: `PUSH R4`,
                 },
             },
         },
@@ -809,10 +822,13 @@ DIE_function: {
 }
 }
 .debug_source
+int c = 55;
+
 int main() {
     int a = 1;
     {
         int b = 2;
+        int c = 22;
         {
             int a = 3;
         }
@@ -832,18 +848,24 @@ int main() {
     }
 
     ASSERT_FALSE(source.GetVariableLocation(*native, "a"));
-    ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
+    auto loc = source.GetVariableLocation(*native, "c");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 0);
+
+    auto vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("c"));
+
     native->SetBreakpoint(2);
     native->ContinueExecution();
     native->WaitForDebugEvent();
 
-    auto loc = source.GetVariableLocation(*native, "a");
+    loc = source.GetVariableLocation(*native, "a");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
     ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
 
-    auto vars = source.GetScopedVariables(native->GetIP());
-    ASSERT_THAT(vars, testing::ElementsAre("a"));
+    vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a", "c"));
 
     native->PerformSingleStep();
     loc = source.GetVariableLocation(*native, "a");
@@ -854,26 +876,35 @@ int main() {
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
 
-    native->PerformSingleStep();
-    loc = source.GetVariableLocation(*native, "a");
+    loc = source.GetVariableLocation(*native, "c");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R2");
 
-    loc = source.GetVariableLocation(*native, "b");
-    ASSERT_TRUE(loc);
-    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
-    vars = source.GetScopedVariables(native->GetIP());
-    ASSERT_THAT(vars, testing::ElementsAre("a", "b"));
-
     native->PerformSingleStep();
     loc = source.GetVariableLocation(*native, "a");
-    ASSERT_TRUE(loc);
-    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
-
-    loc = source.GetVariableLocation(*native, "b");
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R3");
 
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R1");
+
+    loc = source.GetVariableLocation(*native, "c");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R2");
+
+    vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a", "b", "c"));
+
+    native->PerformSingleStep();
+    loc = source.GetVariableLocation(*native, "a");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
+
+    loc = source.GetVariableLocation(*native, "b");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Register>(*loc).name, "R4");
+
     native->PerformSingleStep();
     loc = source.GetVariableLocation(*native, "a");
     ASSERT_TRUE(loc);
@@ -888,10 +919,12 @@ int main() {
     ASSERT_TRUE(loc);
     ASSERT_EQ(std::get<expr::Register>(*loc).name, "R0");
 
-    ASSERT_FALSE(source.GetVariableLocation(*native, "b"));
-    vars = source.GetScopedVariables(native->GetIP());
-    ASSERT_THAT(vars, testing::ElementsAre("a"));
+    loc = source.GetVariableLocation(*native, "c");
+    ASSERT_TRUE(loc);
+    ASSERT_EQ(std::get<expr::Offset>(*loc).value, 0);
 
+    vars = source.GetScopedVariables(native->GetIP());
+    ASSERT_THAT(vars, testing::ElementsAre("a", "c"));
 }
 
 TEST_F(NativeSourceTest, SourceStepIn) {
