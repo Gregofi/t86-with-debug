@@ -5,10 +5,11 @@ if [[ "$#" -ne 1 ]]; then
     exit 1
 fi
 
-for file in tests/*.in; do
+for file in dbg-cli/tests/*.in; do
     ref="${file%.in}.ref"
     conf="${file%.in}.conf"
-    t86_file=tests/`cat ${conf}`
+    t86_file=dbg-cli/tests/`cat ${conf}`
+    # That crazy sed removes colors and other escape sequences from the output.
     ${1} ${t86_file} < ${file} | sed 's/\x1B\[[0-9;]\{1,\}[A-Za-z]//g' > "test_out.tmp"
     diff "test_out.tmp" ${ref} > "failed_diff.tmp"
     if [[ $? -ne 0 ]]; then

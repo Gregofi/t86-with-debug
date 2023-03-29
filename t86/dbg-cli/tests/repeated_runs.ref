@@ -1,5 +1,5 @@
-Started process 'tests/sources/swap.t86'
-Started process 'tests/sources/swap.t86'
+Started process 'dbg-cli/tests/sources/swap.t86'
+Started process 'dbg-cli/tests/sources/swap.t86'
 Breakpoint set on address 10: 'LEA R3, [SP + -3]'
 Process stopped, reason: Watchpoint triggered at memory address 1020
 function main at 7-18; active variables: a, b
@@ -8,7 +8,7 @@ function main at 7-18; active variables: a, b
  ->  10:    swap(&a, &b);
      11:    print(a);
      12:    print(b);
-Started process 'tests/sources/swap.t86'
+Started process 'dbg-cli/tests/sources/swap.t86'
 Process stopped, reason: Watchpoint triggered at memory address 1020
 function main at 7-18; active variables: a, b
       8:    int a = 3;
@@ -24,7 +24,7 @@ function main at 7-18; active variables: a, b
      11:  CALL 2
      12:  MOV R0, [SP + -2]
 Breakpoint disabled at address 10
-Started process 'tests/sources/swap.t86'
+Started process 'dbg-cli/tests/sources/swap.t86'
 Process stopped, reason: Watchpoint triggered at memory address 1020
 function main at 7-18; active variables: a, b
       8:    int a = 3;

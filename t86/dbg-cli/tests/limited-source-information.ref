@@ -1,4 +1,4 @@
-Started process 'tests/sources/llvm.ir'
+Started process 'dbg-cli/tests/sources/llvm.ir'
 Breakpoint set on line 6 (addr 5):   store i32 5, ptr %2, align 4, !dbg !17 #6
 Breakpoint set on line 13 (addr 12):   %8 = add nsw i32 %6, %7, !dbg !26 #13
  ->   1:define dso_local i32 @main() #0 !dbg !10 { #1

@@ -1,4 +1,4 @@
-Started process 'tests/sources/char_ptr.t86'
+Started process 'dbg-cli/tests/sources/char_ptr.t86'
 Breakpoint set on line 4 (addr 15):         print(*s++);
 Process stopped, reason: Software breakpoint hit at line 4
 function main at 5-26; active variables: s

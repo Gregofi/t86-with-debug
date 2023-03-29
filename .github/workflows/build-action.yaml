@@ -47,8 +47,8 @@ jobs:
         run: chmod +x ${{ github.workspace }}/dbg-cli/dbg-cli
       - name: Run tests
         run: |
-          cd ${{ github.workspace }}/t86/dbg-cli
-          ./scripts/run_tests.sh ../../dbg-cli/dbg-cli
+          cd ${{ github.workspace }}/t86
+          ./scripts/run_dbg_tests.sh ../dbg-cli/dbg-cli
 
   test-t86-cli-ubuntu:
     needs: [build-t86-ubuntu]
@@ -65,7 +65,7 @@ jobs:
       - name: Run tests
         run: |
           cd ${{ github.workspace }}/t86
-          ./scripts/run_tests.sh ../t86-cli/t86-cli
+          ./scripts/run_t86_tests.sh ../t86-cli/t86-cli
 
 # =============== MacOS ===============
   build-t86-macos:
