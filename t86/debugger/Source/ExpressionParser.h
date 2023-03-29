@@ -32,8 +32,8 @@ public:
 private:
     template<typename ...Args>
     ParserError CreateError(fmt::format_string<Args...> format, Args&& ...args) const {
-        return ParserError(fmt::format("Error:{}:{}:{}", curtok.row,
-                    curtok.col, fmt::format(format,
+        return ParserError(fmt::format("Error:{}:{}:{}", curtok.row + 1,
+                    curtok.col + 1, fmt::format(format,
                         std::forward<Args>(args)...)));
     }
 
