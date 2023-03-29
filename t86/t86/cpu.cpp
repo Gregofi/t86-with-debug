@@ -97,7 +97,7 @@ namespace tiny::t86 {
 
     double Cpu::getFloatRegister(PhysicalRegister reg) const {
         int64_t val = registers_.at(reg.index()).value;
-        return *reinterpret_cast<double*>(&val);
+        return utils::reinterpret_safe<double>(val);
     }
 
     Cpu::Cpu(size_t registerCount)
@@ -159,7 +159,7 @@ namespace tiny::t86 {
     }
 
     void Cpu::setRegister(PhysicalRegister reg, double value) {
-        registers_.at(reg.index()).value = *reinterpret_cast<int64_t*>(&value); // Store the double as int64_t
+        registers_.at(reg.index()).value = utils::reinterpret_safe<int64_t>(value); // Store the double as int64_t
         registers_.at(reg.index()).ready = true;
     }
 
