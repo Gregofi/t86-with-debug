@@ -1,0 +1,107 @@
+.text
+#     
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     39 -> main$entry
+   2  CALL 39
+   3  HALT
+# ======= FUNCTION entry END =======
+#     
+#     
+# ======= FUNCTION is_prime START =======
+# is_prime$entry:
+   4  PUSH BP
+   5  MOV BP, SP
+   6  SUB SP, 4
+   7  MOV [BP + -4], R2
+   8  MOV [BP + -3], R3
+#     is_prime prologue end
+#     [BP + 2] -> arg #0
+   9  MOV R0, [BP + 2]
+#     [BP + -1] -> %arg_num
+  10  MOV [BP + -1], R0
+#     [BP + -2] -> %local_i
+  11  MOV [BP + -2], 2
+# is_prime$forCond:
+#     [BP + -2] -> %local_i
+  12  MOV R2, [BP + -2]
+#     [BP + -1] -> %arg_num
+  13  MOV R0, [BP + -1]
+  14  CMP R2, R0
+#     33 -> is_prime$forCont
+  15  JGE 33
+# is_prime$forBody:
+#     [BP + -1] -> %arg_num
+  16  MOV R2, [BP + -1]
+#     [BP + -2] -> %local_i
+  17  MOV R3, [BP + -2]
+  18  MOV R0, R2
+  19  IDIV R0, R3
+  20  IMUL R0, R3
+  21  CMP R2, R0
+#     29 -> is_prime$ifFalse
+  22  JNZ 29
+# is_prime$ifTrue:
+  23  MOV R0, 0
+#     is_prime epilogue start
+  24  MOV R2, [BP + -4]
+  25  MOV R3, [BP + -3]
+  26  MOV SP, BP
+  27  POP BP
+  28  RET
+# is_prime$ifFalse:
+# is_prime$ifCont:
+# is_prime$forInc:
+#     [BP + -2] -> %local_i
+  29  MOV R0, [BP + -2]
+  30  ADD R0, 1
+#     [BP + -2] -> %local_i
+  31  MOV [BP + -2], R0
+#     12 -> is_prime$forCond
+  32  JMP 12
+# is_prime$forCont:
+  33  MOV R0, 1
+#     is_prime epilogue start
+  34  MOV R2, [BP + -4]
+  35  MOV R3, [BP + -3]
+  36  MOV SP, BP
+  37  POP BP
+  38  RET
+# ======= FUNCTION is_prime END =======
+#     
+#     
+# ======= FUNCTION main START =======
+# main$entry:
+  39  PUSH BP
+  40  MOV BP, SP
+#     main prologue end
+  41  MOV R0, 7187
+  42  PUSH R0
+#     4 -> is_prime$entry
+  43  CALL 4
+  44  ADD SP, 1
+  45  PUTNUM R0
+  46  MOV R0, 0
+#     main epilogue start
+  47  MOV SP, BP
+  48  POP BP
+  49  RET
+# ======= FUNCTION main END =======
+#     
+.debug_source
+int is_prime(int num) {
+    for (int i = 2; i < num; ++i) {
+        if (num % i == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int main() {
+    printnum(is_prime(7187));
+    return 0;
+}
