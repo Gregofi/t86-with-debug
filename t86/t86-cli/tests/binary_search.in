@@ -1,0 +1,222 @@
+.text
+#     
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     58 -> main$entry
+   2  CALL 58
+   3  HALT
+# ======= FUNCTION entry END =======
+#     
+#     
+# ======= FUNCTION binary_search START =======
+# binary_search$entry:
+   4  PUSH BP
+   5  MOV BP, SP
+   6  SUB SP, 8
+   7  MOV [BP + -7], R2
+   8  MOV [BP + -8], R3
+#     binary_search prologue end
+#     [BP + 2] -> arg #0
+   9  MOV R0, [BP + 2]
+#     [BP + 3] -> arg #1
+  10  MOV R2, [BP + 3]
+#     [BP + 4] -> arg #2
+  11  MOV R3, [BP + 4]
+#     [BP + -1] -> %arg_arr
+  12  MOV [BP + -1], R0
+#     [BP + -2] -> %arg_length
+  13  MOV [BP + -2], R2
+#     [BP + -3] -> %arg_n
+  14  MOV [BP + -3], R3
+#     [BP + -4] -> %local_lo
+  15  MOV [BP + -4], 0
+#     [BP + -2] -> %arg_length
+  16  MOV R0, [BP + -2]
+#     [BP + -5] -> %local_hi
+  17  MOV [BP + -5], R0
+# binary_search$whileCond:
+#     [BP + -4] -> %local_lo
+  18  MOV R0, [BP + -4]
+#     [BP + -5] -> %local_hi
+  19  MOV R2, [BP + -5]
+  20  CMP R0, R2
+#     52 -> binary_search$whileCont
+  21  JGE 52
+# binary_search$whileBody:
+#     [BP + -4] -> %local_lo
+  22  MOV R0, [BP + -4]
+#     [BP + -5] -> %local_hi
+  23  MOV R2, [BP + -5]
+  24  ADD R0, R2
+  25  IDIV R0, 2
+#     [BP + -6] -> %local_ptr
+  26  MOV [BP + -6], R0
+#     [BP + -1] -> %arg_arr
+  27  MOV R0, [BP + -1]
+#     [BP + -6] -> %local_ptr
+  28  MOV R2, [BP + -6]
+  29  MOV R0, [R0 + R2 * 1]
+#     [BP + -3] -> %arg_n
+  30  MOV R2, [BP + -3]
+  31  CMP R0, R2
+#     37 -> binary_search$ifFalse
+  32  JGE 37
+# binary_search$ifTrue:
+#     [BP + -6] -> %local_ptr
+  33  MOV R0, [BP + -6]
+  34  ADD R0, 1
+#     [BP + -4] -> %local_lo
+  35  MOV [BP + -4], R0
+# binary_search$ifCont:
+#     18 -> binary_search$whileCond
+  36  JMP 18
+# binary_search$ifFalse:
+#     [BP + -1] -> %arg_arr
+  37  MOV R0, [BP + -1]
+#     [BP + -6] -> %local_ptr
+  38  MOV R2, [BP + -6]
+  39  MOV R0, [R0 + R2 * 1]
+#     [BP + -3] -> %arg_n
+  40  MOV R2, [BP + -3]
+  41  CMP R0, R2
+#     46 -> binary_search$ifFalse2
+  42  JLE 46
+# binary_search$ifTrue2:
+#     [BP + -6] -> %local_ptr
+  43  MOV R0, [BP + -6]
+#     [BP + -5] -> %local_hi
+  44  MOV [BP + -5], R0
+# binary_search$ifCont2:
+#     36 -> binary_search$ifCont
+  45  JMP 36
+# binary_search$ifFalse2:
+  46  MOV R0, 1
+#     binary_search epilogue start
+  47  MOV R2, [BP + -7]
+  48  MOV R3, [BP + -8]
+  49  MOV SP, BP
+  50  POP BP
+  51  RET
+# binary_search$whileCont:
+  52  MOV R0, 0
+#     binary_search epilogue start
+  53  MOV R2, [BP + -7]
+  54  MOV R3, [BP + -8]
+  55  MOV SP, BP
+  56  POP BP
+  57  RET
+# ======= FUNCTION binary_search END =======
+#     
+#     
+# ======= FUNCTION main START =======
+# main$entry:
+  58  PUSH BP
+  59  MOV BP, SP
+  60  SUB SP, 803
+  61  MOV [BP + -802], R1
+  62  MOV [BP + -803], R3
+#     main prologue end
+#     [BP + -800] -> %local_arr
+  63  LEA R1, [BP + -800]
+#     [BP + -801] -> %local_i
+  64  MOV [BP + -801], 0
+# main$forCond:
+#     [BP + -801] -> %local_i
+  65  MOV R0, [BP + -801]
+  66  CMP R0, 800
+#     76 -> main$forCont
+  67  JGE 76
+# main$forBody:
+#     [BP + -801] -> %local_i
+  68  MOV R0, [BP + -801]
+#     [BP + -801] -> %local_i
+  69  MOV R3, [BP + -801]
+  70  IMUL R3, 3
+  71  MOV [R1 + R0 * 1], R3
+# main$forInc:
+#     [BP + -801] -> %local_i
+  72  MOV R0, [BP + -801]
+  73  ADD R0, 1
+#     [BP + -801] -> %local_i
+  74  MOV [BP + -801], R0
+#     65 -> main$forCond
+  75  JMP 65
+# main$forCont:
+  76  MOV R0, 800
+  77  MOV R3, 9
+  78  PUSH R3
+  79  PUSH R0
+  80  PUSH R1
+#     4 -> binary_search$entry
+  81  CALL 4
+  82  ADD SP, 3
+  83  PUTNUM R0
+  84  MOV R3, 800
+  85  MOV R0, 1400
+  86  PUSH R0
+  87  PUSH R3
+  88  PUSH R1
+#     4 -> binary_search$entry
+  89  CALL 4
+  90  ADD SP, 3
+  91  PUTNUM R0
+  92  MOV R3, 800
+  93  MOV R0, 1800
+  94  PUSH R0
+  95  PUSH R3
+  96  PUSH R1
+#     4 -> binary_search$entry
+  97  CALL 4
+  98  ADD SP, 3
+  99  PUTNUM R0
+ 100  MOV R0, 800
+ 101  MOV R3, 3000
+ 102  PUSH R3
+ 103  PUSH R0
+ 104  PUSH R1
+#     4 -> binary_search$entry
+ 105  CALL 4
+ 106  ADD SP, 3
+ 107  PUTNUM R0
+ 108  MOV R0, 0
+#     main epilogue start
+ 109  MOV R1, [BP + -802]
+ 110  MOV R3, [BP + -803]
+ 111  MOV SP, BP
+ 112  POP BP
+ 113  RET
+# ======= FUNCTION main END =======
+#     
+.debug_source
+int binary_search(int* arr, int length, int n) {
+    int lo = 0;
+    int hi = length;
+    while (lo < hi) {
+        int ptr = (lo + hi) / 2;
+        if (arr[ptr] < n) {
+            lo = ptr + 1;
+        } else if (arr[ptr] > n) {
+            hi = ptr;
+        } else {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int main() {
+    int arr[800];
+    for (int i = 0; i < 800; ++i) {
+        arr[i] = i * 3;
+    }
+
+    printnum(binary_search(arr, 800, 9));
+    printnum(binary_search(arr, 800, 1400));
+    printnum(binary_search(arr, 800, 1800));
+    printnum(binary_search(arr, 800, 3000));
+
+    return 0;
+}
