@@ -39,11 +39,11 @@ TypedValue ExpressionEvaluator::EvaluateTypeAndLocation(const expr::Location& lo
         [&](const PrimitiveType& t) -> TypedValue {
             uint64_t raw_value = GetRawValue(native, loc);
             if (t.type == PrimitiveType::Type::SIGNED) {
-                return IntegerValue{*reinterpret_cast<int64_t*>(&raw_value), loc};
+                return IntegerValue{utils::reinterpret_safe<int64_t>(raw_value), loc};
             } else if (t.type == PrimitiveType::Type::FLOAT) {
-                return FloatValue{*reinterpret_cast<double*>(&raw_value), loc};
+                return FloatValue{utils::reinterpret_safe<double>(raw_value), loc};
             } else if (t.type == PrimitiveType::Type::CHAR) {
-                return CharValue{*reinterpret_cast<char*>(&raw_value), loc};
+                return CharValue{utils::reinterpret_safe<char>(raw_value), loc};
             } else {
                 NOT_IMPLEMENTED;
             }

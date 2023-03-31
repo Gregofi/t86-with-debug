@@ -5,6 +5,7 @@
 #include "program/label.h"
 #include "instruction.h"
 #include "cpu.h"
+#include "common/helpers.h"
 #include "cpu/reservation_station.h"
 #include "cpu/register.h"
 
@@ -527,7 +528,7 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
         assert(memWriteIds.size() == 1);
         entry.specifyWriteAddress(memWriteIds[0], operands[1].getValue() - 1);
         double opVal = operands[0].getFloatValue();
-        entry.setWriteValue(memWriteIds[0], *reinterpret_cast<int64_t*>(&opVal));
+        entry.setWriteValue(memWriteIds[0], utils::reinterpret_safe<int64_t>(opVal));
         entry.setStackPointer(operands[1].getValue() - 1);
     }
 
@@ -560,7 +561,7 @@ INS_NAME::INS_NAME(Operand address) : ConditionalJumpInstruction([](Alu::Flags f
         const auto& operands = entry.operands();
         assert(operands.size() == 2);
         int64_t opValue = operands[0].getValue();
-        entry.setFloatRegister(fReg_, *reinterpret_cast<double*>(&opValue));
+        entry.setFloatRegister(fReg_, utils::reinterpret_safe<double>(opValue));
         entry.setStackPointer(operands[1].getValue() + 1);
     }
 
