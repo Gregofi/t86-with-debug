@@ -70,7 +70,11 @@ MOV | `R1`, `R2` | `R1 = R2`
 | | `[R1 + i1 + R2 * i2]`, `R3` | `[R1 + i1 + R2 * i2] = R3`
 | | `[R1 + i1 + R2 * i2]`, `F1` | `[R1 + i1 + R2 * i2] = F1` (bit copy)
 | | `[R1 + i1 + R2 * i2]`, `i3` | `[R1 + i1 + R2 * i2] = i3`
-| NOP | | Do nothing |
+LEA | `R0`, `[R1 + i]` | `R0 = R1 + i`
+| | `R0`, `[R1 + R2]` | `R0 = R1 + R2`
+| | `R0`, `[R1 + R2 * i0]` | `R0 = R1 + R2 * i0`
+| | `R0`, `[R1 + i + R2]` | `R0 = R1 + i + R2`
+| | `R0`, `[R1 + i1 + R2 * i2]` | `R0 = R1 + i1 + R2 * i2`
 
 ### Arithmetics
 
@@ -305,3 +309,4 @@ DBG | debug function | executes debug function
 BREAK | | executes handle function
 BKPT | | used for a breakpoint by debuggers
 HALT | | halts the CPU
+NOP | | Do nothing
