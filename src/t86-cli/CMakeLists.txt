@@ -4,9 +4,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(PROJECT_NAME "t86-cli")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOG_LEVEL=4")
-set(CMAKE_CXX_FLAGS_RELEASE "-Wall -DLOG_LEVEL=1")
-
 project(${PROJECT_NAME})
 add_executable(t86-cli main.cpp)
 target_link_libraries(t86-cli t86 common fmt::fmt argparse::argparse)
