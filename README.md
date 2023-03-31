@@ -5,6 +5,9 @@ A repository which houses the T86 Virtual Machine and the debugger. Although the
 strictly tied to the T86 architecture, it is the only one supported as of now.
 
 ## Build
+The repository works on Ubuntu 22.04 LTS, Arch Linux and latest MacOS (with Apple Clang).
+If you use GCC, at least version 11 is required.
+
 To build the T86 CLI and Debugger CLI:
 ```
 mkdir src/build
