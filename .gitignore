@@ -3,3 +3,4 @@ build
 .cache
 tests/diff
 tests/out
+doxy/
