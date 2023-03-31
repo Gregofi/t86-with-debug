@@ -52,6 +52,8 @@ commands:
 - continue = Continue execution.
 - istep = Execute one instruction.
 - step = Execute one source line.
+- inext = Step over call instructions.
+- next = Step over function calls.
 - finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.

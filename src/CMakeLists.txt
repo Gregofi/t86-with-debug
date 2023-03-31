@@ -3,6 +3,7 @@ project(t86)
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(default_build_type "Release")
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOG_LEVEL=4")
 set(CMAKE_CXX_FLAGS_SANITIZER "-Wall -g -DLOG_LEVEL=4 -fsanitize=address")
 set(CMAKE_CXX_FLAGS_RELEASE "-Wall -DLOG_LEVEL=2 -O2")
@@ -18,7 +19,9 @@ add_subdirectory(dbg-cli)
 add_subdirectory(t86-parser)
 
 # Some stupid cmake bullsh*t to silence FetchContent warnings
-cmake_policy(SET CMP0135 NEW)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 include(FetchContent)
 
 # Libraries ----------
