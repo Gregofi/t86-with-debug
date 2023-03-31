@@ -1,5 +1,6 @@
 #include "operand.h"
 #include "../cpu/memory.h"
+#include "helpers.h"
 
 #include <cassert>
 
@@ -46,7 +47,7 @@ namespace tiny::t86 {
         assert(isValue() || isFloatValue());
         if (isFloatValue()) {
             double fVal = getFloatValue();
-            return *reinterpret_cast<int64_t*>(&fVal);
+            return utils::reinterpret_safe<int64_t>(fVal);
         }
         return std::get<int64_t>(value_);
     }
@@ -55,7 +56,7 @@ namespace tiny::t86 {
         assert(isFloatValue() || isValue());
         if (isValue()) {
             int64_t val = getValue();
-            return *reinterpret_cast<double*>(&val);
+            return utils::reinterpret_safe<double>(val);
         }
         return std::get<double>(value_);
     }
