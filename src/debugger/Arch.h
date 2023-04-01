@@ -54,6 +54,15 @@ public:
         return ins.current_machine == Machine::T86;
     }
 
+    static std::string GetIPRegister() {
+        auto &ins = GetInstance();
+        if (ins.current_machine == Machine::T86) {
+            return "IP";
+        } else {
+            UNREACHABLE;
+        }
+    }
+
     static Machine GetMachine() {
         auto &ins = GetInstance();
         return ins.current_machine;

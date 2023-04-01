@@ -26,7 +26,7 @@ For example the `step` "executes" one line of the source code, whereas
 
 Unlike GDB or LLDB, you **need** to run the program before setting breakpoints,
 but when the program is run, it immediately stops before executing the
-first instruction.
+first instruction (behaving like GDB's `start` command).
 
 ## GDB to DBG map
 
