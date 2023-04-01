@@ -49,7 +49,10 @@ Some of the commands work with or without subcommands.
 
 commands:
 - help = Display help message about subcommands.
+- run = Run the program.
+- attach <port> = Attach to an already running VM.
 - continue = Continue execution.
+- breakpoint = Stop the program at various points.
 - istep = Execute one instruction.
 - step = Execute one source line.
 - inext = Step over call instructions.
@@ -57,11 +60,8 @@ commands:
 - finish = Leave current function.
 - disassemble = Disassemble the underlying native code.
 - assemble = Rewrite the underlying native code.
-- breakpoint = Stop the program at various points.
 - register = Read and write to registers.
-- run = Run the program.
 - watchpoint = Watch for writes to values in memory.
-- attach <port> = Attach to an already running VM.
 - frame = Print information about current function and variables.
 - expression = Evaluate the source language expression and print result.
 - source = Print the source code that is being debugged.
