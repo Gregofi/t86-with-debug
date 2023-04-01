@@ -23,8 +23,8 @@ was installed), while the t86-cli is at `t86-cli/t86-cli`.
 
 ## Usage
 
-Please read the `src/t86.md` for information about running programs on the T86 Virtual machine.
-For debugging T86 programs, see `src/debugging.md`.
+Please read the `docs/t86.md` for information about running programs on the T86 Virtual machine.
+For debugging T86 programs, see `docs/debugging.md`.
 
 ## Contributing
 Use the `-DCMAKE_BUILD_TYPE=Debug` for debug build. To run integration tests,
