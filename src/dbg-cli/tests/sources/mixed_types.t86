@@ -381,7 +381,7 @@ DIE_structured_type: {
     ATTR_size: 21,
     ATTR_members: {
         0: {3: name},
-        21: {0: age},
+        20: {0: age},
     },
     ATTR_id: 4,
 },

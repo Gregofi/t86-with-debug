@@ -1,0 +1,16 @@
+r
+b s 45
+c
+p db
+p db.array[0]
+p db.array[3]
+p db.array[2].name
+p db.array[2].name[3]
+p db.array[2].age
+p $5 + 5
+p db.array + 1
+p $15
+p $-1
+p db.array[10]
+p db.array[0].age = 55
+p db.array[0].age
