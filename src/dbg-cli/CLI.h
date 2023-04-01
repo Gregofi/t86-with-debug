@@ -118,6 +118,8 @@ and above it.
 - from <b> [<n>] = Dissasembles <n> instructions starting at <b>.
                    If <n> is not specified then disassembles the rest
                    of the executable starting from <b>.
+- function <name> = Disassemble function body, needs debugging information
+                    about the function beginning and ending address.
 )";
     static constexpr const char* REGISTER_USAGE =
 R"(register <subcommands> [parameter [parameter...]]
@@ -729,6 +731,8 @@ Most often, the correct address will be one below it.)";
             auto text = process.ReadText(fun_addr->first,
                     fun_addr->second - fun_addr->first);
             PrintText(fun_addr->first, text);
+        } else {
+            fmt::print("{}", DISASSEMBLE_USAGE);
         }
     }
 
