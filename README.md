@@ -35,7 +35,7 @@ corresponding executables, e.g., `./scr/scripts/run_dbg_tests.h
 For information about benchmarks see `src/benchmarks/README.md`.
 
 ## Credits
-The vast majority of the work on the T86 Virtual machine and the design of the
+The vast majority of the work on the T86 Virtual machine (`/src/t86`) and the design of the
 architecture was made by Ivo Strejc as part of his
 [thesis](http://hdl.handle.net/10467/94644). We just added the debugging
 interface to it.
