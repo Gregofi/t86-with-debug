@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(t86)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
 set(default_build_type "Release")
 set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -DLOG_LEVEL=4")
@@ -52,6 +53,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(argparse)
 # Libraries END ------------
 
-# # Testing
+# benchmarks
+add_subdirectory(benchmarks)
+
+# testing
 enable_testing()
 add_subdirectory(tests)
