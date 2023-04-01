@@ -1,0 +1,423 @@
+.text
+#     
+# ======= FUNCTION entry START =======
+# entry$entry:
+   0  PUSH BP
+   1  MOV BP, SP
+#     entry prologue end
+#     181 -> main$entry
+   2  CALL 181
+   3  HALT
+# ======= FUNCTION entry END =======
+#     
+#     
+# ======= FUNCTION random START =======
+# random$entry:
+   4  PUSH BP
+   5  MOV BP, SP
+   6  SUB SP, 5
+   7  MOV [BP + -4], R2
+   8  MOV [BP + -5], R3
+#     random prologue end
+#     [BP + 2] -> arg #0
+   9  MOV R0, [BP + 2]
+#     [BP + -1] -> %arg_seed
+  10  MOV [BP + -1], R0
+#     [BP + -1] -> %arg_seed
+  11  MOV R0, [BP + -1]
+#     [BP + -2] -> %local_result
+  12  MOV [BP + -2], R0
+#     [BP + -3] -> %local_i
+  13  MOV [BP + -3], 0
+# random$forCond:
+#     [BP + -3] -> %local_i
+  14  MOV R0, [BP + -3]
+  15  CMP R0, 12
+#     32 -> random$forCont
+  16  JGE 32
+# random$forBody:
+#     [BP + -2] -> %local_result
+  17  MOV R2, [BP + -2]
+#     [BP + -1] -> %arg_seed
+  18  MOV R0, [BP + -1]
+#     [BP + -3] -> %local_i
+  19  MOV R3, [BP + -3]
+  20  IMUL R0, R3
+  21  ADD R2, R0
+  22  ADD R2, 1
+  23  MOV R0, R2
+  24  IDIV R0, 300
+  25  IMUL R0, 300
+  26  SUB R2, R0
+#     [BP + -2] -> %local_result
+  27  MOV [BP + -2], R2
+# random$forInc:
+#     [BP + -3] -> %local_i
+  28  MOV R0, [BP + -3]
+  29  ADD R0, 1
+#     [BP + -3] -> %local_i
+  30  MOV [BP + -3], R0
+#     14 -> random$forCond
+  31  JMP 14
+# random$forCont:
+#     [BP + -2] -> %local_result
+  32  MOV R0, [BP + -2]
+#     random epilogue start
+  33  MOV R2, [BP + -4]
+  34  MOV R3, [BP + -5]
+  35  MOV SP, BP
+  36  POP BP
+  37  RET
+# ======= FUNCTION random END =======
+#     
+#     
+# ======= FUNCTION swap START =======
+# swap$entry:
+  38  PUSH BP
+  39  MOV BP, SP
+  40  SUB SP, 8
+  41  MOV [BP + -7], R1
+  42  MOV [BP + -8], R2
+  43  MOV [BP + -6], R3
+#     swap prologue end
+#     [BP + 2] -> arg #0
+  44  MOV R2, [BP + 2]
+#     [BP + 3] -> arg #1
+  45  MOV R1, [BP + 3]
+#     [BP + 4] -> arg #2
+  46  MOV R3, [BP + 4]
+#     [BP + -1] -> %arg_arr
+  47  MOV [BP + -1], R2
+#     [BP + -2] -> %arg_i
+  48  MOV [BP + -2], R1
+#     [BP + -3] -> %arg_j
+  49  MOV [BP + -3], R3
+#     [BP + -1] -> %arg_arr
+  50  MOV R2, [BP + -1]
+#     [BP + -2] -> %arg_i
+  51  MOV R1, [BP + -2]
+  52  MOV R1, [R2 + R1 * 1]
+#     [BP + -4] -> %local_temp
+  53  MOV [BP + -4], R1
+#     [BP + -1] -> %arg_arr
+  54  MOV R3, [BP + -1]
+#     [BP + -2] -> %arg_i
+  55  MOV R1, [BP + -2]
+  56  MOV [BP + -5], R1
+#     [BP + -1] -> %arg_arr
+  57  MOV R1, [BP + -1]
+#     [BP + -3] -> %arg_j
+  58  MOV R2, [BP + -3]
+  59  MOV R2, [R1 + R2 * 1]
+  60  MOV R1, [BP + -5]
+  61  MOV [R3 + R1 * 1], R2
+#     [BP + -1] -> %arg_arr
+  62  MOV R2, [BP + -1]
+#     [BP + -3] -> %arg_j
+  63  MOV R3, [BP + -3]
+#     [BP + -4] -> %local_temp
+  64  MOV R1, [BP + -4]
+  65  MOV [R2 + R3 * 1], R1
+#     swap epilogue start
+  66  MOV R1, [BP + -7]
+  67  MOV R2, [BP + -8]
+  68  MOV R3, [BP + -6]
+  69  MOV SP, BP
+  70  POP BP
+  71  RET
+# ======= FUNCTION swap END =======
+#     
+#     
+# ======= FUNCTION partition START =======
+# partition$entry:
+  72  PUSH BP
+  73  MOV BP, SP
+  74  SUB SP, 8
+  75  MOV [BP + -7], R1
+  76  MOV [BP + -8], R2
+#     partition prologue end
+#     [BP + 2] -> arg #0
+  77  MOV R0, [BP + 2]
+#     [BP + 3] -> arg #1
+  78  MOV R1, [BP + 3]
+#     [BP + 4] -> arg #2
+  79  MOV R2, [BP + 4]
+#     [BP + -1] -> %arg_arr
+  80  MOV [BP + -1], R0
+#     [BP + -2] -> %arg_lo
+  81  MOV [BP + -2], R1
+#     [BP + -3] -> %arg_hi
+  82  MOV [BP + -3], R2
+#     [BP + -1] -> %arg_arr
+  83  MOV R0, [BP + -1]
+#     [BP + -3] -> %arg_hi
+  84  MOV R1, [BP + -3]
+  85  MOV R0, [R0 + R1 * 1]
+#     [BP + -4] -> %local_pivot
+  86  MOV [BP + -4], R0
+#     [BP + -2] -> %arg_lo
+  87  MOV R0, [BP + -2]
+#     [BP + -5] -> %local_i
+  88  MOV [BP + -5], R0
+#     [BP + -2] -> %arg_lo
+  89  MOV R0, [BP + -2]
+#     [BP + -6] -> %local_j
+  90  MOV [BP + -6], R0
+# partition$forCond:
+#     [BP + -6] -> %local_j
+  91  MOV R0, [BP + -6]
+#     [BP + -3] -> %arg_hi
+  92  MOV R1, [BP + -3]
+  93  CMP R0, R1
+#     117 -> partition$forCont
+  94  JGE 117
+# partition$forBody:
+#     [BP + -1] -> %arg_arr
+  95  MOV R0, [BP + -1]
+#     [BP + -6] -> %local_j
+  96  MOV R1, [BP + -6]
+  97  MOV R1, [R0 + R1 * 1]
+#     [BP + -4] -> %local_pivot
+  98  MOV R0, [BP + -4]
+  99  CMP R1, R0
+#     116 -> partition$ifFalse
+ 100  JGE 116
+# partition$ifTrue:
+#     [BP + -1] -> %arg_arr
+ 101  MOV R2, [BP + -1]
+#     [BP + -5] -> %local_i
+ 102  MOV R1, [BP + -5]
+ 103  MOV R0, R1
+ 104  ADD R0, 1
+#     [BP + -5] -> %local_i
+ 105  MOV [BP + -5], R0
+#     [BP + -6] -> %local_j
+ 106  MOV R0, [BP + -6]
+ 107  PUSH R0
+ 108  PUSH R1
+ 109  PUSH R2
+#     38 -> swap$entry
+ 110  CALL 38
+ 111  ADD SP, 3
+# partition$ifCont:
+# partition$forInc:
+#     [BP + -6] -> %local_j
+ 112  MOV R0, [BP + -6]
+ 113  ADD R0, 1
+#     [BP + -6] -> %local_j
+ 114  MOV [BP + -6], R0
+#     91 -> partition$forCond
+ 115  JMP 91
+# partition$ifFalse:
+#     112 -> partition$ifCont
+ 116  JMP 112
+# partition$forCont:
+#     [BP + -1] -> %arg_arr
+ 117  MOV R2, [BP + -1]
+#     [BP + -5] -> %local_i
+ 118  MOV R0, [BP + -5]
+#     [BP + -3] -> %arg_hi
+ 119  MOV R1, [BP + -3]
+ 120  PUSH R1
+ 121  PUSH R0
+ 122  PUSH R2
+#     38 -> swap$entry
+ 123  CALL 38
+ 124  ADD SP, 3
+#     [BP + -5] -> %local_i
+ 125  MOV R0, [BP + -5]
+#     partition epilogue start
+ 126  MOV R1, [BP + -7]
+ 127  MOV R2, [BP + -8]
+ 128  MOV SP, BP
+ 129  POP BP
+ 130  RET
+# ======= FUNCTION partition END =======
+#     
+#     
+# ======= FUNCTION quicksort START =======
+# quicksort$entry:
+ 131  PUSH BP
+ 132  MOV BP, SP
+ 133  SUB SP, 7
+ 134  MOV [BP + -5], R1
+ 135  MOV [BP + -6], R2
+ 136  MOV [BP + -7], R3
+#     quicksort prologue end
+#     [BP + 2] -> arg #0
+ 137  MOV R1, [BP + 2]
+#     [BP + 3] -> arg #1
+ 138  MOV R2, [BP + 3]
+#     [BP + 4] -> arg #2
+ 139  MOV R3, [BP + 4]
+#     [BP + -1] -> %arg_arr
+ 140  MOV [BP + -1], R1
+#     [BP + -2] -> %arg_lo
+ 141  MOV [BP + -2], R2
+#     [BP + -3] -> %arg_hi
+ 142  MOV [BP + -3], R3
+#     [BP + -2] -> %arg_lo
+ 143  MOV R2, [BP + -2]
+#     [BP + -3] -> %arg_hi
+ 144  MOV R1, [BP + -3]
+ 145  CMP R2, R1
+#     180 -> quicksort$ifFalse
+ 146  JGE 180
+# quicksort$ifTrue:
+#     [BP + -1] -> %arg_arr
+ 147  MOV R1, [BP + -1]
+#     [BP + -2] -> %arg_lo
+ 148  MOV R0, [BP + -2]
+#     [BP + -3] -> %arg_hi
+ 149  MOV R2, [BP + -3]
+ 150  PUSH R2
+ 151  PUSH R0
+ 152  PUSH R1
+#     72 -> partition$entry
+ 153  CALL 72
+ 154  ADD SP, 3
+#     [BP + -4] -> %local_r
+ 155  MOV [BP + -4], R0
+#     [BP + -1] -> %arg_arr
+ 156  MOV R1, [BP + -1]
+#     [BP + -2] -> %arg_lo
+ 157  MOV R2, [BP + -2]
+#     [BP + -4] -> %local_r
+ 158  MOV R0, [BP + -4]
+ 159  SUB R0, 1
+ 160  PUSH R0
+ 161  PUSH R2
+ 162  PUSH R1
+#     131 -> quicksort$entry
+ 163  CALL 131
+ 164  ADD SP, 3
+#     [BP + -1] -> %arg_arr
+ 165  MOV R1, [BP + -1]
+#     [BP + -4] -> %local_r
+ 166  MOV R0, [BP + -4]
+ 167  ADD R0, 1
+#     [BP + -3] -> %arg_hi
+ 168  MOV R2, [BP + -3]
+ 169  PUSH R2
+ 170  PUSH R0
+ 171  PUSH R1
+#     131 -> quicksort$entry
+ 172  CALL 131
+ 173  ADD SP, 3
+# quicksort$ifCont:
+#     quicksort epilogue start
+ 174  MOV R1, [BP + -5]
+ 175  MOV R2, [BP + -6]
+ 176  MOV R3, [BP + -7]
+ 177  MOV SP, BP
+ 178  POP BP
+ 179  RET
+# quicksort$ifFalse:
+#     174 -> quicksort$ifCont
+ 180  JMP 174
+# ======= FUNCTION quicksort END =======
+#     
+#     
+# ======= FUNCTION main START =======
+# main$entry:
+ 181  PUSH BP
+ 182  MOV BP, SP
+ 183  SUB SP, 503
+ 184  MOV [BP + -502], R1
+ 185  MOV [BP + -503], R2
+#     main prologue end
+#     [BP + -500] -> %local_arr
+ 186  LEA R2, [BP + -500]
+#     [BP + -501] -> %local_i
+ 187  MOV [BP + -501], 0
+# main$forCond:
+#     [BP + -501] -> %local_i
+ 188  MOV R0, [BP + -501]
+ 189  CMP R0, 500
+#     201 -> main$forCont
+ 190  JGE 201
+# main$forBody:
+#     [BP + -501] -> %local_i
+ 191  MOV R1, [BP + -501]
+#     [BP + -501] -> %local_i
+ 192  MOV R0, [BP + -501]
+ 193  PUSH R0
+#     4 -> random$entry
+ 194  CALL 4
+ 195  ADD SP, 1
+ 196  MOV [R2 + R1 * 1], R0
+# main$forInc:
+#     [BP + -501] -> %local_i
+ 197  MOV R0, [BP + -501]
+ 198  ADD R0, 1
+#     [BP + -501] -> %local_i
+ 199  MOV [BP + -501], R0
+#     188 -> main$forCond
+ 200  JMP 188
+# main$forCont:
+ 201  MOV R0, 0
+ 202  MOV R1, 500
+ 203  SUB R1, 1
+ 204  PUSH R1
+ 205  PUSH R0
+ 206  PUSH R2
+#     131 -> quicksort$entry
+ 207  CALL 131
+ 208  ADD SP, 3
+ 209  MOV R0, 0
+#     main epilogue start
+ 210  MOV R1, [BP + -502]
+ 211  MOV R2, [BP + -503]
+ 212  MOV SP, BP
+ 213  POP BP
+ 214  RET
+# ======= FUNCTION main END =======
+#     
+.debug_source
+// Pseudo random number
+int random(int seed) {
+    int result = seed;
+    for (int i = 0; i < 12; ++i) {
+        result = (result + seed * i + 1) % 300;
+    }
+    return result;
+}
+
+void swap(int* arr, int i, int j) {
+    int temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+}
+
+// Lomuto variant
+int partition(int* arr, int lo, int hi) {
+    int pivot = arr[hi];
+    int i = lo;
+    for (int j = lo; j < hi; j++) {
+        if (arr[j] < pivot) {
+            swap(arr, i++, j);
+        }
+    }
+    swap(arr, i, hi);
+    return i;
+}
+
+void quicksort(int* arr, int lo, int hi) {
+    if (lo < hi) {
+        int r = partition(arr, lo, hi);
+        quicksort(arr, lo, r - 1);
+        quicksort(arr, r + 1, hi);
+    }
+}
+
+int main() {
+    int arr[500];
+    for (int i = 0; i < 500; ++i) {
+        arr[i] = random(i);
+    }
+
+    quicksort(arr, 0, 500 - 1);
+
+    return 0;
+}
+
