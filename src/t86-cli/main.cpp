@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
         .help("input file containing t86 assembly");
 
     args.add_argument("--debug")
-        .help("open debugging port")
+        .help("open debugging port at 9110")
         .default_value(false)
         .implicit_value(true);
 

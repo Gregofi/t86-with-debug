@@ -284,7 +284,7 @@ void Native::SetAllWatchpoints(std::map<uint64_t, Watchpoint> watchpoints) {
 
 uint64_t Native::GetIP() {
     // TODO: Not architecture independent (take IP name from Arch singleton)
-    return GetRegister("IP"); 
+    return GetRegister(Arch::GetIPRegister()); 
 }
 
 void Native::SetMemory(uint64_t address, const std::vector<int64_t>& values) {

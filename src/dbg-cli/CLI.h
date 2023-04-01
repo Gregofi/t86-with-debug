@@ -1166,19 +1166,17 @@ private:
         }
         auto debuggee = Native::Initialize(*port_o);
         process = Native(std::move(debuggee));
+        if (fname) {
+            std::ifstream file(*fname);
+            if (!file) {
+                Error("Unable to open file '{}'\n", *fname);
+            }
+            source = ParseDebugInfo(file);
+        }
     }
 
-    std::pair<Source, tiny::t86::Program> ParseProgram(const std::string& path) {
-        std::ifstream file(path);
-        if (!file) {
-            Error("Unable to open file '{}'\n", *fname);
-        }
-        Parser parser(file);
-        auto program = parser.Parse();
-        // Parse debug info
+    Source ParseDebugInfo(std::ifstream& file) {
         Source source;
-        file.clear();
-        file.seekg(0);
         if (file) {
             dbg::Parser p(file);
             auto debug_info = p.Parse();
@@ -1195,6 +1193,20 @@ private:
                 source.RegisterDebuggingInformation(std::move(*debug_info.top_die));
             }
         }
+        return source;
+    }
+
+    std::pair<Source, tiny::t86::Program> ParseProgram(const std::string& path) {
+        std::ifstream file(path);
+        if (!file) {
+            Error("Unable to open file '{}'\n", *fname);
+        }
+        Parser parser(file);
+        auto program = parser.Parse();
+        // Parse debug info
+        file.clear();
+        file.seekg(0);
+        auto source = ParseDebugInfo(file);
         return {std::move(source), std::move(program)};
     }
 
