@@ -3,6 +3,8 @@
 #include <cassert>
 
 #include "../cpu.h"
+#include "../execution_error.h"
+#include "fmt/core.h"
 
 namespace tiny::t86 {
 
@@ -65,6 +67,14 @@ namespace tiny::t86 {
     }
 
     void RegisterAllocationTable::rename(Register from, PhysicalRegister to) {
+        if (from.index() >= cpu_.registersCount()
+                && from.index() != Register::ProgramCounter()
+                && from.index() != Register::StackPointer()
+                && from.index() != Register::StackBasePointer()
+                && from.index() != Register::Flags()) {
+            throw T86ExecutionError(fmt::format(
+                "Register out of range ({})", from.index()));
+        }
         if (auto it = table_.find(from); it != table_.end()) {
             cpu_.unsubscribeRegisterRead(it->second);
         }
@@ -73,6 +83,10 @@ namespace tiny::t86 {
     }
 
     void RegisterAllocationTable::rename(FloatRegister from, PhysicalRegister to) {
+        if (from.index() >= cpu_.floatRegistersCount()) {
+            throw T86ExecutionError(fmt::format(
+                "Float register out of range ({})", from.index()));
+        }
         if (auto it = table_.find(from); it != table_.end()) {
             cpu_.unsubscribeRegisterRead(it->second);
         }

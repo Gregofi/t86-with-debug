@@ -25,7 +25,7 @@ void OS::DispatchInterrupt(int n) {
     }
 }
 
-void OS::Run(Program program) {
+bool OS::Run(Program program) {
     cpu.start(std::move(program));
     DebuggerMessage(Debug::BreakReason::Begin);
     log_info("Starting execution\n");
@@ -35,12 +35,12 @@ void OS::Run(Program program) {
         } catch (const std::exception& e) {
             log_error("The CPU throwed an exception! {}", e.what());
             DebuggerMessage(Debug::BreakReason::CpuError);
-            return;
+            return false;
         }
         if (cpu.halted()) {
             log_info("Halt");
             DebuggerMessage(Debug::BreakReason::Halt);
-            return;
+            return true;
         }
 
         if (int n = cpu.interrupted(); n > 0) {
@@ -50,7 +50,7 @@ void OS::Run(Program program) {
 
         if (stop) {
             log_info("OS: stop is set, ending");
-            return;
+            return true;
         }
     }
 }
