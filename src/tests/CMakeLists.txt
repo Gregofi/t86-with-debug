@@ -1,3 +1,4 @@
+set(INSTALL_GTEST 0)
 # GTEST
 FetchContent_Declare(
   googletest
@@ -33,3 +34,4 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(unittests)
+
