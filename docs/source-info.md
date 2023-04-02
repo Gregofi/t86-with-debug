@@ -14,46 +14,50 @@ int main() {
     return a;
 }
 ```
-which compiles into
+which could compile into (using a very primitive compiler)
 ```
 .text
 0 CALL 2
 1 HALT
 2 PUSH BP
-3 MOV BP,SP
+3 MOV BP, SP
 4 NOP
-5 SUB SP,1
-6 SUB SP,1
-7 MOV R0,5
-8 MOV [BP + -2],R0
-9 LEA R1,[BP + -2]
-10 MOV [BP + -1],R1
-11 MOV R2,4
-12 MOV R3,[BP + -1]
-13 MOV [R3],R2
-14 MOV R4,[BP + -2]
-15 MOV R5,R4
+5 SUB SP, 1
+6 SUB SP, 1
+7 MOV R0, 5
+8 MOV [BP - 2], R0
+9 LEA R1, [BP - 2]
+10 MOV [BP - 1], R1
+11 MOV R2, 4
+12 MOV R3, [BP - 1]
+13 MOV [R3], R2
+14 MOV R4, [BP - 2]
+15 MOV R5, R4
 16 JMP 17
 17 NOP
-18 ADD SP,2
+18 ADD SP, 2
 19 POP BP
 20 RET
 ```
 
-The mapping would be included in another section, namely `.debug_line` and could look like this
+The mapping would be included in section `.debug_line` and could look like this
 ```
 .debug_line
-0: 7
+0: 2
 1: 7
 2: 9
 3: 11
 4: 14
-5: 18
+5: 20
 ```
 
-Notice that the first point of the function is considered at the point after prologue and the last point
-of the function is before epilogue. As a compiler designer, you can make the decision yourself if a breakpoint
-on a function should break before or after prologue/epilogue.
+Notice that the first point of the function is considered at the beginning of
+prologue and the last point of the function is after epilogue. As a compiler
+designer, you can make the decision yourself if a breakpoint on a function
+should break before or after prologue/epilogue. The mapping begins from zero!
+The line `int main() {` is considered as line `0`. The debugger however works
+with them as you would expect, so a breakpoint on line `1` sets it on line `int
+main() {`.
 
 The lines not need be continuous. For example, you can have mapping like this
 ```
@@ -85,105 +89,148 @@ various incidents happened.
 ## Metadata
 The debugger requires various metadata to properly print identifiers. For example the code
 ```c
-struct coord {
-    int x;
-    int y;
-};
+void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
 
 int main() {
-    double d = 3.5;
-    
-    int x = 3;
-    int y = 1;
-    
-    struct coord s;
-    s.x = x;
-    s.y = y;
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
+    print(a);
+    print(b);
 }
 ```
-When using `expression d`, you would expect that `3.5` is printed. To get the value,
-the debugger needs to know where it is stored. Supported locations are either memory
-or register. It also needs to know the type of the variable and its scope.
-Here is an example of debugging information for this program:
+When using `expression *x`, you would expect that the `x` is interpreted as a
+pointer and is properly dereferenced. For this, the debugger needs to know the
+type of the variable, and its location, so that it might get its value. The
+line below shows how a source information about this program should look like:
 
 ```
-.debug_info
-DIE_primitive_type: {
-ATTR_name: double,
-ATTR_size: 1,
-},
-
-DIE_primitive_type: {
-ATTR_name: int,
-ATTR_size: 1,
-},
-
-DIE_structured_type: {
-ATTR_name: coord,
-ATTR_size: 2,
-ATTR_members: {
-    0:int,
-    1:int,
-  }
-},
-
-DIE_function: {
-  ATTR_name: main,
-  ATTR_begin_addr: 0,
-  ATTR_end_addr: 8,
-  DIE_scope: {
-    ATTR_begin_addr: 0,
-    ATTR_end_addr: 8, 
-    DIE_variable: {
-      ATTR_name: d,
-      ATTR_type: double,
-      ATTR_location: `BASE_REG_OFFSET -2`,
-    },
-    DIE_variable: {
-      ATTR_name: x,
-      ATTR_type: int,
-      ATTR_location: [PUSH BP; PUSH -3; ADD],
-    }
-    DIE_variable: {
-      ATTR_name: y,
-      ATTR_type: int,
-      ATTR_location: `BASE_REG_OFFSET -2`,
-    }
-  }
-}
-
-
-.debug_loc
-5: 0
-6: 0
-7: 2
-8: 2
-9: 3
-10: 4
-11: 4
-12: 4
-13: 6
-14: 8
-
 .text
-0 movsd   F0, 3.5
-1 movsd   [BP-2], F0
-2 mov     [BP-3], 3
-3 mov     [BP-4], 1
-4 mov     R0, [BP-3]
-5 mov     [BP-8], R0
-6 mov     R0, [BP-4]
-7 mov     [BP-7], R0
-8 HALT
+0       CALL    7            # main
+1       HALT
+# swap(int*, int*):
+2       MOV     R0, [R2]
+3       MOV     R1, [R3]
+4       MOV     [R2], R1
+5       MOV     [R3], R0
+6       RET
+# main:
+7       MOV     [SP + -2], 3   # a
+8       MOV     [SP + -3], 6   # b
+9       LEA     R2, [SP + -2]
+10      LEA     R3, [SP + -3]
+11      CALL    2             # swap(int*, int*)
+12      MOV     R0, [SP + -2]
+13      PUTNUM  R0
+14      MOV     R1, [SP + -3]
+15      PUTNUM  R1
+16      XOR     R0, R0        # return 0
+17      RET
+
+.debug_line
+0: 2
+1: 2
+2: 3
+3: 5
+4: 6
+6: 7
+7: 7
+8: 8
+9: 9
+10: 12
+11: 14
+12: 16
+
+.debug_info
+DIE_compilation_unit: {
+DIE_primitive_type: {
+    ATTR_name: int,
+    ATTR_id: 0,
+    ATTR_size: 1,
+},
+DIE_pointer_type: {
+    ATTR_type: 1,
+    ATTR_size: 1,
+    ATTR_id: 1,
+},
+DIE_function: {
+    ATTR_name: main,
+    ATTR_begin_addr: 7,
+    ATTR_end_addr: 18,
+    DIE_scope: {
+        ATTR_begin_addr: 7,
+        ATTR_end_addr: 18,
+        DIE_variable: {
+            ATTR_name: a,
+            ATTR_type: 0,
+            ATTR_location: [PUSH SP; PUSH -2; ADD],
+        },
+        DIE_variable: {
+            ATTR_name: b,
+            ATTR_type: 0,
+            ATTR_location: [PUSH SP; PUSH -3; ADD],
+        }
+    }
+},
+DIE_function: {
+    ATTR_name: swap,
+    ATTR_begin_addr: 2,
+    ATTR_end_addr: 7,
+    DIE_scope: {
+        ATTR_begin_addr: 2,
+        ATTR_end_addr: 7,
+        DIE_variable: {
+            ATTR_name: x,
+            ATTR_type: 1,
+            ATTR_location: [PUSH R2],
+        },
+        DIE_variable: {
+            ATTR_name: y,
+            ATTR_type: 1,
+            ATTR_location: [PUSH R3],
+        },
+        DIE_variable: {
+            ATTR_name: tmp,
+            ATTR_type: 0,
+            ATTR_location: `PUSH R0`,
+        }
+    }
+}
+}
+
+.debug_source
+void swap(int* x, int* y) {
+    int tmp = *x;
+    *x = *y;
+    *y = tmp;
+}
+
+int main() {
+    int a = 3;
+    int b = 6;
+    swap(&a, &b);
+    print(a);
+    print(b);
+}
 ```
-It is under `.debug_info` section, the structure is similar to JSON.
-There are two main types of keys. One is prefixed with `DIE_`, representing
-debugging information entry. Those entries have various attributes, beginning with `ATTR_`
-prefix.
+It is under the `.debug_info` section, the structure is similar to JSON. There
+are two main types of keys. One is prefixed with `DIE_`, representing debugging
+information entry. Those entries have various attributes, beginning with
+`ATTR_` prefix. You don't have to generate all debugging information at once,
+but rather can do so incrementally. You can find more examples under
+`src/dbg-cli/tests/sources`.
 
 There are following types of DIEs:
 ### `DIE_compilation_unit`
-Should only appear at the top level. Represents the whole program.
+This must be a top-level DIE. It is the only one that cannot be a child of
+another DIE. It is a mandatory if you include this section.
+
+Allowed children: Everything but `DIE_scope`.
+
 ### `DIE_function`
 Represents a function.
 
@@ -216,7 +263,7 @@ Attributes:
 - `ATTR_name`: Name of the variable.
 - `ATTR_location`: Location of the variable, is a location expression, see the
   _Location expressions_ section.
-- `ATTR_type`: Id of the DIE that represents this variable type.
+- `ATTR_type`: ID of the DIE that represents this variable type.
 
 ### `DIE_primitive_type`
 Represents either an int, float or char type.
@@ -299,5 +346,7 @@ add `PUSH 1` and `ADD`, the result would be the value in register `R0` added to
 `PUSH R0`, if it is at `[R0]`, use `PUSH 0; PUSH R0; ADD`.
 
 The program itself is written either in backticks `` `BASE_REG_OFFSET -2` `` or
-in square brackets `[PUSH 0; PUSH R0; ADD]`. The backticks allow only zero or one
-instruction, the brackets allow arbitrary amount.
+in square brackets `[PUSH 0; PUSH R0; ADD]`. The backticks allow only zero or
+one instruction, the brackets allow arbitrary amount. If some variable has an
+unknown location, you can either provide an empty (`[]`) program or just leave
+the information out altogether.
