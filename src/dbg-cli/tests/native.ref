@@ -1,0 +1,88 @@
+Started process 'dbg-cli/tests/sources/no_debug_info.t86'
+Error: No debug info for line 5
+Error: No debug info for line 10000
+Error: Lines starts from one
+Error: Expected line or function name, '-5' is neither.
+Error: Expected line or function name, 'main' is neither.
+Error: No debug information about source code
+Breakpoint set on address 4: 'PUTCHAR R1'
+Breakpoint set on address 5: 'MOV R0, [BP + -1]'
+Breakpoint set on address 6: 'ADD R0, 1'
+Error: Breakpoint at 4 is already set!
+Process stopped, reason: Software breakpoint hit at address 4
+      2:  MOV R0, [BP + -1]
+      3:  MOV R1, [R0]
+@->   4:  PUTCHAR R1
+@     5:  MOV R0, [BP + -1]
+@     6:  ADD R0, 1
+Error: No breakpoint at address 1!
+Error: No breakpoint at address 1!
+Error: No breakpoint at address 1!
+Error: No breakpoint at address 5555!
+Error: Reading text at range 5555-5556, but text size is 12
+Error: Reading text at range 12-13, but text size is 12
+HProcess stopped, reason: Software breakpoint hit at address 5
+      3:  MOV R1, [R0]
+@     4:  PUTCHAR R1
+@->   5:  MOV R0, [BP + -1]
+@     6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+Process stopped, reason: Software breakpoint hit at address 6
+@     4:  PUTCHAR R1
+@     5:  MOV R0, [BP + -1]
+@->   6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+      8:  MOV R0, [BP + -1]
+@     5:  MOV R0, [BP + -1]
+@     6:  ADD R0, 1
+ ->   7:  MOV [BP + -1], R0
+      8:  MOV R0, [BP + -1]
+      9:  CMP R0, 13
+Breakpoint disabled at address 4
+Breakpoint removed from address 6
+addr: 4; disabled
+addr: 5; enabled
+eProcess stopped, reason: Software breakpoint hit at address 5
+      3:  MOV R1, [R0]
+@     4:  PUTCHAR R1
+@->   5:  MOV R0, [BP + -1]
+      6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+Breakpoint disabled at address 5
+llo, World!
+Process stopped, reason: The program finished execution
+Started process 'dbg-cli/tests/sources/no_debug_info.t86'
+addr: 4; disabled
+addr: 5; disabled
+Breakpoint enabled at address 5
+Error: Breakpoint at 4 is already set!
+HProcess stopped, reason: Software breakpoint hit at address 5
+      3:  MOV R1, [R0]
+@     4:  
+@->   5:  MOV R0, [BP + -1]
+      6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+@     4:  
+@     5:  MOV R0, [BP + -1]
+ ->   6:  ADD R0, 1
+      7:  MOV [BP + -1], R0
+      8:  MOV R0, [BP + -1]
+Error: No register 'R9' in target
+0
+@     5:  MOV R0, [BP + -1]
+      6:  ADD R0, 1
+ ->   7:  MOV [BP + -1], R0
+      8:  MOV R0, [BP + -1]
+      9:  CMP R0, 13
+5
+ ->   7:  NOP
+      8:  NOP
+      9:  NOP
+     10:  NOP
+     11:  HALT
+      6:  ADD R0, 1
+      7:  NOP
+ ->   8:  NOP
+      9:  NOP
+     10:  NOP
+Process stopped, reason: The program finished execution

@@ -17,6 +17,10 @@ function main at 2-35; active variables: it, l1
 (struct list*) $1 = 1018
 1016:10
 1017:1014
+function main at 2-35
+(struct list*) it = 1018
+(struct list) l1 = { next = 1016, v = 5 }
+(struct list) $2 = { next = 1016, v = 5 }
 5
 10
 15

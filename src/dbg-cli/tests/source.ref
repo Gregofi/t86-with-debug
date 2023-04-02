@@ -1,0 +1,102 @@
+Started process 'dbg-cli/tests/sources/mixed_types.t86'
+Error: Lines start at 1
+     50:    return long_names;
+     51:}
+     51:}
+Breakpoint set on line 42 (addr 146):     db.array[3].age = 37;
+Breakpoint set on line 44 (addr 149):     int long_names = 0;
+Breakpoint set on line 45 (addr 151):     for (int i = 0; i < 4; ++i) {
+Process stopped, reason: Software breakpoint hit at line 42
+function main at 94-177; active variables: db, long_names
+     40:    db.array[2].age = 30;
+     41:    strcpy("Alex Honnold", db.array[3].name);
+@->  42:    db.array[3].age = 37;
+     43:
+@    44:    int long_names = 0;
+Breakpoint disabled on line 44 (addr 149):     int long_names = 0;
+Breakpoint disabled on line 45 (addr 151):     for (int i = 0; i < 4; ++i) {
+function main at 94-177; active variables: db, long_names
+@    42:    db.array[3].age = 37;
+     43:
+@->  44:    int long_names = 0;
+@    45:    for (int i = 0; i < 4; ++i) {
+     46:        if (is_long(db.array[i].name)) {
+Breakpoint enabled on line 44 (addr 149):     int long_names = 0;
+Breakpoint enabled on line 45 (addr 151):     for (int i = 0; i < 4; ++i) {
+Process stopped, reason: Software breakpoint hit at line 45
+function main at 94-177; active variables: db, long_names
+     43:
+@    44:    int long_names = 0;
+@->  45:    for (int i = 0; i < 4; ++i) {
+     46:        if (is_long(db.array[i].name)) {
+     47:            puts(db.array[i].name);
+function main at 94-177
+(struct Database) db = { array = [{ age = 34, name = 811 "Magnus Midtbo" }, { age = 35, name = 832 "Eddie Hall" }, { age = 30, name = 853 "Adam Ondra" }, { age = 37, name = 874 "Alex Honnold" }, { age = 0, name = 895 "" }, { age = 0, name = 916 "" }, { age = 0, name = 937 "" }, { age = 0, name = 958 "" }, { age = 0, name = 979 "" }, { age = 0, name = 1000 "" }] }
+      8:  PUSH BP
+      9:  MOV BP, SP
+     10:  SUB SP, 3
+     11:  MOV [BP + -3], R1
+     12:  MOV R0, [BP + 2]
+     13:  MOV [BP + -1], R0
+     14:  MOV [BP + -2], 0
+     15:  MOV R0, [BP + -2]
+     16:  CMP R0, 11
+     17:  JGE 32
+     18:  MOV R1, [BP + -1]
+     19:  MOV R0, [BP + -2]
+     20:  MOV R0, [R1 + R0 * 1]
+     21:  CMP R0, 0
+     22:  JNZ 28
+     23:  MOV R0, 0
+     24:  MOV R1, [BP + -3]
+     25:  MOV SP, BP
+     26:  POP BP
+     27:  RET
+     28:  MOV R0, [BP + -2]
+     29:  ADD R0, 1
+     30:  MOV [BP + -2], R0
+     31:  JMP 15
+     32:  MOV R0, 1
+     33:  MOV R1, [BP + -3]
+Breakpoint set on line 26 (addr 70): void puts(char* str) {
+Process stopped, reason: Software breakpoint hit at line 26
+function puts at 70-90; active variables: str
+     24:}
+     25:
+@->  26:void puts(char* str) {
+     27:    while (*str != 0) {
+     28:        print(*str++);
+Breakpoint set on line 28 (addr 81):         print(*str++);
+Process stopped, reason: Software breakpoint hit at line 28
+function puts at 70-90; active variables: str
+@    26:void puts(char* str) {
+     27:    while (*str != 0) {
+@->  28:        print(*str++);
+     29:    }
+     30:    print('\n');
+MProcess stopped, reason: Software breakpoint hit at line 28
+function puts at 70-90; active variables: str
+@    26:void puts(char* str) {
+     27:    while (*str != 0) {
+@->  28:        print(*str++);
+     29:    }
+     30:    print('\n');
+Breakpoint removed from line 28 (addr 81):         print(*str++);
+agnus Midtbo
+function main at 94-177; active variables: db, long_names
+    167:  PUSH R0
+    168:  CALL 70
+ -> 169:  ADD SP, 1
+    170:  MOV R0, [BP + -212]
+    171:  ADD R0, 1
+Process stopped, reason: Software breakpoint hit at line 45
+function main at 94-177; active variables: db, long_names
+     43:
+@    44:    int long_names = 0;
+@->  45:    for (int i = 0; i < 4; ++i) {
+     46:        if (is_long(db.array[i].name)) {
+     47:            puts(db.array[i].name);
+Breakpoint removed from line 45 (addr 151):     for (int i = 0; i < 4; ++i) {
+Breakpoint removed from line 26 (addr 70): void puts(char* str) {
+Alex Honnold
+Process stopped, reason: The program finished execution

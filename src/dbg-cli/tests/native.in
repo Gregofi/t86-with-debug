@@ -1,0 +1,48 @@
+r
+b s 5
+b s 10000
+b s 0
+b s -5
+b s main
+frame
+source from 1
+b is 4
+b is 5
+b is 6
+b is 4
+c
+b id 1
+b irem 1
+b ie 1
+b ie 5555
+b is 5555
+b is 12
+c
+c
+in
+b id 4
+b ir 6
+b list
+c
+b id 5
+c
+r
+b list
+b ie 5
+b is 4
+c
+is
+reg get R9
+reg get R0
+reg set R0 4
+is
+reg get R0
+assemble int 7
+NOP
+NOP
+NOP
+NOP
+
+disas from 7 5
+is
+c
