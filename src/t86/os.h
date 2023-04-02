@@ -10,7 +10,10 @@ class OS {
 public:
     OS(size_t register_count = 8, size_t float_register_count = 4, size_t memory_size = 1024): cpu(register_count, float_register_count, memory_size) {}
 
-    void Run(Program program);
+    /// Runs the program on the T86 virtual machine.
+    /// Returns true if the run was completed successfully,
+    /// false if some error occured.
+    bool Run(Program program);
 
     void SetDebuggerComms(std::unique_ptr<Messenger> m) {
         debug_interface.emplace(cpu, std::move(m));

@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "cpu.h"
+#include "execution_error.h"
 #include "utils/stats_logger.h"
 #include "cpu/branch_predictors/naive_branch_predictor.h"
 #include "common/config.h"

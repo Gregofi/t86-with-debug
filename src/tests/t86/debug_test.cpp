@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+#include <vector>
 
 #include "t86/os.h"
+#include "t86/execution_error.h"
 #include "t86-parser/parser.h"
 #include "messenger.h"
 #include "../MockMessenger.h"
@@ -450,4 +452,110 @@ R"(
     ASSERT_EQ(*it++, "OK");
     ASSERT_EQ(*it++, "STOPPED");
     ASSERT_EQ(*it++, "HALT");
+}
+
+TEST(T86Test, RegisterOutOfRange) {
+    {
+        OS os(13, 0);
+        std::istringstream iss{
+    R"(
+    .text
+
+    0 MOV R12, 1
+    4 HALT
+    )"
+        };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_TRUE(os.Run(std::move(p)));
+    }
+    {
+        OS os(13, 0);
+        std::istringstream iss{
+    R"(
+    .text
+
+    0 MOV R13, 1
+    4 HALT
+    )"
+        };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_FALSE(os.Run(std::move(p)));
+    }
+}
+
+TEST(T86Test, FloatRegisterOutOfRange) {
+    {
+        OS os(1, 13);
+        std::istringstream iss{
+    R"(
+    .text
+
+    0 MOV F12, 1.5
+    4 HALT
+    )"
+        };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_TRUE(os.Run(std::move(p)));
+    }
+    {
+        OS os(1, 13);
+        std::istringstream iss{
+    R"(
+    .text
+
+    0 MOV F13, 1.5
+    4 HALT
+    )"
+        };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_FALSE(os.Run(std::move(p)));
+    }
+}
+
+TEST(T86Test, MemoryOutOfRange) {
+    {
+        OS os(10, 0, 1050);
+        std::istringstream iss{
+R"(
+.text
+
+0 MOV [1049], 5
+1 HALT
+)"
+        };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_TRUE(os.Run(std::move(p)));
+    }
+
+    {
+        OS os(10, 0, 1050);
+        std::istringstream iss{
+R"(
+.text
+
+0 MOV [1050], 5
+1 HALT
+)"
+    };
+
+        Parser parser(iss);
+        Program p = parser.Parse();
+
+        ASSERT_FALSE(os.Run(std::move(p)));
+    }
 }
