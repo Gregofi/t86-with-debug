@@ -5,4 +5,6 @@ e l1
 s
 e it
 mem get 1016 2
+frame
+e *it
 c

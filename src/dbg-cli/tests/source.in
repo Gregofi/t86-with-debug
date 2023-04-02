@@ -1,0 +1,29 @@
+r
+source from 0
+source from 50
+source from 51
+source from 52
+source from 53
+b s 42
+b s 44
+b s 45
+c
+b d 44
+b d 45
+s
+b e 44
+b e 45
+c
+frame
+disas fun is_long
+b s puts
+c
+b s 28
+fin
+fin
+b r 28
+fin
+c
+b r 45
+b r puts
+c

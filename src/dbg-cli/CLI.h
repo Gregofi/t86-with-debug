@@ -80,13 +80,15 @@ R"(breakpoint <subcommads> [parameter [parameter...]]
 Make program stop at certain point.
 
 To work with breakpoints at instruction level, just prefix
-the commands with the 'i' (as instruction), ie. `bp iset 1` sets 
+the commands with the 'i' (as instruction), ie. `br iset 1` sets 
 breakpoint on instruction at address 1.
 
-- set <line> = Creates breakpoint at <line> and enables it.
-- unset <line> = Removes breakpoint at <line>.
-- enable <line> = Enables breakpoint at <line>.
-- disable <line> = Disables breakpoint at <line>.
+The <loc> can either be a function name or a source line.
+
+- set <loc> = Creates breakpoint at <loc> and enables it.
+- unset <loc> = Removes breakpoint at <loc>.
+- enable <loc> = Enables breakpoint at <loc>.
+- disable <loc> = Disables breakpoint at <loc>.
 - list = Lists existing breakpoints.
 )";
     static constexpr const char* ISTEP_USAGE =
@@ -751,7 +753,11 @@ Most often, the correct address will be one below it.)";
             auto end = *line + 2 + 1;
             PrintCode(begin, end);
         } else if (check_command(subcommands, "from", 2)) {
-            auto from_line = ParseAddress(subcommands.at(1)) - 1;
+            auto line = ParseAddress(subcommands.at(1));
+            if (line == 0) {
+                Error("Lines start at 1");
+            }
+            auto from_line = line - 1;
             auto amount = subcommands.size() >= 3
                             ? ParseAddress(subcommands.at(2))
                             : source.GetLines().size() - from_line;
