@@ -171,5 +171,7 @@ namespace tiny::t86 {
         size_t remainingExecutionTime_;
 
         std::size_t loggingId_;
+
+        std::exception_ptr memoryAccessException_;
     };
 }
