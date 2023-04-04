@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <exception>
 
 namespace tiny::t86 {
     void ReservationStation::executeAndRetire() {
@@ -303,6 +304,11 @@ namespace tiny::t86 {
 
     void ReservationStation::Entry::retire() {
         instruction_->retire(*this);
+        // delay throwing illegal read exception until we know that the instruction will be executed
+        if (memoryAccessException_) {
+            std::rethrow_exception(memoryAccessException_);
+        }
+
         // Handle single step with trapflags here
         if (cpu_.isTrapFlagSet()) {
             unrollSpeculation();
@@ -332,7 +338,20 @@ namespace tiny::t86 {
     }
 
     std::optional<int64_t> ReservationStation::Entry::readMemory(uint64_t address) {
-        return cpu_.readMemory(address, maxWriteId_);
+        // A hack around reading from invalid memory cell in predictions, ie.
+        // MOV R0, -1
+        // RET
+        // MOV [R0], 1
+        // Would cause an error, because the MOV [R0 = -1] would cause this
+        // function to get called. This causes the exception to get thrown
+        // at retire. Meaning if the prediction was wrong the exception
+        // will not get thrown because retire does not happen.
+        try {
+            return cpu_.readMemory(address, maxWriteId_);
+        } catch(...) {
+            memoryAccessException_ = std::current_exception();
+            return {-1};
+        }
     }
 
     void ReservationStation::Entry::specifyWriteAddress(MemoryWrite::Id id, std::size_t address) {
