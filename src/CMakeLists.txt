@@ -30,20 +30,25 @@ include(FetchContent)
 
 # Libraries ----------
 # fmt
+message("-- Fetching fmt library")
 FetchContent_Declare(
-  fmt
-  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-  GIT_TAG master
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG 9.1.0
 )
 FetchContent_MakeAvailable(fmt)
+message("-- Fetching fmt library - done")
 
 # argparse
+message("-- Fetching argparse library")
 include(FetchContent)
 FetchContent_Declare(
     argparse
     GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    GIT_TAG v2.9
 )
 FetchContent_MakeAvailable(argparse)
+message("-- Fetching argparse library - done")
 # Libraries END ------------
 
 # benchmarks
