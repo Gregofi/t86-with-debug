@@ -1,5 +1,6 @@
 set(INSTALL_GTEST 0)
 # GTEST
+message("-- Fetching googletest library")
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
@@ -8,6 +9,7 @@ FetchContent_Declare(
 # For Windows: Prevent overriding the parent project's compiler/linker settings
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+message("-- Fetching googletest library - done")
 
 add_executable(
   unittests
@@ -34,4 +36,3 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(unittests)
-
