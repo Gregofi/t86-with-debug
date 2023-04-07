@@ -203,7 +203,7 @@ Continue execution until a debug event happens.
 )";
 
 public:
-    Cli(std::string fname): fname(std::move(fname)) {
+    Cli(std::optional<std::string> fname): fname(std::move(fname)) {
     }
 
     Cli() = default;
@@ -1052,7 +1052,8 @@ Most often, the correct address will be one below it.)";
         auto subcommands = utils::split_v(command);
 
         if (!fname) {
-            fmt::print("No file name was provided, provide the file name as argument at startup");
+            fmt::print(stderr, "No file name was provided, provide the file "
+                               "name as argument at startup of the program.\n");
             return;
         }
         auto [source, program] = ParseProgram(std::string{*fname});

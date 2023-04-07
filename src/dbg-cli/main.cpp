@@ -21,19 +21,24 @@ SourceFile ParseSourceFile(std::ifstream& ifs) {
     return buffer.str();
 }
 
+const char* usage =
+R"(usage: dbg-cli [exe-file]
+
+Provide the file if you want to debug local executable.
+For help on debugger uses, run the dbg-cli and type
+'help'.
+)";
+
 int main(int argc, char* argv[]) {
-    argparse::ArgumentParser args("debugger");
-    args.add_argument("file")
-        .help("Input file with T86 assembly to be debugged.");
-    
-    try {
-        args.parse_args(argc, argv);
-    } catch (const std::runtime_error& e) {
-        fmt::print(stderr, "{}\n", e.what());
-        std::cerr << args;
+    std::optional<std::string> fname;
+    if (argc > 1) {
+        fname = argv[1];
+    }
+    if (fname && fname.value()[0] == '-') {
+        fmt::print(stderr, "{}", usage);
         return 1;
     }
     
-    Cli cli(args.get<std::string>("file"));
+    Cli cli(fname);
     cli.Run();
 }
