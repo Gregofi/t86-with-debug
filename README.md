@@ -1,4 +1,4 @@
-# The Tinyverse monorepo
+# T86 with debugger
 ![build and test](https://github.com/gregofi/thesis-monorepo/actions/workflows/build-action.yaml/badge.svg)
 
 A repository which houses the T86 Virtual Machine and the debugger. Although
