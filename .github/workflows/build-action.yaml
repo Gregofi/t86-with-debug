@@ -85,3 +85,29 @@ jobs:
         run: |
           cd ${{ github.workspace }}/src/build
           make test
+
+# =============== Arch Linux =============
+  build-t86-arch:
+    name: Build and Unit test T86 on Arch Linux
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux
+      volumes:
+        - ${{ github.workspace }}:${{ github.workspace }}
+    steps:
+      - name: Packages
+        run: |
+          pacman -Syu --noconfirm gcc make cmake git
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          cd ${{ github.workspace }}/src
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Sanitizer
+          make -j
+      - name: Unit tests
+        run: |
+          cd ${{ github.workspace }}/src/build
+          make test
