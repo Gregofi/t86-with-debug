@@ -68,10 +68,10 @@ namespace tiny::t86 {
 
     void RegisterAllocationTable::rename(Register from, PhysicalRegister to) {
         if (from.index() >= cpu_.registersCount()
-                && from.index() != Register::ProgramCounter()
-                && from.index() != Register::StackPointer()
-                && from.index() != Register::StackBasePointer()
-                && from.index() != Register::Flags()) {
+                && Register::ProgramCounter() != from.index()
+                && Register::StackPointer() != from.index()
+                && Register::StackBasePointer() != from.index()
+                && Register::Flags() != from.index()) {
             throw T86ExecutionError(fmt::format(
                 "Register out of range ({})", from.index()));
         }
