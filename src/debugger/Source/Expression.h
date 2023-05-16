@@ -55,19 +55,6 @@ struct ArrayValue;
 using TypedValue = std::variant<PointerValue, IntegerValue, FloatValue,
                                 CharValue, StructuredValue, ArrayValue>;
 
-struct ArrayValue: Located {
-    ArrayValue(ArrayType type, uint64_t begin_address,
-               std::vector<TypedValue> members,
-               std::optional<expr::Location> loc = std::nullopt)
-        : Located{std::move(loc)}, type(std::move(type)),
-          begin_address(begin_address), members(std::move(members)) {}
-    ArrayValue() = default;
-    ArrayType type;
-    uint64_t begin_address;
-    std::vector<TypedValue> members;
-};
-
-
 struct StructuredValue: Located {
     StructuredValue(std::string name, uint64_t size,
                     std::map<std::string, TypedValue> members,
@@ -78,6 +65,18 @@ struct StructuredValue: Located {
     std::string name;
     uint64_t size;
     std::map<std::string, TypedValue> members;
+};
+
+struct ArrayValue: Located {
+    ArrayValue(ArrayType type, uint64_t begin_address,
+               std::vector<TypedValue> members,
+               std::optional<expr::Location> loc = std::nullopt)
+        : Located{std::move(loc)}, type(std::move(type)),
+          begin_address(begin_address), members(std::move(members)) {}
+    ArrayValue() = default;
+    ArrayType type;
+    uint64_t begin_address;
+    std::vector<TypedValue> members;
 };
 
 class Identifier;
