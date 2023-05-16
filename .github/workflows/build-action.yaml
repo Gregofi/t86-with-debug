@@ -1,6 +1,8 @@
 name: build
 
 on:
+  schedule:
+    - cron: 0 0 * * 5
   pull_request:
   push:
     branches:
