@@ -33,7 +33,7 @@ public:
     /// Returns range of instructions of length 'amount' starting at 'address'.
     /// Caller is responsible that the size of the program is respected.
     /// Use the TextSize for getting the size of text.
-    std::vector<std::string> ReadText(uint64_t address, size_t amount);
+    std::vector<std::string> ReadText(uint64_t address, size_t amount) override;
 
     /// Write into the memory at 'address' the contents of 'data'.
     /// If the write is out of bounds then an exception is thrown
