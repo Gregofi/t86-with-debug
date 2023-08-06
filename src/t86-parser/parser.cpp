@@ -469,7 +469,7 @@ std::unique_ptr<tiny::t86::Instruction> Parser::Instruction() {
     PARSE_UNARY(JNS, ImmOrRegisterOrSimpleMemory);
     PARSE_UNARY(CALL, ImmOrRegister);
     PARSE_UNARY(PUSH, ImmOrRegister);
-    PARSE_UNARY(PUSH, FloatImmOrRegister);
+    PARSE_UNARY(FPUSH, FloatImmOrRegister);
     PARSE_UNARY(POP, Register);
     PARSE_UNARY(FPOP, FloatRegister);
     PARSE_UNARY(PUTCHAR, Register);
