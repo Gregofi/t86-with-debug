@@ -2,6 +2,7 @@
 
 #include "../instruction.h"
 
+#include <algorithm>
 #include <iostream>
 #include <cassert>
 #include <unordered_map>
