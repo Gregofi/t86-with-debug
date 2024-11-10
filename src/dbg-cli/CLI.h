@@ -65,6 +65,7 @@ commands:
 - frame = Print information about current function and variables.
 - expression = Evaluate the source language expression and print result.
 - source = Print the source code that is being debugged.
+- memory = Read and write to the RAM memory.
 )";
     static constexpr const char* RUN_USAGE =
 R"(run [--arg=val [--arg=val ...]]
